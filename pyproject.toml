@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wordlevel"
+description = "A Python package for word-level analysis of text"
+readme = "README.md"
+authors = [
+  {name = "Ryan J. Gallagher"}
+]
+version = "0.0.1"
+requires-python = ">= 3.10"
+dependencies = [
+  "polars"
+]
+
+[dependency-groups]
+dev = [
+    "pytest"
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
