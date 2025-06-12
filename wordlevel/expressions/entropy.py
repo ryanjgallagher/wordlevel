@@ -20,7 +20,12 @@ def tsallis_entropy_weighted_avg_scores(
 
     return scores
 
-def tsallis_entropy(freqs: pl.Expr, alpha: float=1, base: float=2, normalize: bool=True) -> pl.Expr:
+def tsallis_entropy(
+    freqs: pl.Expr, 
+    alpha: float=1, 
+    base: float=2, 
+    normalize: bool=True
+) -> pl.Expr:
     """
     """
     probs = normalize_freqs(freqs, normalize=normalize)
@@ -39,7 +44,11 @@ def tsallis_entropy(freqs: pl.Expr, alpha: float=1, base: float=2, normalize: bo
     return entropies
 
 
-def shannon_entropy(freqs: pl.Expr, base: float=2, normalize: bool=True) -> pl.Expr:
+def shannon_entropy(
+    freqs: pl.Expr, 
+    base: float=2, 
+    normalize: bool=True
+) -> pl.Expr:
     """
     """
     return tsallis_entropy(freqs, alpha=1, base=base, normalize=normalize)
