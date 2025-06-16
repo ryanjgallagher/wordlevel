@@ -1,5 +1,5 @@
 import polars as pl
-from math import e
+
 from wordlevel.expressions.utils import normalize_freqs
 
 
@@ -30,19 +30,14 @@ def tsallis_entropy(
     """
     probs = normalize_freqs(freqs, normalize=normalize)
 
-    if alpha == 1:
-        scores = (
-            pl.when(probs > 0)
-            .then(tsallis_entropy_weighted_avg_scores(probs, base=base, normalize=False))
-            .otherwise(0)
-        )
-    else:
-        scores = tsallis_entropy_weighted_avg_scores(probs, alpha=alpha, normalize=False)
-
+    scores = (
+        pl.when(probs > 0)
+        .then(tsallis_entropy_weighted_avg_scores(probs, alpha=alpha, base=base, normalize=False))
+        .otherwise(0)
+    )
     entropies = probs * scores
 
     return entropies
-
 
 def shannon_entropy(
     freqs: pl.Expr, 
