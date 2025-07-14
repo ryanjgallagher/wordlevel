@@ -31,3 +31,19 @@ def mixed_distribution(
     probs_mixed = weight1 * probs1 + weight2 * probs2 
 
     return probs_mixed
+
+def alias_expressions(
+    expr1: pl.Expr, 
+    expr2: pl.Expr, 
+    alias1: str | None=None, 
+    alias2: str | None=None
+) -> Tuple[pl.Expr, pl.Expr]:
+    """
+    """
+    if alias1 is not None:
+        expr1 = expr1.alias(alias1)
+
+    if alias2 is not None:
+        expr2 = expr2.alias(alias2)
+
+    return expr1, expr2

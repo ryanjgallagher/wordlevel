@@ -1,6 +1,8 @@
 import polars as pl
 
-from wordlevel.expressions.utils import normalize_freqs, mixed_distribution
+from typing import Tuple
+
+from wordlevel.expressions.utils import alias_expressions, normalize_freqs, mixed_distribution
 from wordlevel.expressions.entropy import tsallis_entropy_weighted_avg_scores
 
 
@@ -12,7 +14,7 @@ def proportion_shift_scores(
 ) -> tuple[pl.Expr, pl.Expr]:
     """
     """
-    return pl.lit(1).alias(alias1), pl.lit(1).alias(alias2)
+    return alias_expressions(pl.lit(1), pl.lit(1), alias1, alias2)
 
 def tsallis_entropy_shift_scores(
     freqs1: pl.Expr, 
@@ -32,7 +34,7 @@ def tsallis_entropy_shift_scores(
         freqs2, alpha=alpha, base=base, normalize=normalize
     )
 
-    return scores1.alias(alias1), scores2.alias(alias2)
+    return alias_expressions(scores1, scores2, alias1, alias2)
 
 def kullback_leibler_divergence_shift_scores(
     freqs1: pl.Expr,
@@ -54,7 +56,7 @@ def kullback_leibler_divergence_shift_scores(
         freqs1, freqs2, alpha=1, base=base, normalize=normalize, alias1=alias1, alias2=alias2
     )
 
-    return scores1.alias(alias1), scores2.alias(alias2)
+    return alias_expressions(scores1, scores2, alias1, alias2)
 
 def jensen_shannon_divergence_shift_scores(
     freqs1: pl.Expr,
@@ -86,4 +88,4 @@ def jensen_shannon_divergence_shift_scores(
         scores1 = weight1 * (probs_mixed.pow(alpha - 1) - probs1.pow(alpha - 1)) / (alpha - 1)
         scores2 = weight2 * (probs2.pow(alpha - 1) - probs_mixed.pow(alpha - 1)) / (alpha - 1)
 
-    return scores1.alias(alias1), scores2.alias(alias2)
+    return alias_expressions(scores1, scores2, alias1, alias2)
