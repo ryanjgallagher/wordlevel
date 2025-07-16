@@ -16,8 +16,8 @@ def normalize_freqs(freqs: pl.Expr, normalize: bool=True) -> pl.Expr:
 def mixed_distribution(
     freqs1: pl.Expr, 
     freqs2: pl.Expr, 
-    weight1: float, 
-    weight2: float,
+    weight1: float=0.5, 
+    weight2: float=0.5,
     normalize: bool=True
 ) -> pl.Expr:
     """
