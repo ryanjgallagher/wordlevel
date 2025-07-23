@@ -1,6 +1,6 @@
 import polars as pl
 
-from wordlevel.expressions.utils import normalize_freqs
+from wordlevel.expressions.utils import normalize_freqs, alias_expressions
 
 
 def tsallis_entropy_weighted_avg_scores(
@@ -19,6 +19,26 @@ def tsallis_entropy_weighted_avg_scores(
         scores = (1 / (alpha - 1)) * (1 - probs.pow(alpha - 1))
 
     return scores
+
+def tsallis_entropy_shift_scores(
+    freqs1: pl.Expr, 
+    freqs2: pl.Expr, 
+    alpha: float=1,
+    base: float=2,
+    normalize: bool=True,
+    alias1: str | None=None,
+    alias2: str | None=None
+) -> tuple[pl.Expr, pl.Expr]:
+    """
+    """
+    scores1 = tsallis_entropy_weighted_avg_scores(
+        freqs1, alpha=alpha, base=base, normalize=normalize
+    )
+    scores2 = tsallis_entropy_weighted_avg_scores(
+        freqs2, alpha=alpha, base=base, normalize=normalize
+    )
+
+    return alias_expressions(scores1, scores2, alias1, alias2)
 
 def tsallis_entropy(
     freqs: pl.Expr, 
