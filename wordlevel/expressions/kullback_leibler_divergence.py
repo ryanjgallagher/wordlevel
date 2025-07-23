@@ -1,8 +1,30 @@
 import polars as pl
 
-from wordlevel.expressions.shift_scores import kullback_leibler_divergence_shift_scores
-from wordlevel.expressions.utils import normalize_freqs
+from wordlevel.expressions.entropy import tsallis_entropy_shift_scores
+from wordlevel.expressions.utils import normalize_freqs, alias_expressions
 
+
+def kullback_leibler_divergence_shift_scores(
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    base: float=2,
+    normalize: bool=True,
+    alias1: str | None=None,
+    alias2: str | None=None
+) -> tuple[pl.Expr, pl.Expr]:
+    """
+    KLD = p * log(p / q)
+        = p * log p - p * log q
+        = -p * log q - (-p * log p)
+
+    Let p = freqs1, q = freqs2, and have the scores correspond accordingly, i.e scores1 = -log p, 
+    scores2 = -log q
+    """
+    scores1,scores2 = tsallis_entropy_shift_scores(
+        freqs1, freqs2, alpha=1, base=base, normalize=normalize, alias1=alias1, alias2=alias2
+    )
+
+    return alias_expressions(scores1, scores2, alias1, alias2)
 
 def kullback_leibler_divergence(
     freqs1: pl.Expr, 

@@ -2,7 +2,7 @@ import pytest
 import polars as pl 
 import polars.testing 
 
-from math import log, log2
+from math import log
 
 from wordlevel.expressions.entropy import *
 
@@ -97,6 +97,35 @@ def test_entropy_weighted_avg_scores(
         df['actual_output'],
         check_names=False
     )
+
+@pytest.mark.parametrize('freqs1, freqs2, alpha, base', [
+    ([1, 2, 3, 4], [7, 5, 3, 1], 1, 2),
+    ([1, 1, 1, 1], [1, 2, 2, 1], 3, 10)
+])
+def test_tsallis_entropy_shift_scores(
+    freqs1: list[int], 
+    freqs2: list[int], 
+    alpha: float, 
+    base: float
+) -> None:
+    """
+    """
+    df = pl.DataFrame({'freqs1': freqs1, 'freqs2': freqs2}, strict=False)
+    df = df.with_columns(
+        *tsallis_entropy_shift_scores(
+            pl.col('freqs1'), 
+            pl.col('freqs2'),
+            base=base,
+            alpha=alpha,
+            alias1='scores1',
+            alias2='scores2'
+        ),
+        entropies1=tsallis_entropy_weighted_avg_scores(pl.col('freqs1'), alpha=alpha, base=base),
+        entropies2=tsallis_entropy_weighted_avg_scores(pl.col('freqs2'), alpha=alpha, base=base),
+    )
+
+    polars.testing.assert_series_equal(df['scores1'], df['entropies1'], check_names=False)
+    polars.testing.assert_series_equal(df['scores2'], df['entropies2'], check_names=False)
 
 @pytest.mark.parametrize('input, expected_output, alpha, base', [
     # Shannon entropy (alpha=1), base=2
