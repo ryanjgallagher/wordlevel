@@ -1,7 +1,5 @@
 import polars as pl
 
-from typing import Tuple
-
 from wordlevel.expressions.utils import alias_expressions, normalize_freqs, mixed_distribution
 from wordlevel.expressions.entropy import tsallis_entropy_weighted_avg_scores
 
