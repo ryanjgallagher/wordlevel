@@ -108,7 +108,6 @@ def less_of_positive(
         counteracted=counteracted
     )
 
-
 def higher_score(
     frequency_diff: pl.Expr,
     reference_score_diff: pl.Expr,

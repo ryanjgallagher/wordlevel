@@ -94,3 +94,19 @@ def test_mixed_distribution(
         df['actual_output'],
         check_names=False
     )
+
+def test_are_same_sign():
+    """
+    """
+    df = (
+        pl.DataFrame({
+            'col1': [1, 2, 3, 0, -4, 0, -5, 6],
+            'col2': [6, 5, 0, 4, 0, -3, 2, -1],
+            'expected': [True, True, True, True, True, True, False, False]
+        })
+        .with_columns(
+            are_same_sign(pl.col('col1'), pl.col('col2')).alias('actual')
+        )
+    )
+
+    polars.testing.assert_series_equal(df['expected'], df['actual'], check_names=False)
