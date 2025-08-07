@@ -42,9 +42,9 @@ def conditional_plot_component(
     """
     """
     if counteracted:
-        plot_component_func = plot_component
-    else:
         plot_component_func = plot_component_counteracted
+    else:
+        plot_component_func = plot_component
 
     return pl.when(condition).then(plot_component_func(component1, component2)).otherwise(0)
 
