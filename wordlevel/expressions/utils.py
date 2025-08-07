@@ -32,6 +32,17 @@ def mixed_distribution(
 
     return probs_mixed
 
+def are_same_sign(expr1: pl.Expr, expr2: pl.Expr) -> pl.Expr:
+    """
+    """
+    same_signs = (
+        pl.when(expr1.sign() == expr2.sign()).then(True)
+        .when((expr1 == 0) | (expr2 == 0)).then(True)
+        .otherwise(False)
+    )
+
+    return same_signs
+
 def alias_expressions(
     expr1: pl.Expr, 
     expr2: pl.Expr, 

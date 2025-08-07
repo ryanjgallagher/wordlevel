@@ -12,12 +12,14 @@ authors = [
 version = "0.0.1"
 requires-python = ">= 3.10"
 dependencies = [
-  "polars"
+  "altair>=5.5.0",
+  "polars",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest"
+    "pytest",
+    "altair[all]>=5.5.0"
 ]
 
 [tool.pytest.ini_options]
