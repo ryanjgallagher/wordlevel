@@ -3,7 +3,14 @@ import polars.testing
 
 from polars import col
 
-from wordlevel.expressions.shift_plot_components import *
+from wordlevel.expressions.shift_plot_components import (
+    higher_score,
+    lower_score,
+    less_of_negative,
+    less_of_positive,
+    more_of_negative,
+    more_of_positive,
+)
 
 
 def test_shift_plot_components():

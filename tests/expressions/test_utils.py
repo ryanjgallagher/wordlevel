@@ -2,7 +2,7 @@ import pytest
 import polars as pl
 import polars.testing
 
-from wordlevel.expressions.utils import *
+from wordlevel.expressions.utils import normalize_freqs, mixed_distribution, are_same_sign
 
 
 @pytest.mark.parametrize(

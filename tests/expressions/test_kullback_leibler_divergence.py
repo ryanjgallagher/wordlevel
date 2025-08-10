@@ -5,7 +5,10 @@ import polars.testing
 from math import log10
 
 from wordlevel.expressions.entropy import tsallis_entropy_weighted_avg_scores
-from wordlevel.expressions.kullback_leibler_divergence import *
+from wordlevel.expressions.kullback_leibler_divergence import (
+    kullback_leibler_divergence_shift_scores,
+    kullback_leibler_divergence,
+)
 
 
 @pytest.mark.parametrize(

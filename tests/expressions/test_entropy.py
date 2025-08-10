@@ -4,7 +4,12 @@ import polars.testing
 
 from math import log
 
-from wordlevel.expressions.entropy import *
+from wordlevel.expressions import (
+    tsallis_entropy_weighted_avg_scores,
+    tsallis_entropy_shift_scores,
+    tsallis_entropy,
+    shannon_entropy,
+)
 
 
 @pytest.mark.parametrize(

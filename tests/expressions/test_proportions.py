@@ -1,7 +1,7 @@
 import pytest
 import polars as pl
 
-from wordlevel.expressions.proportions import *
+from wordlevel.expressions.proportions import proportion_shift_scores
 
 
 @pytest.mark.parametrize(

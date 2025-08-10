@@ -2,7 +2,11 @@ import pytest
 import polars as pl
 import polars.testing
 
-from wordlevel.expressions.shift_components import *
+from wordlevel.expressions.shift_components import (
+    frequency_diff,
+    weighted_score_diff,
+    reference_score_diff,
+)
 
 
 @pytest.mark.parametrize(

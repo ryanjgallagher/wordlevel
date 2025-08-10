@@ -4,8 +4,12 @@ import polars.testing
 
 from math import log10
 
-from wordlevel.expressions.jensen_shannon_divergence import *
 from wordlevel.expressions.entropy import tsallis_entropy
+from wordlevel.expressions.jensen_shannon_divergence import (
+    jensen_shannon_divergence_shift_scores,
+    jensen_shannon_divergence,
+    mixed_distribution,
+)
 from wordlevel.expressions.kullback_leibler_divergence import kullback_leibler_divergence
 
 
