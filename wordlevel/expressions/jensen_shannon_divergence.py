@@ -6,22 +6,21 @@ from wordlevel.expressions.utils import normalize_freqs, mixed_distribution, ali
 def jensen_shannon_divergence_shift_scores(
     freqs1: pl.Expr,
     freqs2: pl.Expr,
-    alpha: float=1,
-    base: float=2,
-    weight1: float=0.5,
-    weight2: float=0.5,
-    normalize: bool=True,
-    alias1: str | None=None,
-    alias2: str | None=None
+    alpha: float = 1,
+    base: float = 2,
+    weight1: float = 0.5,
+    weight2: float = 0.5,
+    normalize: bool = True,
+    alias1: str | None = None,
+    alias2: str | None = None,
 ) -> tuple[pl.Expr, pl.Expr]:
-    """
-    """
+    """ """
     probs1 = normalize_freqs(freqs1, normalize=normalize)
     probs2 = normalize_freqs(freqs2, normalize=normalize)
-    
+
     if weight1 + weight2 != 1:
-        weight1,weight2 = weight1 / (weight1 + weight2), weight2 / (weight1 + weight2)
-    
+        weight1, weight2 = weight1 / (weight1 + weight2), weight2 / (weight1 + weight2)
+
     probs_mixed = mixed_distribution(
         probs1, probs2, weight1=weight1, weight2=weight2, normalize=False
     )
@@ -35,21 +34,21 @@ def jensen_shannon_divergence_shift_scores(
 
     return alias_expressions(scores1, scores2, alias1, alias2)
 
+
 def jensen_shannon_divergence(
-    freqs1: pl.Expr, 
-    freqs2: pl.Expr, 
-    weight1: float=0.5, 
-    weight2: float=0.5,
-    base: int=2,
-    alpha: float=1,
-    normalize: bool=True
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    weight1: float = 0.5,
+    weight2: float = 0.5,
+    base: int = 2,
+    alpha: float = 1,
+    normalize: bool = True,
 ) -> pl.Expr:
-    """
-    """
+    """ """
     probs1 = normalize_freqs(freqs1, normalize=normalize)
     probs2 = normalize_freqs(freqs2, normalize=normalize)
 
-    scores1,scores2 = jensen_shannon_divergence_shift_scores(
+    scores1, scores2 = jensen_shannon_divergence_shift_scores(
         probs1, probs2, alpha=alpha, base=base, weight1=weight1, weight2=weight2, normalize=False
     )
     scores1 = pl.when(probs1 > 0).then(scores1).otherwise(0)

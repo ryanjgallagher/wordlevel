@@ -19,10 +19,21 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
-    "altair[all]>=5.5.0"
+    "altair[all]>=5.5.0",
+    "ruff>=0.12.8",
+    "pre-commit>=4.3.0",
+]
+
+[tool.setuptools]
+packages = [
+  "wordlevel"
 ]
 
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
 ]
+
+[tool.ruff]
+line-length = 100
+show-fixes = true
