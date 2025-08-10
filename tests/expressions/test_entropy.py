@@ -4,7 +4,7 @@ import polars.testing
 
 from math import log
 
-from wordlevel.expressions import (
+from wordlevel.expressions.entropy import (
     tsallis_entropy_weighted_avg_scores,
     tsallis_entropy_shift_scores,
     tsallis_entropy,
