@@ -19,12 +19,14 @@ jobs:
           - 3.10
           - 3.13
     steps:
-      - uses: actions/checkout@v4
-      - name: Install uv and Python
+      - name: Enable uv caching
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install Python
         uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-        enable-cache: true
       - name: Install dependencies
         run: uv sync --group dev
       - name: Run tests
