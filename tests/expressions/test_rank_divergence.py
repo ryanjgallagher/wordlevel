@@ -119,9 +119,7 @@ def test_rank(input: list[int | float], expected_output: list[float], alpha: flo
         ),
     ],
 )
-def test_rank_divergence_summands(
-    freqs1: list[int], freqs2: list[int], expected_output: list[float], alpha: float
-) -> None:
+def test_rank_divergence_summands(freqs1: list[int], freqs2: list[int], expected_output: list[float], alpha: float) -> None:
     """ """
     df = pl.DataFrame({"freqs1": freqs1, "freqs2": freqs2, "expected_output": expected_output})
     df = df.with_columns(
