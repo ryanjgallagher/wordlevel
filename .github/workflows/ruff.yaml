@@ -1,0 +1,23 @@
+name: Run Ruff linting and formatting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Run Ruff check
+        uses: astral-sh/ruff-action@v3
+
+      - name: Run Ruff format
+        with:
+          args: "format --check --diff"
