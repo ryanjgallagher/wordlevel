@@ -4,13 +4,12 @@ from wordlevel.expressions.utils import normalize_freqs, alias_expressions
 
 
 def tsallis_entropy_weighted_avg_scores(
-    freqs: pl.Expr, 
-    alpha: float=1, 
-    base: float=2, 
-    normalize: bool=True
+    freqs: pl.Expr,
+    alpha: float = 1,
+    base: float = 2,
+    normalize: bool = True,
 ) -> pl.Expr:
-    """
-    """
+    """ """
     probs = normalize_freqs(freqs, normalize=normalize)
 
     if alpha == 1:
@@ -20,17 +19,17 @@ def tsallis_entropy_weighted_avg_scores(
 
     return scores
 
+
 def tsallis_entropy_shift_scores(
-    freqs1: pl.Expr, 
-    freqs2: pl.Expr, 
-    alpha: float=1,
-    base: float=2,
-    normalize: bool=True,
-    alias1: str | None=None,
-    alias2: str | None=None
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    alpha: float = 1,
+    base: float = 2,
+    normalize: bool = True,
+    alias1: str | None = None,
+    alias2: str | None = None,
 ) -> tuple[pl.Expr, pl.Expr]:
-    """
-    """
+    """ """
     scores1 = tsallis_entropy_weighted_avg_scores(
         freqs1, alpha=alpha, base=base, normalize=normalize
     )
@@ -40,14 +39,14 @@ def tsallis_entropy_shift_scores(
 
     return alias_expressions(scores1, scores2, alias1, alias2)
 
+
 def tsallis_entropy(
-    freqs: pl.Expr, 
-    alpha: float=1, 
-    base: float=2, 
-    normalize: bool=True
+    freqs: pl.Expr,
+    alpha: float = 1,
+    base: float = 2,
+    normalize: bool = True,
 ) -> pl.Expr:
-    """
-    """
+    """ """
     probs = normalize_freqs(freqs, normalize=normalize)
 
     scores = (
@@ -59,11 +58,11 @@ def tsallis_entropy(
 
     return entropies
 
+
 def shannon_entropy(
-    freqs: pl.Expr, 
-    base: float=2, 
-    normalize: bool=True
+    freqs: pl.Expr,
+    base: float = 2,
+    normalize: bool = True,
 ) -> pl.Expr:
-    """
-    """
+    """ """
     return tsallis_entropy(freqs, alpha=1, base=base, normalize=normalize)
