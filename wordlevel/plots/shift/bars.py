@@ -120,6 +120,11 @@ def shift_bars(
         # Case 3: User wants to see default Altair labels, i.e. opted out of the tick step
         rank_tick_values = alt.Undefined
 
+    if vertical:
+        rank_label_rotation = alt.Undefined
+    else:
+        rank_label_rotation = 0
+
     # Configure the score types and colors
     if bars.detailed:
         score_types = list(bars.colors.keys())
@@ -150,6 +155,7 @@ def shift_bars(
         title=to_altair_optional(rank_axis.title),
         titleFontSize=to_altair_optional(rank_axis.title_fontsize),
         labelFontSize=to_altair_optional(rank_axis.label_fontsize),
+        labelAngle=rank_label_rotation,
         grid=rank_axis.grid,
         values=rank_tick_values,
     )
