@@ -125,7 +125,7 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col):
         (RankAxisConfig, None, None, None, True),
         (RankAxisConfig, "My custom title", 44, 22, False),
         (ScoreAxisConfig, None, None, None, False),
-        (RankAxisConfig, "Another title", 33, 11, True),
+        (ScoreAxisConfig, "Another title", 33, 11, True),
     ],
 )
 def test_axis_config(
