@@ -16,11 +16,12 @@ class LabelConfig:
 
     pad: float = 5
     color: str = "black"
-    size: float | None = None
+    size: float | None = 11
     weight: str | int = "normal"
     rotation: float | None = None
     mirror_rotation: bool = True
     on_bar_ends: bool = True
+    font_width_to_height_ratio: float = 0.6
 
 
 def shift_labels(

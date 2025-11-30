@@ -248,7 +248,7 @@ def test_default_label_config(make_mock_df, score_col, rank_col, label_col):
 
     assert chart_json["mark"]["color"] == default_config.color
     assert chart_json["mark"]["fontWeight"] == default_config.weight
-    assert "fontSize" not in chart_json["mark"]
+    assert chart_json["mark"]["fontSize"] == default_config.size
 
 
 @pytest.mark.parametrize(
