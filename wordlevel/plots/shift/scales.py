@@ -3,7 +3,7 @@ import polars as pl
 
 from polars import col
 
-from wordlevel.plots.shift.labels import LabelConfig
+from wordlevel.plots.shift.labels import LabelConfig, get_label_positions
 
 
 def shift_scales(
@@ -17,7 +17,7 @@ def shift_scales(
     height: float | None = None,
     config: LabelConfig | None = None,
     scale_factor: float = 1.0,
-) -> alt.Chart:
+) -> alt.LayerChart:
     """
     Assumes a dataframe which has one row per word per type of contribution. There should be columns
     for the contribution, contribution type, and rank
@@ -26,7 +26,7 @@ def shift_scales(
         config = LabelConfig()
 
     if config.size is None:
-        fontsize = 11
+        fontsize = LabelConfig().size
     else:
         fontsize = config.size
 
@@ -76,13 +76,15 @@ def shift_scales(
     return alt.layer(positive_limit, negative_limit)
 
 
-def get_total_absolute_scores(
+def get_bar_lengths(
     df: pl.DataFrame, score_col: str, rank_col: str, label_col: str
 ) -> pl.DataFrame:
     """ """
-    return df.group_by([label_col, rank_col]).agg(
-        col(score_col).abs().sum().alias("total_absolute_score")
+    df_positions = get_label_positions(
+        df, score_col=score_col, rank_col=rank_col, label_col=label_col
     )
+
+    return df_positions.select(label_col, rank_col, col(score_col).abs().alias("bar_length"))
 
 
 def get_scale_limits(
@@ -98,12 +100,12 @@ def get_scale_limits(
     scale_factor: float = 1.0,
 ):
     """ """
-    df_total_abs = get_total_absolute_scores(
+    df_bar_lengths = get_bar_lengths(
         df, score_col=score_col, rank_col=rank_col, label_col=label_col
     )
 
     # Get how long the entire score axis is
-    len_score_axis = df_total_abs.select(col("total_absolute_score").max() * 2).item()
+    len_score_axis = df_bar_lengths.select(col("bar_length").max() * 2).item()
     # Get how many units along the score axis per a single pixel
     units_per_pixel = len_score_axis / size
     # Estimate the average number of pixels wide each character is
@@ -112,14 +114,14 @@ def get_scale_limits(
     label_scaling_factor = avg_char_size_px * units_per_pixel
 
     # With the scaling information, make the limits symmetric and long enough to account for labels
-    df_lims = df_total_abs.with_columns(
+    df_lims = df_bar_lengths.with_columns(
         (col(label_col).str.len_chars() * label_scaling_factor).alias("label_width")
     )
 
     if on_bar_ends:
-        estimated_width = col("total_absolute_score") + col("label_width")
+        estimated_width = col("bar_length") + col("label_width")
     else:
-        estimated_width = pl.max_horizontal(col("total_absolute_score"), col("label_width"))
+        estimated_width = pl.max_horizontal(col("bar_length"), col("label_width"))
 
     df_lims = df_lims.with_columns(
         (estimated_width + units_per_pixel * pad).alias("estimated_width")
