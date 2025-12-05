@@ -4,7 +4,6 @@ import polars as pl
 import altair as alt
 
 from polars.testing import assert_frame_equal
-from altair.vegalite.v5.schema.core import ExprRef
 
 from wordlevel.plots.shift.labels import (
     shift_labels,
@@ -105,7 +104,7 @@ def test_to_conditional_expr(score_col, key, positive_value, negative_value, exp
     neg_params = {key: negative_value}
 
     expr = to_conditional_expr(score_col, key, pos_params, neg_params)
-    assert isinstance(expr, ExprRef)
+    assert isinstance(expr, alt.ExprRef)
 
     expected_expr_str = f"datum['{score_col}'] >= 0 ? {expected_if_else}"
     assert expr.to_dict()["expr"] == expected_expr_str
