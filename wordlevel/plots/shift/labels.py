@@ -5,7 +5,6 @@ import altair as alt
 import polars as pl
 
 from polars import col
-from altair.vegalite.v5.schema.core import ExprRef
 
 from wordlevel.plots.utils import to_altair_optional
 
@@ -209,7 +208,7 @@ def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict
 
 def to_conditional_expr(
     score_col: str, key: str, positive_params: dict[str, float], negative_params: dict[str, float]
-) -> ExprRef:
+) -> alt.ExprRef:
     """ """
     pos_val = positive_params[key]
     neg_val = negative_params[key]
