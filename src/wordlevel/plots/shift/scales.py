@@ -12,17 +12,20 @@ def shift_scales(
     rank_col: str,
     label_col: str,
     max_rank: int = 50,
+    filter_max_rank: bool = True,
     vertical: bool = True,
     width: float | None = None,
     height: float | None = None,
-    config: LabelConfig | None = None,
+    config: LabelConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
     """
     Assumes a dataframe which has one row per word per type of contribution. There should be columns
     for the contribution, contribution type, and rank
     """
-    if config is None:
+    if isinstance(config, dict):
+        config = LabelConfig(**config)
+    elif config is None:
         config = LabelConfig()
 
     if config.size is None:
@@ -39,7 +42,8 @@ def shift_scales(
         if height is None:
             raise ValueError("To scale axis to labels, must specify the chart's height")
 
-    df = df.filter(col(rank_col) <= max_rank)
+    if filter_max_rank:
+        df = df.filter(col(rank_col) <= max_rank)
 
     # Get the base calculations for the scale layers
     df_lims = get_scale_limits(

@@ -101,22 +101,32 @@ def test_chart_dimensions(make_mock_df, score_col, score_type_col, rank_col, wid
         assert "height" not in chart_json
 
 
-def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col):
+@pytest.mark.parametrize("filter_max_rank", [True, False])
+def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filter_max_rank):
     """
     Test that max_rank correctly filters the data used for the chart
     """
+    n = 50
     max_rank = 11
+
     chart = shift_bars(
-        make_mock_df(),
+        make_mock_df(n=n),
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
         max_rank=max_rank,
+        filter_max_rank=filter_max_rank,
     )
 
     df_chart = pl.DataFrame(chart.data)
-    assert df_chart["rank"].max() == max_rank
-    assert df_chart.height == max_rank * len(shift_score_type2color)
+
+    if filter_max_rank:
+        n_expected = max_rank
+    else:
+        n_expected = n
+
+    assert df_chart["rank"].max() == n_expected
+    assert df_chart.height == n_expected * len(shift_score_type2color)
 
 
 @pytest.mark.parametrize(
@@ -142,43 +152,49 @@ def test_axis_config(
     """
     Test that configs for the rank axis are properly applied to the chart
     """
-    config = Config(
-        title=title, title_fontsize=title_fontsize, label_fontsize=label_fontsize, grid=grid
-    )
+    # Test that the config works whether given a formal config or a dictionary
+    for constructor in [Config, dict]:
+        config_params = {
+            "title": title,
+            "title_fontsize": title_fontsize,
+            "label_fontsize": label_fontsize,
+            "grid": grid,
+        }
+        config = constructor(**config_params)
 
-    chart_params = {
-        "df": make_mock_df(),
-        "rank_col": rank_col,
-        "score_col": score_col,
-        "score_type_col": score_type_col,
-        "vertical": True,
-    }
-    if isinstance(config, RankAxisConfig):
-        chart = shift_bars(**chart_params, rank_axis=config)
-        axis = "y"
-    elif isinstance(config, ScoreAxisConfig):
-        chart = shift_bars(**chart_params, score_axis=config)
-        axis = "x"
+        chart_params = {
+            "df": make_mock_df(),
+            "rank_col": rank_col,
+            "score_col": score_col,
+            "score_type_col": score_type_col,
+            "vertical": True,
+        }
+        if isinstance(config, RankAxisConfig):
+            chart = shift_bars(**chart_params, rank_axis=config)
+            axis = "y"
+        elif isinstance(config, ScoreAxisConfig):
+            chart = shift_bars(**chart_params, score_axis=config)
+            axis = "x"
 
-    chart_json = chart.to_dict()
-    chart_axis = chart_json["encoding"][axis]["axis"]
+        chart_json = chart.to_dict()
+        chart_axis = chart_json["encoding"][axis]["axis"]
 
-    altair_key2expected_param = {
-        "title": title,
-        "titleFontSize": title_fontsize,
-        "labelFontSize": label_fontsize,
-    }
+        altair_key2expected_param = {
+            "title": title,
+            "titleFontSize": title_fontsize,
+            "labelFontSize": label_fontsize,
+        }
 
-    for altair_key, expected_param in altair_key2expected_param.items():
-        if expected_param is None:
-            assert altair_key not in chart_axis or chart_axis[altair_key] is None
+        for altair_key, expected_param in altair_key2expected_param.items():
+            if expected_param is None:
+                assert altair_key not in chart_axis or chart_axis[altair_key] is None
+            else:
+                assert chart_axis[altair_key] == expected_param
+
+        if grid:
+            assert chart_axis["grid"]
         else:
-            assert chart_axis[altair_key] == expected_param
-
-    if grid:
-        assert chart_axis["grid"]
-    else:
-        assert not chart_axis["grid"]
+            assert not chart_axis["grid"]
 
 
 def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col):

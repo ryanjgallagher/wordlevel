@@ -29,19 +29,23 @@ def shift_labels(
     rank_col: str,
     label_col: str,
     max_rank: int = 50,
+    filter_max_rank: bool = True,
     vertical: bool = True,
-    config: LabelConfig | None = None,
+    config: LabelConfig | dict | None = None,
 ) -> alt.Chart:
     """
     Assumes a dataframe which has one row per word per type of contribution. There should be columns
     for the contribution, contribution type, and rank
     """
-    df = get_label_positions(
-        df, label_col=label_col, rank_col=rank_col, score_col=score_col, max_rank=max_rank
-    )
+    if filter_max_rank:
+        df = df.filter(col(rank_col) <= max_rank)
+
+    df = get_label_positions(df, label_col=label_col, rank_col=rank_col, score_col=score_col)
 
     # Set default label configurations
-    if config is None:
+    if isinstance(config, dict):
+        config = LabelConfig(**config)
+    elif config is None:
         config = LabelConfig()
 
     # Set angle defaults
@@ -114,14 +118,13 @@ def shift_labels(
 
 
 def get_label_positions(
-    df: pl.DataFrame, score_col: str, rank_col: str, label_col: str, max_rank: int = 50
+    df: pl.DataFrame, score_col: str, rank_col: str, label_col: str
 ) -> pl.DataFrame:
     """
     Get positions for labels, assuming long dataframe. Positions are still in score col
     """
     df = (
-        df.filter(col(rank_col) <= max_rank)
-        .group_by([label_col, rank_col])
+        df.group_by([label_col, rank_col])
         .agg(
             col(score_col).filter(pl.col(score_col) >= 0).sum().fill_null(0.0).alias("positives"),
             col(score_col).filter(pl.col(score_col) < 0).sum().fill_null(0.0).alias("negatives"),

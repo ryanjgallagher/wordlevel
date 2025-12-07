@@ -147,17 +147,17 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertica
             assert encoding["y"]["field"] == axis
 
 
-def test_max_rank_filter(
-    score_col,
-    rank_col,
-    label_col,
-):
+@pytest.mark.parametrize("filter_max_rank", [True, False])
+def test_max_rank_filter(score_col, rank_col, label_col, filter_max_rank):
     """
     Test that max_rank correctly filters the data used for the chart
     """
     df_mock = pl.DataFrame({label_col: ["w1", "w2"], rank_col: [100, 1], score_col: [100, 5]})
 
-    expected_limit = 25
+    if filter_max_rank:
+        expected_limit = 25
+    else:
+        expected_limit = 500
 
     chart = shift_scales(
         df_mock,
@@ -165,9 +165,11 @@ def test_max_rank_filter(
         rank_col=rank_col,
         label_col=label_col,
         max_rank=2,
+        filter_max_rank=filter_max_rank,
         width=1,
         scale_factor=1,
-        config=LabelConfig(size=1, font_width_to_height_ratio=1, pad=0),
+        # Test passing a dictionary config works vs passing a formal config
+        config={"size": 1, "font_width_to_height_ratio": 1, "pad": 0},
     )
 
     # chart_json['datasets'] is of the form {arbitrary_key: [{rank: 1, pos_lim: N, neg_lim: -N}]}

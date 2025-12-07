@@ -79,6 +79,32 @@ def test_shift_dimension_validation(make_mock_df, score_col, rank_col, label_col
         pytest.fail("shift() raised ValueError unexpectedly when autoscale_axes=False")
 
 
+@pytest.mark.parametrize("max_rank", [11, 40])
+def test_shift_max_rank_filter(
+    make_mock_df, score_col, rank_col, label_col, score_type_col, max_rank
+):
+    """
+    Check that the wrapper filters data by max_rank before creating layers
+    """
+    chart = shift(
+        make_mock_df(n=50),
+        score_col=score_col,
+        rank_col=rank_col,
+        label_col=label_col,
+        score_type_col=score_type_col,
+        max_rank=max_rank,
+        width=100,
+        autoscale_axes=True,
+    )
+
+    bars_data = chart.layer[0].data
+    assert bars_data[rank_col].max() == max_rank
+
+    labels_data = chart.layer[1].data
+    assert labels_data[rank_col].max() == max_rank
+    assert len(labels_data) == max_rank
+
+
 def test_config_propagation(make_mock_df, score_col, rank_col, label_col, score_type_col):
     """
     Check configs passed to the wrapper affect the final chart
@@ -88,40 +114,46 @@ def test_config_propagation(make_mock_df, score_col, rank_col, label_col, score_
     custom_bar_colors = {"more_of_positive_counteracted": "magenta"}
     custom_label_color = "cyan"
 
-    rank_config = RankAxisConfig(title=custom_rank_title, grid=False)
-    score_config = ScoreAxisConfig(title=custom_score_title, grid=True)
-    bar_config = BarConfig(colors=custom_bar_colors, detailed=True)
-    label_config = LabelConfig(color=custom_label_color)
+    for config_style in ["config", "dict"]:
+        rank_config = {"title": custom_rank_title, "grid": False}
+        score_config = {"title": custom_score_title, "grid": True}
+        bar_config = {"colors": custom_bar_colors, "detailed": True}
+        label_config = {"color": custom_label_color}
 
-    # 2. Generate Chart
-    chart = shift(
-        make_mock_df(),
-        score_col=score_col,
-        rank_col=rank_col,
-        label_col=label_col,
-        score_type_col=score_type_col,
-        width=100,
-        vertical=True,
-        rank_axis=rank_config,
-        score_axis=score_config,
-        bar_config=bar_config,
-        label_config=label_config,
-    )
+        if config_style == "config":
+            rank_config = RankAxisConfig(**rank_config)
+            score_config = ScoreAxisConfig(**score_config)
+            bar_config = BarConfig(**bar_config)
+            label_config = LabelConfig(**label_config)
 
-    layers = chart.to_dict()["layer"]
+        chart = shift(
+            make_mock_df(),
+            score_col=score_col,
+            rank_col=rank_col,
+            label_col=label_col,
+            score_type_col=score_type_col,
+            width=100,
+            vertical=True,
+            rank_axis=rank_config,
+            score_axis=score_config,
+            bar_config=bar_config,
+            label_config=label_config,
+        )
 
-    # Check bars layer
-    bars_encoding = layers[0]["encoding"]
+        layers = chart.to_dict()["layer"]
 
-    assert bars_encoding["y"]["axis"]["title"] == custom_rank_title
-    assert bars_encoding["y"]["axis"]["grid"] is False
+        # Check bars layer
+        bars_encoding = layers[0]["encoding"]
 
-    assert bars_encoding["x"]["axis"]["title"] == custom_score_title
-    assert bars_encoding["x"]["axis"]["grid"] is True
+        assert bars_encoding["y"]["axis"]["title"] == custom_rank_title
+        assert bars_encoding["y"]["axis"]["grid"] is False
 
-    assert "magenta" in bars_encoding["color"]["scale"]["range"]
+        assert bars_encoding["x"]["axis"]["title"] == custom_score_title
+        assert bars_encoding["x"]["axis"]["grid"] is True
 
-    # Check labels layer
-    label_layer = layers[1]
+        assert "magenta" in bars_encoding["color"]["scale"]["range"]
 
-    assert label_layer["mark"]["color"] == custom_label_color
+        # Check labels layer
+        label_layer = layers[1]
+
+        assert label_layer["mark"]["color"] == custom_label_color
