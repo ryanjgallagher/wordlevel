@@ -60,12 +60,13 @@ def shift_bars(
     rank_col: str,
     score_type_col: str,
     max_rank: int = 50,
+    filter_max_rank: bool = True,
     vertical: bool = True,
     height: float = None,
     width: float = None,
-    rank_axis: RankAxisConfig | None = None,
-    score_axis: ScoreAxisConfig | None = None,
-    bars: BarConfig | None = None,
+    rank_axis: RankAxisConfig | dict | None = None,
+    score_axis: ScoreAxisConfig | dict | None = None,
+    bars: BarConfig | dict | None = None,
     show_legend: bool = False,
     show_border: bool = False,
 ) -> alt.Chart:
@@ -74,14 +75,23 @@ def shift_bars(
     for the contribution, contribution type, and rank
     """
     # Filter the dataframe to the top N rows
-    df = df.filter(pl.col(rank_col) <= max_rank)
+    if filter_max_rank:
+        df = df.filter(pl.col(rank_col) <= max_rank)
 
     # Configure defaults for rank and score axes and the bars
-    if rank_axis is None:
+    if isinstance(rank_axis, dict):
+        rank_axis = RankAxisConfig(**rank_axis)
+    elif rank_axis is None:
         rank_axis = RankAxisConfig()
-    if score_axis is None:
+
+    if isinstance(score_axis, dict):
+        score_axis = ScoreAxisConfig(**score_axis)
+    elif score_axis is None:
         score_axis = ScoreAxisConfig()
-    if bars is None:
+
+    if isinstance(bars, dict):
+        bars = BarConfig(**bars)
+    elif bars is None:
         bars = BarConfig()
 
     # Configure whether to show all border axes, i.e. whether to hide the top and right axes

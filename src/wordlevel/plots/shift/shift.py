@@ -17,21 +17,24 @@ def shift(
     height: float | None = None,
     width: float | None = None,
     autoscale_axes: bool = True,
-    rank_axis: RankAxisConfig | None = None,
-    score_axis: ScoreAxisConfig | None = None,
-    bar_config: BarConfig | None = None,
-    label_config: LabelConfig | None = None,
+    rank_axis: RankAxisConfig | dict | None = None,
+    score_axis: ScoreAxisConfig | dict | None = None,
+    bar_config: BarConfig | dict | None = None,
+    label_config: LabelConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,
     show_border: bool = False,
 ) -> alt.LayerChart:
     """ """
+    df = df.filter(pl.col(rank_col) <= max_rank)
+
     bars = shift_bars(
         df,
         score_col=score_col,
         rank_col=rank_col,
         score_type_col=score_type_col,
         max_rank=max_rank,
+        filter_max_rank=False,
         vertical=vertical,
         height=height,
         width=width,
@@ -48,6 +51,7 @@ def shift(
         rank_col=rank_col,
         label_col=label_col,
         max_rank=max_rank,
+        filter_max_rank=False,
         vertical=vertical,
         config=label_config,
     )
@@ -61,6 +65,7 @@ def shift(
             rank_col=rank_col,
             label_col=label_col,
             max_rank=max_rank,
+            filter_max_rank=False,
             vertical=vertical,
             width=width,
             height=height,

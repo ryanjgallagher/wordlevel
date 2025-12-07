@@ -139,7 +139,7 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, label_col):
 
     # Check the data is encoded as expected
     df_expected = get_label_positions(
-        df, score_col=score_col, rank_col=rank_col, label_col=label_col, max_rank=50
+        df, score_col=score_col, rank_col=rank_col, label_col=label_col
     )
     assert_frame_equal(df_chart, df_expected, check_column_order=False, check_row_order=False)
 
@@ -193,26 +193,31 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertica
         assert encoding["y"]["field"] == score_col
 
 
-def test_max_rank_filter(
-    make_mock_df,
-    score_col,
-    rank_col,
-    label_col,
-):
+@pytest.mark.parametrize("filter_max_rank", [True, False])
+def test_max_rank_filter(make_mock_df, score_col, rank_col, label_col, filter_max_rank):
     """
     Test that max_rank correctly filters the data used for the chart
     """
+    n = 50
     max_rank = 11
+
     chart = shift_labels(
-        make_mock_df(),
+        make_mock_df(n=n),
         rank_col=rank_col,
         score_col=score_col,
         label_col=label_col,
         max_rank=max_rank,
+        filter_max_rank=filter_max_rank,
     )
 
     df_chart = pl.DataFrame(chart.data)
-    assert df_chart["rank"].max() == max_rank
+
+    if filter_max_rank:
+        n_expected = max_rank
+    else:
+        n_expected = n
+
+    assert df_chart["rank"].max() == n_expected
 
 
 @pytest.mark.parametrize(
@@ -224,17 +229,22 @@ def test_max_rank_filter(
 )
 def test_label_config(make_mock_df, score_col, rank_col, label_col, color, size, weight):
     """ """
-    config = LabelConfig(color=color, size=size, weight=weight)
-    df = make_mock_df()
+    # Test that the config works whether given a formal config or a dictionary
+    for constructor in [LabelConfig, dict]:
+        config_params = {"color": color, "size": size, "weight": weight}
+        config = constructor(**config_params)
 
-    chart = shift_labels(
-        df, score_col=score_col, rank_col=rank_col, label_col=label_col, config=config
-    )
-    chart_json = chart.to_dict()
+        config = LabelConfig(color=color, size=size, weight=weight)
+        df = make_mock_df()
 
-    assert chart_json["mark"]["color"] == color
-    assert chart_json["mark"]["fontSize"] == size
-    assert chart_json["mark"]["fontWeight"] == weight
+        chart = shift_labels(
+            df, score_col=score_col, rank_col=rank_col, label_col=label_col, config=config
+        )
+        chart_json = chart.to_dict()
+
+        assert chart_json["mark"]["color"] == color
+        assert chart_json["mark"]["fontSize"] == size
+        assert chart_json["mark"]["fontWeight"] == weight
 
 
 def test_default_label_config(make_mock_df, score_col, rank_col, label_col):
