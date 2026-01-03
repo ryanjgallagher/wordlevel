@@ -3,6 +3,46 @@ import polars as pl
 from wordlevel.expressions.utils import are_same_sign
 
 
+def get_shift_plot_components(
+    df: pl.DataFrame,
+    frequency_diff: pl.Expr,
+    weighted_score_diff: pl.Expr,
+    reference_score_diff: pl.Expr,
+    more_of_positive_alias: str = "more_of_positive",
+    less_of_negative_alias: str = "less_of_negative",
+    more_of_negative_alias: str = "more_of_negative",
+    less_of_positive_alias: str = "less_of_positive",
+    higher_score_alias: str = "higher_score",
+    lower_score_alias: str = "lower_score",
+    counteracted_suffix: str = "_counteracted",
+) -> pl.DataFrame:
+    """ """
+    components = {
+        "frequency_diff": frequency_diff,
+        "weighted_score_diff": weighted_score_diff,
+        "reference_score_diff": reference_score_diff,
+    }
+
+    # fmt: off
+    df_comps = df.with_columns(
+        more_of_positive(**components, counteracted=False).alias(more_of_positive_alias),
+        less_of_negative(**components, counteracted=False).alias(less_of_negative_alias),
+        more_of_negative(**components, counteracted=False).alias(more_of_negative_alias),
+        less_of_positive(**components, counteracted=False).alias(less_of_positive_alias),
+        higher_score(**components, counteracted=False).alias(higher_score_alias),
+        lower_score(**components, counteracted=False).alias(lower_score_alias),
+        more_of_positive(**components, counteracted=True).alias(f"{more_of_positive_alias}{counteracted_suffix}"),
+        less_of_negative(**components, counteracted=True).alias(f"{less_of_negative_alias}{counteracted_suffix}"),
+        more_of_negative(**components, counteracted=True).alias(f"{more_of_negative_alias}{counteracted_suffix}"),
+        less_of_positive(**components, counteracted=True).alias(f"{less_of_positive_alias}{counteracted_suffix}"),
+        higher_score(**components, counteracted=True).alias(f"{higher_score_alias}{counteracted_suffix}"),
+        lower_score(**components, counteracted=True).alias(f"{lower_score_alias}{counteracted_suffix}"),
+    )
+    # fmt: on
+
+    return df_comps
+
+
 def plot_component(component1: pl.Expr, component2: pl.Expr) -> pl.Expr:
     """ """
     # fmt: off
