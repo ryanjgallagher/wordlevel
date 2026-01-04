@@ -1,6 +1,6 @@
 import polars as pl
 
-from wordlevel.expressions.entropy import tsallis_entropy_shift_scores
+from wordlevel.expressions.entropy import tsallis_entropy_dual_dist_scores
 from wordlevel.expressions.utils import normalize_freqs, alias_expressions
 
 
@@ -20,7 +20,7 @@ def kullback_leibler_divergence_shift_scores(
     Let p = freqs1, q = freqs2, and have the scores correspond accordingly, i.e scores1 = -log p,
     scores2 = -log q
     """
-    scores1, scores2 = tsallis_entropy_shift_scores(
+    scores1, scores2 = tsallis_entropy_dual_dist_scores(
         freqs1, freqs2, alpha=1, base=base, normalize=normalize, alias1=alias1, alias2=alias2
     )
 

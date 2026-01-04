@@ -4,7 +4,7 @@ import polars.testing
 
 from math import log10
 
-from wordlevel.expressions.entropy import tsallis_entropy_weighted_avg_scores
+from wordlevel.expressions.entropy import tsallis_entropy_dist_scores
 from wordlevel.expressions.kullback_leibler_divergence import (
     kullback_leibler_divergence_shift_scores,
     kullback_leibler_divergence,
@@ -21,8 +21,8 @@ def test_kld_shift_scores(freqs1: list[int], freqs2: list[int], base: float) -> 
         *kullback_leibler_divergence_shift_scores(
             pl.col("freqs1"), pl.col("freqs2"), base=base, alias1="scores1", alias2="scores2"
         ),
-        entropies1=tsallis_entropy_weighted_avg_scores(pl.col("freqs1"), base=base),
-        entropies2=tsallis_entropy_weighted_avg_scores(pl.col("freqs2"), base=base),
+        entropies1=tsallis_entropy_dist_scores(pl.col("freqs1"), base=base),
+        entropies2=tsallis_entropy_dist_scores(pl.col("freqs2"), base=base),
     )
 
     polars.testing.assert_series_equal(df["scores1"], df["entropies1"], check_names=False)

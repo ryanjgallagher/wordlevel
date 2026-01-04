@@ -5,8 +5,8 @@ import polars.testing
 from math import log
 
 from wordlevel.expressions.entropy import (
-    tsallis_entropy_weighted_avg_scores,
-    tsallis_entropy_shift_scores,
+    tsallis_entropy_dist_scores,
+    tsallis_entropy_dual_dist_scores,
     tsallis_entropy,
     shannon_entropy,
 )
@@ -63,7 +63,7 @@ def test_entropy_weighted_avg_scores(
     """ """
     df = pl.DataFrame({"input": input, "expected_output": expected_output}, strict=False)
     df = df.with_columns(
-        actual_output=tsallis_entropy_weighted_avg_scores(
+        actual_output=tsallis_entropy_dist_scores(
             pl.col("input"), alpha=alpha, base=base, normalize=normalize
         )
     )
@@ -83,7 +83,7 @@ def test_tsallis_entropy_shift_scores(
     """ """
     df = pl.DataFrame({"freqs1": freqs1, "freqs2": freqs2}, strict=False)
     df = df.with_columns(
-        *tsallis_entropy_shift_scores(
+        *tsallis_entropy_dual_dist_scores(
             pl.col("freqs1"),
             pl.col("freqs2"),
             base=base,
@@ -91,8 +91,8 @@ def test_tsallis_entropy_shift_scores(
             alias1="scores1",
             alias2="scores2",
         ),
-        entropies1=tsallis_entropy_weighted_avg_scores(pl.col("freqs1"), alpha=alpha, base=base),
-        entropies2=tsallis_entropy_weighted_avg_scores(pl.col("freqs2"), alpha=alpha, base=base),
+        entropies1=tsallis_entropy_dist_scores(pl.col("freqs1"), alpha=alpha, base=base),
+        entropies2=tsallis_entropy_dist_scores(pl.col("freqs2"), alpha=alpha, base=base),
     )
 
     polars.testing.assert_series_equal(df["scores1"], df["entropies1"], check_names=False)
