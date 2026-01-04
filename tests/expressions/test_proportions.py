@@ -1,7 +1,7 @@
 import pytest
 import polars as pl
 
-from wordlevel.expressions.proportions import proportion_shift_scores
+from wordlevel.expressions.proportions import proportion_dual_dist_scores
 
 
 @pytest.mark.parametrize(
@@ -11,7 +11,7 @@ def test_proportion_shift_scores(freqs1: list[int], freqs2: list[int]) -> None:
     """ """
     df = pl.DataFrame({"freqs1": freqs1, "freqs2": freqs2}, strict=False)
     df = df.with_columns(
-        *proportion_shift_scores(
+        *proportion_dual_dist_scores(
             pl.col("freqs1"), pl.col("freqs2"), alias1="scores1", alias2="scores2"
         )
     )

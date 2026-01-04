@@ -3,17 +3,10 @@ import polars.testing
 
 from polars import col
 
-from wordlevel.expressions.shift_plot_components import (
-    higher_score,
-    lower_score,
-    less_of_negative,
-    less_of_positive,
-    more_of_negative,
-    more_of_positive,
-)
+from wordlevel.expressions.shift_plot_components import get_shift_plot_components
 
 
-def test_shift_plot_components():
+def test_shift_plot_components_v2():
     """ """
     test_rows = [
         # More of positive + higher score
@@ -76,81 +69,12 @@ def test_shift_plot_components():
         orient="row",
     )
 
-    df = df_expected.select(
-        col("frequency_diff"), col("reference_score_diff"), col("weighted_score_diff")
-    ).with_columns(
-        more_of_positive(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=False,
-        ).alias("more_of_positive"),
-        less_of_negative(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=False,
-        ).alias("less_of_negative"),
-        more_of_negative(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=False,
-        ).alias("more_of_negative"),
-        less_of_positive(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=False,
-        ).alias("less_of_positive"),
-        higher_score(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=False,
-        ).alias("higher_score"),
-        lower_score(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=False,
-        ).alias("lower_score"),
-        more_of_positive(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=True,
-        ).alias("more_of_positive_counteracted"),
-        less_of_negative(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=True,
-        ).alias("less_of_negative_counteracted"),
-        more_of_negative(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=True,
-        ).alias("more_of_negative_counteracted"),
-        less_of_positive(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=True,
-        ).alias("less_of_positive_counteracted"),
-        higher_score(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=True,
-        ).alias("higher_score_counteracted"),
-        lower_score(
-            col("frequency_diff"),
-            col("reference_score_diff"),
-            col("weighted_score_diff"),
-            counteracted=True,
-        ).alias("lower_score_counteracted"),
+    df_actual = df_expected.select("frequency_diff", "weighted_score_diff", "reference_score_diff")
+    df_actual = get_shift_plot_components(
+        df_actual,
+        frequency_diff=col("frequency_diff"),
+        weighted_score_diff=col("weighted_score_diff"),
+        reference_score_diff=col("reference_score_diff"),
     )
 
-    polars.testing.assert_frame_equal(df, df_expected)
+    polars.testing.assert_frame_equal(df_actual, df_expected, check_column_order=False)

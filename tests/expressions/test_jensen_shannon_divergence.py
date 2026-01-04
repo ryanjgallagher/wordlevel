@@ -6,7 +6,7 @@ from math import log10
 
 from wordlevel.expressions.entropy import tsallis_entropy
 from wordlevel.expressions.jensen_shannon_divergence import (
-    jensen_shannon_divergence_shift_scores,
+    jensen_shannon_divergence_dual_dist_scores,
     jensen_shannon_divergence,
     mixed_distribution,
 )
@@ -95,7 +95,7 @@ def test_jsd_shift_scores(
         strict=False,
     )
     df = df.with_columns(
-        *jensen_shannon_divergence_shift_scores(
+        *jensen_shannon_divergence_dual_dist_scores(
             pl.col("freqs1"),
             pl.col("freqs2"),
             base=base,

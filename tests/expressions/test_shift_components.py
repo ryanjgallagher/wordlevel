@@ -6,6 +6,7 @@ from wordlevel.expressions.shift_components import (
     frequency_diff,
     weighted_score_diff,
     reference_score_diff,
+    get_shift_components,
 )
 
 
@@ -91,3 +92,83 @@ def test_reference_score_diff(
     )
 
     polars.testing.assert_series_equal(df["actual"], df["expected"], check_names=False)
+
+
+@pytest.mark.parametrize("include_total_difference", [True, False])
+def test_get_shift_components(include_total_difference: bool) -> None:
+    """ """
+    reference_score = 8.0
+
+    # fmt: off
+    df_input = pl.DataFrame({
+        "f1": [10, 10],  # Normalizes to [0.5, 0.5]
+        "f2": [20, 60],  # Normalizes to [0.25, 0.75]
+        "s1": [5, 5],
+        "s2": [10, 15],
+    })
+
+    df_actual = get_shift_components(
+        df_input,
+        freqs1=pl.col("f1"),
+        freqs2=pl.col("f2"),
+        scores1=pl.col("s1"),
+        scores2=pl.col("s2"),
+        reference_score=reference_score,
+        frequency_diff_alias='diff_of_freqs',
+        weighted_score_diff_alias='diff_of_weighted_scores',
+        reference_score_diff_alias='diff_with_reference_score',
+        total_difference_alias='overall_difference',
+        include_total_difference=include_total_difference
+    )
+
+    df_expected = pl.DataFrame({
+        "f1": [10, 10],
+        "f2": [20, 60],
+        "s1": [5, 5],
+        "s2": [10, 15],
+        "diff_of_freqs": [-0.25, 0.25],            # [0.25 - 0.5, 0.75 - 0.5]
+        "diff_of_weighted_scores": [1.875, 6.25],  # [0.375 * 5, 0.625 * 10]
+        "diff_with_reference_score": [-0.5, 2.0],  # [7.5 - 8.0, 10.0 - 8.0]
+        "overall_difference": [2.0, 6.75],         # [(-0.25 * -0.5) + 1.875, (0.25 * 2.0) + 6.25]
+    })
+    if not include_total_difference:
+        df_expected = df_expected.drop('overall_difference')
+    # fmt: on
+
+    polars.testing.assert_frame_equal(df_actual, df_expected)
+
+
+@pytest.mark.parametrize("normalize", [True, False])
+def test_get_shift_components_normalization(normalize: bool) -> None:
+    """ """
+    reference_score = 8.0
+
+    df_input = pl.DataFrame(
+        {
+            "f1": [10.0, 10.0],
+            "f2": [20.0, 60.0],
+            "s1": [5, 5],
+            "s2": [10, 15],
+        }
+    )
+
+    df_actual = get_shift_components(
+        df_input,
+        freqs1=pl.col("f1"),
+        freqs2=pl.col("f2"),
+        scores1=pl.col("s1"),
+        scores2=pl.col("s2"),
+        frequency_diff_alias="freq_diff",
+        reference_score=reference_score,
+        normalize=normalize,
+    )
+
+    if normalize:
+        expected_freq_diff = [-0.25, 0.25]
+    else:
+        expected_freq_diff = [10.0, 50.0]
+
+    # Only check the frequency difference to verify the flag worked
+    polars.testing.assert_series_equal(
+        df_actual["freq_diff"], pl.Series(expected_freq_diff), check_names=False
+    )

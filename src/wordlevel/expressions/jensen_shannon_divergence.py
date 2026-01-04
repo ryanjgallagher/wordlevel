@@ -3,7 +3,7 @@ import polars as pl
 from wordlevel.expressions.utils import normalize_freqs, mixed_distribution, alias_expressions
 
 
-def jensen_shannon_divergence_shift_scores(
+def jensen_shannon_divergence_dual_dist_scores(
     freqs1: pl.Expr,
     freqs2: pl.Expr,
     alpha: float = 1,
@@ -35,6 +35,21 @@ def jensen_shannon_divergence_shift_scores(
     return alias_expressions(scores1, scores2, alias1, alias2)
 
 
+def jensen_shannon_divergence_clean_dual_dist_scores(
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    scores1: pl.Expr,
+    scores2: pl.Expr,
+    alias1: str | None = None,
+    alias2: str | None = None,
+) -> tuple[pl.Expr, pl.Expr]:
+    """ """
+    clean_scores1 = pl.when(freqs1 > 0).then(scores1).otherwise(0)
+    clean_scores2 = pl.when(freqs2 > 0).then(scores2).otherwise(0)
+
+    return alias_expressions(clean_scores1, clean_scores2, alias1, alias2)
+
+
 def jensen_shannon_divergence(
     freqs1: pl.Expr,
     freqs2: pl.Expr,
@@ -48,12 +63,13 @@ def jensen_shannon_divergence(
     probs1 = normalize_freqs(freqs1, normalize=normalize)
     probs2 = normalize_freqs(freqs2, normalize=normalize)
 
-    scores1, scores2 = jensen_shannon_divergence_shift_scores(
+    scores1, scores2 = jensen_shannon_divergence_dual_dist_scores(
         probs1, probs2, alpha=alpha, base=base, weight1=weight1, weight2=weight2, normalize=False
     )
-    scores1 = pl.when(probs1 > 0).then(scores1).otherwise(0)
-    scores2 = pl.when(probs2 > 0).then(scores2).otherwise(0)
+    clean_scores1, clean_scores2 = jensen_shannon_divergence_clean_dual_dist_scores(
+        freqs1=probs1, freqs2=probs2, scores1=scores1, scores2=scores2
+    )
 
-    jsd = probs2 * scores2 - probs1 * scores1
+    jsd = probs2 * clean_scores2 - probs1 * clean_scores1
 
     return jsd
