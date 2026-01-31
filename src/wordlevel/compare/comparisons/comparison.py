@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Self
+from typing_extensions import Self
 
 from wordlevel.compare.constructors import NORMALIZATION_SUFFIX
 from wordlevel.compare.comparisons.score import Scorer
