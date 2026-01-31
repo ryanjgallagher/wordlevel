@@ -1,10 +1,11 @@
 import polars as pl
 
+from wordlevel.types import PolarsFrame
 from wordlevel.expressions.utils import are_same_sign
 
 
 def get_shift_plot_components(
-    df: pl.DataFrame,
+    df: PolarsFrame,
     frequency_diff: pl.Expr,
     weighted_score_diff: pl.Expr,
     reference_score_diff: pl.Expr,
@@ -15,7 +16,7 @@ def get_shift_plot_components(
     higher_score_alias: str = "higher_score",
     lower_score_alias: str = "lower_score",
     counteracted_suffix: str = "_counteracted",
-) -> pl.DataFrame:
+) -> PolarsFrame:
     """ """
     components = {
         "frequency_diff": frequency_diff,
