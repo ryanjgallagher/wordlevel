@@ -33,25 +33,3 @@ class DualCleanScoreFunc(Protocol):
         alias1: str,
         alias2: str,
     ) -> tuple[pl.Expr, pl.Expr]: ...
-
-
-class ComparisonInterface(Protocol):
-    _ref: str
-    _cmp: str
-    _ref_normed: str
-    _cmp_normed: str
-    _normalization_suffix: str
-    _alias: str | None
-    _plan: ScorePlan | None
-
-    def __init__(
-        self,
-        alias: str,
-        reference: str,
-        comparison: str,
-        method: str,
-        parameters: dict,
-        is_weighted_avg: bool,
-        plan: ScorePlan,
-        normalization_suffix: str,
-    ) -> None: ...
