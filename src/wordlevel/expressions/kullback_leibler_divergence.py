@@ -24,7 +24,7 @@ def kullback_leibler_divergence_dual_dist_scores(
         freqs1, freqs2, alpha=1, base=base, normalize=normalize, alias1=alias1, alias2=alias2
     )
 
-    return alias_expressions(scores1, scores2, alias1, alias2)
+    return scores1, scores2
 
 
 def kullback_leibler_divergence_clean_dual_dist_scores(
@@ -43,7 +43,7 @@ def kullback_leibler_divergence_clean_dual_dist_scores(
     clean_scores1 = pl.when(freqs1 == 0).then(0).otherwise(scores1)
     clean_scores2 = pl.when((freqs1 == 0) & (freqs2 == 0)).then(0).otherwise(scores2)
 
-    return clean_scores1, clean_scores2
+    return alias_expressions(clean_scores1, clean_scores2, alias1, alias2)
 
 
 def kullback_leibler_divergence(

@@ -1,6 +1,9 @@
+from typing import Literal, Optional
+
 import polars as pl
 from polars import col
 
+from wordlevel.types import PolarsFrame
 from wordlevel.expressions.utils import normalize_freqs
 
 
@@ -33,14 +36,22 @@ def weighted_score_diff(
 def reference_score_diff(
     scores1: pl.Expr,
     scores2: pl.Expr,
-    reference_score: float,
+    reference_score: float | Literal["mean"] | pl.Expr,
+    freqs1: Optional[pl.Expr] = None,
+    normalize: bool = True,
 ) -> pl.Expr:
     """ """
+    if isinstance(reference_score, str) and reference_score == "mean":
+        if freqs1 is None:
+            raise ValueError('Must pass `freqs1` if `reference_score` is "mean"')
+
+        reference_score = (scores1 * normalize_freqs(freqs1, normalize=normalize)).sum()
+
     return (0.5 * scores1 + 0.5 * scores2) - reference_score
 
 
 def get_shift_components(
-    df: pl.DataFrame,
+    df: PolarsFrame,
     freqs1: pl.Expr,
     freqs2: pl.Expr,
     scores1: pl.Expr,
@@ -52,7 +63,7 @@ def get_shift_components(
     weighted_score_diff_alias: str = "weighted_score_diff",
     reference_score_diff_alias: str = "ref_score_diff",
     total_difference_alias: str = "total_difference",
-) -> pl.DataFrame:
+) -> PolarsFrame:
     """ """
     if normalize:
         freqs1 = normalize_freqs(freqs1)
@@ -65,7 +76,7 @@ def get_shift_components(
             freqs1=freqs1, freqs2=freqs2, scores1=scores1, scores2=scores2, normalize=False
         ).alias(weighted_score_diff_alias),
         reference_score_diff(
-            scores1=scores1, scores2=scores2, reference_score=reference_score
+            scores1=scores1, scores2=scores2, reference_score=reference_score, freqs1=freqs1, normalize=False
         ).alias(reference_score_diff_alias)
     )
 

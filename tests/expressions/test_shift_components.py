@@ -76,19 +76,32 @@ def test_weighted_score_diff(
 
 
 @pytest.mark.parametrize(
-    "scores1, scores2, ref_score, expected",
+    "scores1, scores2, ref_score, freqs1, expected",
     [
-        ([1, 2, 17, 1], [3, 8, 15, 1], 5, [-3.0, 0.0, 11.0, -4.0]),
-        ([6, 7, 8, 9], [4, 9, 6, 11], 0, [5.0, 8.0, 7.0, 10.0]),
+        ([1, 2, 17, 1], [3, 8, 15, 1], 5, None, [-3.0, 0.0, 11.0, -4.0]),
+        ([6, 7, 8, 9], [4, 9, 6, 11], 0, None, [5.0, 8.0, 7.0, 10.0]),
+        ([1, 2, 3, 4], [1, 2, 3, 4], "mean", [1, 1, 1, 1], [-1.5, -0.5, 0.5, 1.5]),
     ],
 )
 def test_reference_score_diff(
-    scores1: list[float], scores2: list[float], ref_score: float, expected: list[float]
+    scores1: list[float],
+    scores2: list[float],
+    ref_score: float,
+    freqs1: list[float],
+    expected: list[float],
 ) -> None:
     """ """
-    df = pl.DataFrame({"scores1": scores1, "scores2": scores2, "expected": expected}, strict=False)
+    df = pl.DataFrame(
+        {"freqs1": freqs1, "scores1": scores1, "scores2": scores2, "expected": expected},
+        strict=False,
+    )
     df = df.with_columns(
-        actual=reference_score_diff(pl.col("scores1"), pl.col("scores2"), ref_score)
+        actual=reference_score_diff(
+            scores1=pl.col("scores1"),
+            scores2=pl.col("scores2"),
+            reference_score=ref_score,
+            freqs1=pl.col("freqs1"),
+        )
     )
 
     polars.testing.assert_series_equal(df["actual"], df["expected"], check_names=False)
