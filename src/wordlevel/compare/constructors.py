@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Collection
 from typing import TYPE_CHECKING
 
+import polars as pl
 from polars import col
 
 from wordlevel.types import PolarsFrame
@@ -34,14 +35,35 @@ def from_polars(
     normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> ComparatorData:
     """ """
-    cols = set(df.columns)
-    for freq_col in freq_cols:
+    # Check all parameters specified
+    if label_col is None:
+        raise ValueError("`label_col` must be specified if providing a DataFrame")
+    if freq_cols is None:
+        raise ValueError("`freq_cols` must be specified if providing a DataFrame")
+
+    # Check all columns exist
+    deduped_freq_cols = set(freq_cols)
+
+    if isinstance(df, pl.DataFrame):
+        cols = set(df.columns)
+    elif isinstance(df, pl.LazyFrame):
+        cols = set(df.collect_schema().names())
+
+    if label_col not in cols:
+        raise KeyError(f"Label column not in provided dataframe: {label_col}")
+
+    if len(deduped_freq_cols) < 2:
+        raise ValueError("At least two frequency columns must be provided via `freq_cols`")
+
+    for freq_col in deduped_freq_cols:
         if freq_col not in cols:
             raise KeyError(f"Frequency column not in provided dataframe: {freq_col}")
 
     if normalize:
         df_normed = _normalize_frequency_columns(
-            df.clone().lazy(), freq_cols=freq_cols, normalization_suffix=normalization_suffix
+            df.clone().lazy(),
+            freq_cols=deduped_freq_cols,
+            normalization_suffix=normalization_suffix,
         )
     else:
         df_normed = df.clone().lazy()
@@ -50,7 +72,7 @@ def from_polars(
     return ComparatorData(
         df=df_normed,
         label_col=label_col,
-        freq_cols=freq_cols,
+        freq_cols=deduped_freq_cols,
         normalization_suffix=normalization_suffix,
         comparisons=dict(),
     )
