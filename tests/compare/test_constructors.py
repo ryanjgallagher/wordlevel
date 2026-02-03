@@ -7,7 +7,7 @@ from polars.testing import assert_frame_equal
 from wordlevel.compare.comparator import CorpusComparator
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.constructors import _normalize_frequency_columns
-from wordlevel.compare.comparisons.comparison import Comparison
+from wordlevel.compare.comparisons.comparison import ComparisonResult
 
 
 @pytest.fixture
@@ -39,25 +39,33 @@ def df_mock(label_col, words, freq_cols) -> pl.LazyFrame:
 
 
 @pytest.fixture
-def mock_comparison(freq_cols, norm_suffix) -> Comparison:
-    return Comparison(freq_cols[0], freq_cols[1], normalization_suffix=norm_suffix)
+def mock_comparison_result(df_mock, freq_cols) -> ComparisonResult:
+    return ComparisonResult(
+        _lf=df_mock,
+        reference=freq_cols[0],
+        comparison=freq_cols[1],
+        alias="test_comparison",
+        method="test_method",
+        is_weighted_avg=False,
+        parameters={},
+    )
 
 
 @pytest.fixture
 def mock_comparator_data(
-    df_mock, mock_comparison, label_col, freq_cols, norm_suffix
+    df_mock, mock_comparison_result, label_col, freq_cols, norm_suffix
 ) -> ComparatorData:
     return ComparatorData(
         df=df_mock,
         label_col=label_col,
         freq_cols=freq_cols,
         normalization_suffix=norm_suffix,
-        comparisons=dict({"comparison": mock_comparison}),
+        comparisons=dict({"comparison": mock_comparison_result}),
     )
 
 
 def test_init_from_comparator_data(
-    df_mock, mock_comparison, mock_comparator_data, label_col, norm_suffix, freq_cols
+    df_mock, mock_comparison_result, mock_comparator_data, label_col, norm_suffix, freq_cols
 ):
     """
     Checks a comparator is initialized correctly from comparator data. Does not check that the
@@ -70,7 +78,7 @@ def test_init_from_comparator_data(
     assert comparator._normalization_suffix == norm_suffix
 
     assert sorted(list(comparator._freq_cols)) == sorted(freq_cols)
-    assert comparator._comparisons == {"comparison": mock_comparison}
+    assert comparator._comparisons == {"comparison": mock_comparison_result}
     assert_frame_equal(comparator._df, df_mock, check_column_order=False, check_row_order=False)
 
 
@@ -209,7 +217,7 @@ def test_from_comparator_df_mutation(mock_comparator_data):
     assert comp_original._df.collect().height != comp_new._df.collect().height
 
 
-def test_from_comparator_comparisons_mutation_independence(mock_comparator_data):
+def test_from_comparator_comparisons_mutation_independence(mock_comparator_data, df_mock):
     """Test that mutating the original comparator's comparisons dict doesn't affect the copy."""
     comp_original = CorpusComparator(data=mock_comparator_data)
     comp_new = CorpusComparator(data=comp_original)
@@ -218,7 +226,16 @@ def test_from_comparator_comparisons_mutation_independence(mock_comparator_data)
     original_comparisons = comp_new._comparisons.copy()
 
     # Mutate the original's comparisons dict
-    comp_original._comparisons["new_comparison"] = Comparison("a", "b")
+    new_result = ComparisonResult(
+        _lf=df_mock,
+        reference="a",
+        comparison="b",
+        alias="new_comparison",
+        method="test",
+        is_weighted_avg=False,
+        parameters={},
+    )
+    comp_original._comparisons["new_comparison"] = new_result
 
     # Verify the new comparator's comparisons dict is unchanged
     assert comp_new._comparisons == original_comparisons

@@ -10,7 +10,7 @@ from wordlevel.types import PolarsFrame
 from wordlevel.compare.constructors import from_comparator, from_polars
 from wordlevel.compare.constants import NORMALIZATION_SUFFIX
 from wordlevel.compare.types import ComparatorData
-from wordlevel.compare.comparisons.comparison import Comparison
+from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
 
 
 class CorpusComparator:
@@ -78,7 +78,7 @@ class CorpusComparator:
         return cls(data=init_data)
 
     @property
-    def comparisons(self) -> Mapping[str, Comparison]:
+    def comparisons(self) -> Mapping[str, ComparisonResult]:
         """"""
         return MappingProxyType(self._comparisons)
 
@@ -87,23 +87,13 @@ class CorpusComparator:
         """ """
         return self._df.collect()
 
-    # def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
-    #     """
-    #     TODO: don't just store the raw comparison, need to apply the "plan" (function) to the df
+    def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
+        """ """
+        comparator = self.__class__(self)
 
-    #     tc = (
-    #     Comparator(data=data, subsets=['1990', '2000', '2010'])
-    #         .with_comparsions(
-    #             comp('1990', '2000').score.rank_divergence().filter(min_scoore=20).alias('my_rank_div'),
-    #             comp('2000', '2010').score.jensen_shannon()
-    #         )
-    #         .plot.bars('my_rank_div')
-    #     )
-    #     """
-    #     comparator = self.__class__(self)
+        for comparison in comparisons:
+            comparison = comparison._with_normalization_suffix(self._normalization_suffix)
+            result = ComparisonResult.from_comparison(comparison, self._df)
+            comparator._comparisons[result.alias] = result
 
-    #     for comparison in comparisons:
-    #         comparison._normalization_suffix = self._normalization_suffix
-    #         comparator.comparisons[comparison._alias] = comparison
-
-    #     return comparator
+        return comparator
