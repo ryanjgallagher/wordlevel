@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import cached_property
 from typing_extensions import Self
 
@@ -91,24 +91,24 @@ class ComparisonResult:
     method: str
     is_weighted_avg: bool
     parameters: dict
-    _df_cached: pl.DataFrame | None = field(default=None, init=False, repr=False, compare=False)
 
     @property
     def df(self) -> pl.DataFrame:
-        if self._df_cached is None:
-            object.__setattr__(self, "_df_cached", self._lf.collect())
+        df = self._lf.collect()
+        object.__setattr__(self, "_lf", df.lazy())
 
-        return self._df_cached
+        return df
 
     @classmethod
     def from_comparison(cls, comparison: Comparison, df: PolarsFrame) -> Self:
+        """ """
         if comparison._plan is None:
             raise ValueError("Cannot construct a comparison result without a plan")
         if comparison._alias is None:
             raise ValueError("Cannot construct a comparison result without an alias")
         # fmt: off
         if (comparison._is_weighted_avg is None) or (comparison._parameters is None) or (comparison._method is None):
-            raise ValueError("Missing comparison metadata: `method`, `parameters`, or `is_weighted_avg`")
+            raise ValueError("Missing comparison metadata: `method`, `parameters`, or `is_weighted_avg` is None")
         # fmt: on
 
         return cls(
