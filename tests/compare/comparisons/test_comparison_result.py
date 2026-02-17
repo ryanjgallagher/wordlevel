@@ -44,6 +44,7 @@ def valid_comparison(simple_plan) -> Comparison:
         alias="test_alias",
         method="test_method",
         is_weighted_avg=False,
+        is_nonnegative=False,
         plan=simple_plan,
         parameters={"alpha": 1.0},
     )
@@ -53,14 +54,16 @@ def valid_comparison(simple_plan) -> Comparison:
 # TestInitialization - Test direct construction
 # ============================================================================
 @pytest.mark.parametrize(
-    "method,is_weighted_avg,parameters",
+    "method,is_weighted_avg,is_nonnegative,parameters",
     [
-        ("rank_divergence", False, {"alpha": 1.0}),
-        ("proportion", False, {}),
-        ("jensen_shannon_divergence", True, {"alpha": 1.0, "base": 2}),
+        ("rank_divergence", False, True, {"alpha": 1.0}),
+        ("proportion", False, False, {}),
+        ("jensen_shannon_divergence", True, True, {"alpha": 1.0, "base": 2}),
     ],
 )
-def test_initialization(df_mock, simple_plan, method, is_weighted_avg, parameters) -> None:
+def test_initialization(
+    df_mock, simple_plan, method, is_weighted_avg, is_nonnegative, parameters
+) -> None:
     """Test initialization with different scoring methods and parameters."""
     lf = simple_plan(df_mock).lazy()
 
@@ -71,6 +74,7 @@ def test_initialization(df_mock, simple_plan, method, is_weighted_avg, parameter
         alias=f"{method}_test",
         method=method,
         is_weighted_avg=is_weighted_avg,
+        is_nonnegative=is_nonnegative,
         parameters=parameters,
     )
 
@@ -79,6 +83,7 @@ def test_initialization(df_mock, simple_plan, method, is_weighted_avg, parameter
     assert result.alias == f"{method}_test"
     assert result.method == method
     assert result.is_weighted_avg == is_weighted_avg
+    assert result.is_nonnegative == is_nonnegative
     assert result.parameters == parameters
     assert isinstance(result._lf, pl.LazyFrame)
 
@@ -104,6 +109,7 @@ class TestFromComparison:
         assert result.alias == valid_comparison._alias
         assert result.method == valid_comparison._method
         assert result.is_weighted_avg is valid_comparison._is_weighted_avg
+        assert result.is_nonnegative is valid_comparison._is_nonnegative
         assert result.parameters == valid_comparison._parameters
 
     @pytest.mark.parametrize(
@@ -113,6 +119,7 @@ class TestFromComparison:
             ("alias", "Cannot construct a comparison result without an alias"),
             ("method", "Missing comparison metadata"),
             ("is_weighted_avg", "Missing comparison metadata"),
+            ("is_nonnegative", "Missing comparison metadata"),
             ("parameters", "Missing comparison metadata"),
         ],
     )
@@ -169,6 +176,7 @@ class TestLazyEvaluation:
             alias="test",
             method="test",
             is_weighted_avg=False,
+            is_nonnegative=False,
             plan=counting_plan,
             parameters=dict(),
         )
@@ -195,6 +203,7 @@ class TestLazyEvaluation:
         ("alias", "new_alias"),
         ("method", "new_method"),
         ("is_weighted_avg", True),
+        ("is_nonnegative", False),
         ("parameters", {"new": "dict"}),
         ("_lf", pl.LazyFrame()),
     ],
@@ -256,6 +265,7 @@ class TestDataFrameExecution:
             alias="test",
             method="simple",
             is_weighted_avg=False,
+            is_nonnegative=False,
             plan=simple_plan,
             parameters=dict(),
         )
@@ -285,6 +295,7 @@ class TestDataFrameExecution:
             alias="test",
             method="complex",
             is_weighted_avg=False,
+            is_nonnegative=False,
             plan=complex_plan,
             parameters=dict(),
         )

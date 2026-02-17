@@ -20,6 +20,7 @@ class Comparison:
         alias: str | None = None,
         method: str | None = None,
         is_weighted_avg: bool | None = None,
+        is_nonnegative: bool | None = None,
         plan: ScorePlan | None = None,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
         parameters: dict | None = None,
@@ -29,6 +30,7 @@ class Comparison:
         self._alias = alias
         self._method = method
         self._is_weighted_avg = is_weighted_avg
+        self._is_nonnegative = is_nonnegative
         self._plan = plan
         self._normalization_suffix = normalization_suffix
 
@@ -58,6 +60,7 @@ class Comparison:
             alias=name,
             method=self._method,
             is_weighted_avg=self._is_weighted_avg,
+            is_nonnegative=self._is_nonnegative,
             plan=self._plan,
             normalization_suffix=self._normalization_suffix,
             parameters=self._parameters,
@@ -71,6 +74,7 @@ class Comparison:
             alias=self._alias,
             method=self._method,
             is_weighted_avg=self._is_weighted_avg,
+            is_nonnegative=self._is_nonnegative,
             plan=self._plan,
             normalization_suffix=suffix,
             parameters=self._parameters,
@@ -90,6 +94,7 @@ class ComparisonResult:
     alias: str
     method: str
     is_weighted_avg: bool
+    is_nonnegative: bool
     parameters: dict
 
     @property
@@ -106,10 +111,16 @@ class ComparisonResult:
             raise ValueError("Cannot construct a comparison result without a plan")
         if comparison._alias is None:
             raise ValueError("Cannot construct a comparison result without an alias")
-        # fmt: off
-        if (comparison._is_weighted_avg is None) or (comparison._parameters is None) or (comparison._method is None):
-            raise ValueError("Missing comparison metadata: `method`, `parameters`, or `is_weighted_avg` is None")
-        # fmt: on
+
+        no_weighted_avg = comparison._is_weighted_avg is None
+        no_nonnegative = comparison._is_nonnegative is None
+        no_parameters = comparison._parameters is None
+        no_method = comparison._method is None
+        if no_weighted_avg or no_nonnegative or no_parameters or no_method:
+            raise ValueError(
+                "Missing comparison metadata: `method`, `parameters`, `is_weighted_avg`, or "
+                "`is_nonnegative` is None"
+            )
 
         return cls(
             _lf=comparison._plan(df).lazy(),
@@ -118,5 +129,6 @@ class ComparisonResult:
             alias=comparison._alias,
             method=comparison._method,
             is_weighted_avg=comparison._is_weighted_avg,
+            is_nonnegative=comparison._is_nonnegative,
             parameters=comparison._parameters.copy(),
         )
