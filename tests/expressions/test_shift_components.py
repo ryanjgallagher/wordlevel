@@ -107,8 +107,15 @@ def test_reference_score_diff(
     polars.testing.assert_series_equal(df["actual"], df["expected"], check_names=False)
 
 
-@pytest.mark.parametrize("include_total_difference", [True, False])
-def test_get_shift_components(include_total_difference: bool) -> None:
+@pytest.mark.parametrize(
+    "include_total_difference,include_rank",
+    [
+        (True, True),
+        (True, False),
+        (False, False),
+    ],
+)
+def test_get_shift_components(include_total_difference: bool, include_rank: bool) -> None:
     """ """
     reference_score = 8.0
 
@@ -131,7 +138,9 @@ def test_get_shift_components(include_total_difference: bool) -> None:
         weighted_score_diff_alias='diff_of_weighted_scores',
         reference_score_diff_alias='diff_with_reference_score',
         total_difference_alias='overall_difference',
-        include_total_difference=include_total_difference
+        rank_alias='rank',
+        include_total_difference=include_total_difference,
+        include_rank=include_rank
     )
 
     df_expected = pl.DataFrame({
@@ -143,9 +152,12 @@ def test_get_shift_components(include_total_difference: bool) -> None:
         "diff_of_weighted_scores": [1.875, 6.25],  # [0.375 * 5, 0.625 * 10]
         "diff_with_reference_score": [-0.5, 2.0],  # [7.5 - 8.0, 10.0 - 8.0]
         "overall_difference": [2.0, 6.75],         # [(-0.25 * -0.5) + 1.875, (0.25 * 2.0) + 6.25]
+        "rank": [2.0, 1.0],                        # abs([2.0, 6.75]) ranked descending
     })
     if not include_total_difference:
         df_expected = df_expected.drop('overall_difference')
+    if not include_rank:
+        df_expected = df_expected.drop('rank')
     # fmt: on
 
     polars.testing.assert_frame_equal(df_actual, df_expected)

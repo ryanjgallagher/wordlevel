@@ -147,6 +147,7 @@ class TestScoreFunctionWiring:
         assert "weighted_score_diff" in df_result.columns
         assert "ref_score_diff" in df_result.columns
         assert "comparison_score" in df_result.columns
+        assert "rank" in df_result.columns
 
         # Shift plot components
         assert "more_of_positive" in df_result.columns
