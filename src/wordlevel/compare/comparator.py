@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Collection
 from types import MappingProxyType
-from typing import Self, Mapping
+from typing import Mapping
+from typing_extensions import Self
 
 import polars as pl
 
