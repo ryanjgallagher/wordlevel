@@ -1,13 +1,14 @@
 import altair as alt
 import polars as pl
 
+from wordlevel.types import PolarsFrame
 from wordlevel.plots.shift.bars import shift_bars, RankAxisConfig, ScoreAxisConfig, BarConfig
 from wordlevel.plots.shift.labels import shift_labels, LabelConfig
 from wordlevel.plots.shift.scales import shift_scales
 
 
 def shift(
-    df: pl.DataFrame,
+    df: PolarsFrame,
     score_col: str,
     rank_col: str,
     score_type_col: str,
@@ -27,6 +28,8 @@ def shift(
 ) -> alt.LayerChart:
     """ """
     df = df.filter(pl.col(rank_col) <= max_rank)
+    if isinstance(df, pl.LazyFrame):
+        df = df.select(label_col, rank_col, score_type_col, score_col).collect()
 
     bars = shift_bars(
         df,
