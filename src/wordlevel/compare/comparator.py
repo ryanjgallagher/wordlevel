@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+from collections.abc import Collection
+from types import MappingProxyType
+from typing import Mapping
+from typing_extensions import Self
+
+import polars as pl
+
+from wordlevel.types import PolarsFrame
+from wordlevel.compare.constructors import from_comparator, from_polars
+from wordlevel.compare.constants import NORMALIZATION_SUFFIX
+from wordlevel.compare.types import ComparatorData
+from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
+
+
+class CorpusComparator:
+    """ """
+
+    def __init__(
+        self,
+        data: PolarsFrame | CorpusComparator | ComparatorData,
+        label_col: str | None = None,
+        freq_cols: Collection[str] | None = None,
+        normalize: bool = True,
+        normalization_suffix: str = NORMALIZATION_SUFFIX,
+    ) -> None:
+        """ """
+        if isinstance(data, ComparatorData):
+            init_data = data
+        elif isinstance(data, CorpusComparator):
+            init_data = from_comparator(data)
+        elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
+            init_data = from_polars(
+                df=data,
+                label_col=label_col,
+                freq_cols=freq_cols,
+                normalize=normalize,
+                normalization_suffix=normalization_suffix,
+            )
+        else:
+            raise TypeError(f"Input type not supported: {type(data)}")
+
+        self._init_from_comparator_data(init_data)
+
+    def _init_from_comparator_data(self, data: ComparatorData) -> None:
+        """ """
+        self._df = data.df
+        self._label_col = data.label_col
+        self._freq_cols = set(data.freq_cols)
+        self._normalization_suffix = data.normalization_suffix
+        self._comparisons = data.comparisons
+
+    @classmethod
+    def from_comparator(cls, comparator: CorpusComparator) -> CorpusComparator:
+        """ """
+        init_data = from_comparator(comparator)
+
+        return cls(data=init_data)
+
+    @classmethod
+    def from_polars(
+        cls,
+        df: pl.DataFrame,
+        label_col: str,
+        freq_cols: Collection[str],
+        normalize: bool = True,
+        normalization_suffix: str = NORMALIZATION_SUFFIX,
+    ) -> Self:
+        """ """
+        init_data = from_polars(
+            df=df,
+            label_col=label_col,
+            freq_cols=freq_cols,
+            normalize=normalize,
+            normalization_suffix=normalization_suffix,
+        )
+
+        return cls(data=init_data)
+
+    @property
+    def comparisons(self) -> Mapping[str, ComparisonResult]:
+        """"""
+        return MappingProxyType(self._comparisons)
+
+    @property
+    def df(self) -> pl.DataFrame:
+        """ """
+        return self._df.collect()
+
+    def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
+        """ """
+        comparator = self.__class__(self)
+
+        for comparison in comparisons:
+            comparison = comparison._with_normalization_suffix(self._normalization_suffix)
+            result = ComparisonResult.from_comparison(comparison, self._df)
+            comparator._comparisons[result.alias] = result
+
+        return comparator

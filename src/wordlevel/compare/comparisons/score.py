@@ -132,6 +132,8 @@ class Scorer:
                 scores2=col("clean_score_cmp"),
                 reference_score=reference_score,
                 normalize=False,
+                include_total_difference=True,
+                include_rank=True,
                 frequency_diff_alias="freq_diff",
                 weighted_score_diff_alias="weighted_score_diff",
                 reference_score_diff_alias="ref_score_diff",

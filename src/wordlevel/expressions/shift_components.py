@@ -59,10 +59,12 @@ def get_shift_components(
     reference_score: float,
     normalize: bool = True,
     include_total_difference: bool = True,
+    include_rank: bool = False,
     frequency_diff_alias: str = "freq_diff",
     weighted_score_diff_alias: str = "weighted_score_diff",
     reference_score_diff_alias: str = "ref_score_diff",
     total_difference_alias: str = "total_difference",
+    rank_alias: str = "rank",
 ) -> PolarsFrame:
     """ """
     if normalize:
@@ -85,6 +87,11 @@ def get_shift_components(
             (col(frequency_diff_alias) * col(reference_score_diff_alias) + col(weighted_score_diff_alias))
             .alias(total_difference_alias)
         )
+
+        if include_rank:
+            df_comps = df_comps.with_columns(
+                col(total_difference_alias).abs().rank(descending=True).alias(rank_alias)
+            )
     # fmt: on
 
     return df_comps

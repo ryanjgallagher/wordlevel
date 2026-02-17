@@ -1,22 +1,17 @@
+from dataclasses import dataclass
 from functools import cached_property
 from typing_extensions import Self
 
-from wordlevel.compare.constructors import NORMALIZATION_SUFFIX
+import polars as pl
+
+from wordlevel.types import PolarsFrame
+from wordlevel.compare.constants import NORMALIZATION_SUFFIX
 from wordlevel.compare.comparisons.score import Scorer
 from wordlevel.compare.comparisons.types import ScorePlan
 
 
 class Comparison:
-    """
-    tc = (
-        Comparator(data=data, subsets=['1990', '2000', '2010'])
-        .with_comparsions(
-            comp('1990', '2000').score.rank_divergence().filter(min_score=20).alias('my_rank_div'),
-            comp('2000', '2010').score.jensen_shannon()
-        )
-        .plot.bars('my_rank_div')
-    )
-    """
+    """ """
 
     def __init__(
         self,
@@ -68,7 +63,60 @@ class Comparison:
             parameters=self._parameters,
         )
 
+    def _with_normalization_suffix(self, suffix: str) -> Self:
+        """Return a new Comparison with the specified normalization suffix."""
+        return self.__class__(
+            reference=self._ref,
+            comparison=self._cmp,
+            alias=self._alias,
+            method=self._method,
+            is_weighted_avg=self._is_weighted_avg,
+            plan=self._plan,
+            normalization_suffix=suffix,
+            parameters=self._parameters,
+        )
+
 
 def comp(reference: str, comparison: str) -> Comparison:
     """ """
     return Comparison(reference=reference, comparison=comparison)
+
+
+@dataclass(frozen=True)
+class ComparisonResult:
+    _lf: pl.LazyFrame
+    reference: str
+    comparison: str
+    alias: str
+    method: str
+    is_weighted_avg: bool
+    parameters: dict
+
+    @property
+    def df(self) -> pl.DataFrame:
+        df = self._lf.collect()
+        object.__setattr__(self, "_lf", df.lazy())
+
+        return df
+
+    @classmethod
+    def from_comparison(cls, comparison: Comparison, df: PolarsFrame) -> Self:
+        """ """
+        if comparison._plan is None:
+            raise ValueError("Cannot construct a comparison result without a plan")
+        if comparison._alias is None:
+            raise ValueError("Cannot construct a comparison result without an alias")
+        # fmt: off
+        if (comparison._is_weighted_avg is None) or (comparison._parameters is None) or (comparison._method is None):
+            raise ValueError("Missing comparison metadata: `method`, `parameters`, or `is_weighted_avg` is None")
+        # fmt: on
+
+        return cls(
+            _lf=comparison._plan(df).lazy(),
+            reference=comparison._ref,
+            comparison=comparison._cmp,
+            alias=comparison._alias,
+            method=comparison._method,
+            is_weighted_avg=comparison._is_weighted_avg,
+            parameters=comparison._parameters.copy(),
+        )
