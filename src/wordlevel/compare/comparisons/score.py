@@ -157,7 +157,12 @@ class Scorer:
         return full_plan
 
     def _return_comparison(
-        self, plan: PolarsFrame, method: str, parameters: dict[str, Any], is_weighted_avg: bool
+        self,
+        plan: PolarsFrame,
+        method: str,
+        parameters: dict[str, Any],
+        is_weighted_avg: bool,
+        is_nonnegative: bool,
     ) -> Comparison:
         """ """
         if self._comparison._alias is None:
@@ -172,6 +177,7 @@ class Scorer:
             method=method,
             parameters=parameters,
             is_weighted_avg=is_weighted_avg,
+            is_nonnegative=is_nonnegative,
             plan=plan,
             normalization_suffix=self._comparison._normalization_suffix,
         )
@@ -182,7 +188,11 @@ class Scorer:
         plan = self._make_score_plan(score_func, requires_normed_freqs=False)
 
         return self._return_comparison(
-            plan, method="rank_divergence", parameters={"alpha": alpha}, is_weighted_avg=False
+            plan,
+            method="rank_divergence",
+            parameters={"alpha": alpha},
+            is_weighted_avg=False,
+            is_nonnegative=True,
         )
 
     def frequency(self) -> Comparison:
@@ -190,7 +200,7 @@ class Scorer:
         plan = self._make_score_plan(frequency_difference, requires_normed_freqs=False)
 
         return self._return_comparison(
-            plan, method="frequency", parameters=dict(), is_weighted_avg=False
+            plan, method="frequency", parameters=dict(), is_weighted_avg=False, is_nonnegative=False
         )
 
     def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
@@ -209,6 +219,7 @@ class Scorer:
             method="proportion",
             parameters={"reference_score": reference_score},
             is_weighted_avg=True,
+            is_nonnegative=False,
         )
 
     def tsallis_entropy(
@@ -236,6 +247,7 @@ class Scorer:
             method="tsallis_entropy",
             parameters={"alpha": alpha, "base": base, "reference_score": reference_score},
             is_weighted_avg=True,
+            is_nonnegative=False,
         )
 
     def shannon_entropy(
@@ -266,6 +278,7 @@ class Scorer:
             method="kullback_leibler_divergence",
             parameters={"base": base, "reference_score": reference_score},
             is_weighted_avg=True,
+            is_nonnegative=False,
         )
 
     def kld(
@@ -312,6 +325,7 @@ class Scorer:
                 "reference_score": reference_score,
             },
             is_weighted_avg=True,
+            is_nonnegative=True,
         )
 
     def jsd(
