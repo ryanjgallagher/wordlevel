@@ -258,6 +258,7 @@ class TestAliasing:
             method=method_name,
             parameters={"param1": "value1"},
             is_weighted_avg=False,
+            is_nonnegative=False,
         )
 
         if alias is None:

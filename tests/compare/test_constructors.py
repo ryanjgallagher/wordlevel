@@ -47,6 +47,7 @@ def mock_comparison_result(df_mock, freq_cols) -> ComparisonResult:
         alias="test_comparison",
         method="test_method",
         is_weighted_avg=False,
+        is_nonnegative=False,
         parameters={},
     )
 
@@ -233,6 +234,7 @@ def test_from_comparator_comparisons_mutation_independence(mock_comparator_data,
         alias="new_comparison",
         method="test",
         is_weighted_avg=False,
+        is_nonnegative=False,
         parameters={},
     )
     comp_original._comparisons["new_comparison"] = new_result
