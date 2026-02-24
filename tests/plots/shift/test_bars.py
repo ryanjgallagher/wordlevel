@@ -4,7 +4,13 @@ import pytest
 
 from polars.testing import assert_frame_equal
 
-from wordlevel.plots.shift.bars import shift_bars, RankAxisConfig, ScoreAxisConfig, BarConfig
+from wordlevel.plots.shift.bars import (
+    shift_bars,
+    RankAxisConfig,
+    ScoreAxisConfig,
+    InternalBarConfig,
+    InternalScoreAxisConfig,
+)
 from wordlevel.plots.shift.configs import shift_score_type2color
 
 
@@ -134,8 +140,8 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filt
     [
         (RankAxisConfig, None, None, None, True),
         (RankAxisConfig, "My custom title", 44, 22, False),
-        (ScoreAxisConfig, None, None, None, False),
-        (ScoreAxisConfig, "Another title", 33, 11, True),
+        (InternalScoreAxisConfig, None, None, None, False),
+        (InternalScoreAxisConfig, "Another title", 33, 11, True),
     ],
 )
 def test_axis_config(
@@ -224,6 +230,33 @@ def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col)
     assert score_axis["grid"] == score_config.grid
 
 
+@pytest.mark.parametrize("all_positive_labels", [True, False])
+def test_score_axis_all_positive_labels(
+    make_mock_df, score_col, score_type_col, rank_col, all_positive_labels
+):
+    """
+    Test that all_positive_labels correctly adds a labelExpr to show absolute values on the
+    score axis. Since Vega evaluates labelExpr at render time, we verify the expression in the
+    JSON spec rather than the rendered label strings.
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        score_axis=InternalScoreAxisConfig(all_positive_labels=all_positive_labels),
+    )
+
+    chart_json = chart.to_dict()
+    score_axis = chart_json["encoding"]["x"]["axis"]
+
+    if all_positive_labels:
+        assert score_axis["labelExpr"] == "abs(datum.value)"
+    else:
+        assert "labelExpr" not in score_axis
+
+
 @pytest.mark.parametrize(
     "tick_values, tick_step, first_tick, max_rank, expected_output",
     [
@@ -304,7 +337,7 @@ def test_bar_configs_not_detailed(make_mock_df, score_col, score_type_col, rank_
     Tests non-detailed configurations of bars, including the default, passing a string, and passing
     a custom color dictionary
     """
-    default_config = BarConfig()
+    default_config = InternalBarConfig()
     df = make_mock_df()
     expected_domain = set(df[score_type_col].unique())
 
@@ -316,7 +349,7 @@ def test_bar_configs_not_detailed(make_mock_df, score_col, score_type_col, rank_
         "bars": None,
     }
     if colors is not None:
-        chart_params["bars"] = BarConfig(colors=colors)
+        chart_params["bars"] = InternalBarConfig(colors=colors)
 
     chart = shift_bars(**chart_params)
 
@@ -343,7 +376,7 @@ def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, 
             rank_col=rank_col,
             score_col=score_col,
             score_type_col=score_type_col,
-            bars=BarConfig(colors={"lower_score": "red"}, detailed=False),
+            bars=InternalBarConfig(colors={"lower_score": "red"}, detailed=False),
         )
 
 
@@ -356,7 +389,7 @@ def test_bar_configs_detailed(make_mock_df, score_col, score_type_col, rank_col)
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=BarConfig(detailed=True),
+        bars=InternalBarConfig(detailed=True),
     )
 
     chart_json = chart.to_dict()
@@ -383,7 +416,7 @@ def test_bar_configs_detailed_custom_colors(make_mock_df, score_col, score_type_
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=BarConfig(detailed=True, colors=custom_colors),
+        bars=InternalBarConfig(detailed=True, colors=custom_colors),
     )
 
     chart_json = chart.to_dict()
@@ -409,7 +442,7 @@ def test_bar_configs_custom_orders(make_mock_df, score_col, score_type_col, rank
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=BarConfig(orders=custom_orders),
+        bars=InternalBarConfig(orders=custom_orders),
     )
 
     chart_json = chart.to_dict()
