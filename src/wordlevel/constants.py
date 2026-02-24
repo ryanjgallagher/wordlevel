@@ -1,8 +1,10 @@
 """Constants across the package"""
 
 RANK_COL = "rank"
-CONTRIBUTION_COL = "contribution"
-CONTRIBUTION_TYPE_COL = "contribution_type"
+SCORE_COL = "comparison_score"
+
+PLOT_CONTRIBUTION_COL = "contribution"
+PLOT_CONTRIBUTION_TYPE_COL = "contribution_type"
 
 SHIFT_SCORE_TYPES = [
     "more_of_negative",

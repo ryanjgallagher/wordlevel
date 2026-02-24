@@ -1,4 +1,4 @@
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Literal, TYPE_CHECKING
 
 import altair as alt
@@ -6,8 +6,20 @@ import polars as pl
 from polars import col
 
 from wordlevel.compare.comparisons.comparison import ComparisonResult
-from wordlevel.constants import CONTRIBUTION_COL, CONTRIBUTION_TYPE_COL, RANK_COL, SHIFT_SCORE_TYPES
-from wordlevel.plots.shift.bars import RankAxisConfig, ScoreAxisConfig, BarConfig
+from wordlevel.constants import (
+    PLOT_CONTRIBUTION_COL,
+    PLOT_CONTRIBUTION_TYPE_COL,
+    RANK_COL,
+    # SCORE_COL,
+    SHIFT_SCORE_TYPES,
+)
+from wordlevel.plots.shift.bars import (
+    RankAxisConfig,
+    ScoreAxisConfig,
+    InternalScoreAxisConfig,
+    BarConfig,
+    InternalBarConfig,
+)
 from wordlevel.plots.shift.labels import LabelConfig
 from wordlevel.plots.shift.shift import shift
 
@@ -66,8 +78,8 @@ class Plotter:
             df=df_plot,
             label_col=self._comparator._label_col,
             rank_col=RANK_COL,
-            score_col=CONTRIBUTION_COL,
-            score_type_col=CONTRIBUTION_TYPE_COL,
+            score_col=PLOT_CONTRIBUTION_COL,
+            score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
             max_rank=max_rank,
             vertical=vertical,
             height=height,
@@ -117,8 +129,8 @@ class Plotter:
             df=df_plot,
             label_col=self._comparator._label_col,
             rank_col=RANK_COL,
-            score_col=CONTRIBUTION_COL,
-            score_type_col=CONTRIBUTION_TYPE_COL,
+            score_col=PLOT_CONTRIBUTION_COL,
+            score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
             max_rank=max_rank,
             vertical=vertical,
             height=height,
@@ -134,14 +146,25 @@ class Plotter:
         )
 
     @staticmethod
-    def _process_bar_config(config: BarConfig | dict | None, detailed: bool) -> BarConfig:
+    def _process_bar_config(config: BarConfig | dict | None, detailed: bool) -> InternalBarConfig:
         """ """
         if config is None:
             config = BarConfig()
         elif isinstance(config, dict):
             config = BarConfig(**config)
 
-        return replace(config, detailed=detailed)
+        return InternalBarConfig(**config.asdict(), detailed=detailed)
+
+    def _process_score_axis_config(
+        config: ScoreAxisConfig | dict | None, all_positive_labels: bool
+    ) -> InternalScoreAxisConfig:
+        """ """
+        if config is None:
+            config = ScoreAxisConfig()
+        elif isinstance(config, dict):
+            config = ScoreAxisConfig(**config)
+
+        return InternalScoreAxisConfig(**config.asdict(), all_positive_labels=all_positive_labels)
 
     def _get_plot_df(
         self, comparison: ComparisonResult, plot_type: PlotType, max_rank: int = 50
@@ -183,8 +206,8 @@ class Plotter:
             .unpivot(
                 on=SHIFT_SCORE_TYPES,
                 index=[self._comparator._label_col, RANK_COL],
-                value_name=CONTRIBUTION_COL,
-                variable_name=CONTRIBUTION_TYPE_COL,
+                value_name=PLOT_CONTRIBUTION_COL,
+                variable_name=PLOT_CONTRIBUTION_TYPE_COL,
             )
             .collect()
         )
