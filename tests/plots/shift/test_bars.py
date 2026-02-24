@@ -230,6 +230,33 @@ def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col)
     assert score_axis["grid"] == score_config.grid
 
 
+@pytest.mark.parametrize("all_positive_labels", [True, False])
+def test_score_axis_all_positive_labels(
+    make_mock_df, score_col, score_type_col, rank_col, all_positive_labels
+):
+    """
+    Test that all_positive_labels correctly adds a labelExpr to show absolute values on the
+    score axis. Since Vega evaluates labelExpr at render time, we verify the expression in the
+    JSON spec rather than the rendered label strings.
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        score_axis=InternalScoreAxisConfig(all_positive_labels=all_positive_labels),
+    )
+
+    chart_json = chart.to_dict()
+    score_axis = chart_json["encoding"]["x"]["axis"]
+
+    if all_positive_labels:
+        assert score_axis["labelExpr"] == "abs(datum.value)"
+    else:
+        assert "labelExpr" not in score_axis
+
+
 @pytest.mark.parametrize(
     "tick_values, tick_step, first_tick, max_rank, expected_output",
     [
