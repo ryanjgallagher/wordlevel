@@ -4,7 +4,13 @@ import pytest
 
 from polars.testing import assert_frame_equal
 
-from wordlevel.plots.shift.bars import shift_bars, RankAxisConfig, ScoreAxisConfig, BarConfig
+from wordlevel.plots.shift.bars import (
+    shift_bars,
+    RankAxisConfig,
+    ScoreAxisConfig,
+    InternalBarConfig,
+    InternalScoreAxisConfig,
+)
 from wordlevel.plots.shift.configs import shift_score_type2color
 
 
@@ -134,8 +140,8 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filt
     [
         (RankAxisConfig, None, None, None, True),
         (RankAxisConfig, "My custom title", 44, 22, False),
-        (ScoreAxisConfig, None, None, None, False),
-        (ScoreAxisConfig, "Another title", 33, 11, True),
+        (InternalScoreAxisConfig, None, None, None, False),
+        (InternalScoreAxisConfig, "Another title", 33, 11, True),
     ],
 )
 def test_axis_config(
@@ -304,7 +310,7 @@ def test_bar_configs_not_detailed(make_mock_df, score_col, score_type_col, rank_
     Tests non-detailed configurations of bars, including the default, passing a string, and passing
     a custom color dictionary
     """
-    default_config = BarConfig()
+    default_config = InternalBarConfig()
     df = make_mock_df()
     expected_domain = set(df[score_type_col].unique())
 
@@ -316,7 +322,7 @@ def test_bar_configs_not_detailed(make_mock_df, score_col, score_type_col, rank_
         "bars": None,
     }
     if colors is not None:
-        chart_params["bars"] = BarConfig(colors=colors)
+        chart_params["bars"] = InternalBarConfig(colors=colors)
 
     chart = shift_bars(**chart_params)
 
@@ -343,7 +349,7 @@ def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, 
             rank_col=rank_col,
             score_col=score_col,
             score_type_col=score_type_col,
-            bars=BarConfig(colors={"lower_score": "red"}, detailed=False),
+            bars=InternalBarConfig(colors={"lower_score": "red"}, detailed=False),
         )
 
 
@@ -356,7 +362,7 @@ def test_bar_configs_detailed(make_mock_df, score_col, score_type_col, rank_col)
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=BarConfig(detailed=True),
+        bars=InternalBarConfig(detailed=True),
     )
 
     chart_json = chart.to_dict()
@@ -383,7 +389,7 @@ def test_bar_configs_detailed_custom_colors(make_mock_df, score_col, score_type_
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=BarConfig(detailed=True, colors=custom_colors),
+        bars=InternalBarConfig(detailed=True, colors=custom_colors),
     )
 
     chart_json = chart.to_dict()
@@ -409,7 +415,7 @@ def test_bar_configs_custom_orders(make_mock_df, score_col, score_type_col, rank
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=BarConfig(orders=custom_orders),
+        bars=InternalBarConfig(orders=custom_orders),
     )
 
     chart_json = chart.to_dict()

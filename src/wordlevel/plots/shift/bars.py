@@ -19,6 +19,13 @@ class ScoreAxisConfig:
 
 
 @dataclass
+class InternalScoreAxisConfig(ScoreAxisConfig):
+    """ """
+
+    all_positive_labels: bool = False
+
+
+@dataclass
 class RankAxisConfig:
     """ """
 
@@ -37,6 +44,12 @@ class BarConfig:
 
     colors: dict[str, str] | Literal["diverging", "category"] = None
     orders: dict[str, int] | None = None
+
+
+@dataclass
+class InternalBarConfig(BarConfig):
+    """ """
+
     detailed: bool = False
 
     def __post_init__(self):
@@ -65,8 +78,8 @@ def shift_bars(
     height: float = None,
     width: float = None,
     rank_axis: RankAxisConfig | dict | None = None,
-    score_axis: ScoreAxisConfig | dict | None = None,
-    bars: BarConfig | dict | None = None,
+    score_axis: InternalScoreAxisConfig | dict | None = None,
+    bars: InternalBarConfig | dict | None = None,
     show_legend: bool = False,
     show_border: bool = False,
 ) -> alt.Chart:
@@ -85,14 +98,14 @@ def shift_bars(
         rank_axis = RankAxisConfig()
 
     if isinstance(score_axis, dict):
-        score_axis = ScoreAxisConfig(**score_axis)
+        score_axis = InternalScoreAxisConfig(**score_axis)
     elif score_axis is None:
-        score_axis = ScoreAxisConfig()
+        score_axis = InternalScoreAxisConfig()
 
     if isinstance(bars, dict):
-        bars = BarConfig(**bars)
+        bars = InternalBarConfig(**bars)
     elif bars is None:
-        bars = BarConfig()
+        bars = InternalBarConfig()
 
     # Configure whether to show all border axes, i.e. whether to hide the top and right axes
     if show_border:
@@ -154,12 +167,19 @@ def shift_bars(
     else:
         score_type_orders = alt.Undefined
 
+    # Configure whether to show all positive labels on the score axis
+    if score_axis.all_positive_labels:
+        score_label_expr = "abs(datum.value)"
+    else:
+        score_label_expr = alt.Undefined
+
     # Create aspects of the plot
     score_alt_axis = alt.Axis(
         title=to_altair_optional(score_axis.title),
         titleFontSize=to_altair_optional(score_axis.title_fontsize),
         labelFontSize=to_altair_optional(score_axis.label_fontsize),
         grid=score_axis.grid,
+        labelExpr=score_label_expr,
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
