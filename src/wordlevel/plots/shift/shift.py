@@ -2,7 +2,12 @@ import altair as alt
 import polars as pl
 
 from wordlevel.types import PolarsFrame
-from wordlevel.plots.shift.bars import shift_bars, RankAxisConfig, ScoreAxisConfig, BarConfig
+from wordlevel.plots.shift.bars import (
+    shift_bars,
+    RankAxisConfig,
+    InternalScoreAxisConfig,
+    InternalBarConfig,
+)
 from wordlevel.plots.shift.labels import shift_labels, LabelConfig
 from wordlevel.plots.shift.scales import shift_scales
 
@@ -19,8 +24,8 @@ def shift(
     width: float | None = None,
     autoscale_axes: bool = True,
     rank_axis: RankAxisConfig | dict | None = None,
-    score_axis: ScoreAxisConfig | dict | None = None,
-    bar_config: BarConfig | dict | None = None,
+    score_axis: InternalScoreAxisConfig | dict | None = None,
+    bar_config: InternalBarConfig | dict | None = None,
     label_config: LabelConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,

@@ -3,7 +3,7 @@ import altair as alt
 
 from wordlevel.plots.shift.shift import shift
 from wordlevel.plots.shift.labels import LabelConfig
-from wordlevel.plots.shift.bars import RankAxisConfig, ScoreAxisConfig, BarConfig
+from wordlevel.plots.shift.bars import RankAxisConfig, InternalScoreAxisConfig, InternalBarConfig
 
 
 def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, label_col, score_type_col):
@@ -122,8 +122,8 @@ def test_config_propagation(make_mock_df, score_col, rank_col, label_col, score_
 
         if config_style == "config":
             rank_config = RankAxisConfig(**rank_config)
-            score_config = ScoreAxisConfig(**score_config)
-            bar_config = BarConfig(**bar_config)
+            score_config = InternalScoreAxisConfig(**score_config)
+            bar_config = InternalBarConfig(**bar_config)
             label_config = LabelConfig(**label_config)
 
         chart = shift(
