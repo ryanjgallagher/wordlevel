@@ -5,6 +5,7 @@ from wordlevel.expressions.utils import normalize_freqs
 
 REFERENCE_ATTRIBUTION = "reference"
 COMPARISON_ATTRIBUTION = "comparison"
+ATTRIBUTIONS = pl.Enum([REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION])
 
 
 def frequency_attribution(
@@ -19,6 +20,7 @@ def frequency_attribution(
         pl.when(comparison >= reference)
         .then(pl.lit(COMPARISON_ATTRIBUTION))
         .otherwise(pl.lit(REFERENCE_ATTRIBUTION))
+        .cast(ATTRIBUTIONS)
     )
 
 
@@ -31,4 +33,5 @@ def rank_attribution(reference: pl.Expr, comparison: pl.Expr) -> pl.Expr:
         pl.when(comparison_rank <= reference_rank)
         .then(pl.lit(COMPARISON_ATTRIBUTION))
         .otherwise(pl.lit(REFERENCE_ATTRIBUTION))
+        .cast(ATTRIBUTIONS)
     )

@@ -7,6 +7,7 @@ from wordlevel.expressions.attribution import (
     rank_attribution,
     REFERENCE_ATTRIBUTION,
     COMPARISON_ATTRIBUTION,
+    ATTRIBUTIONS,
 )
 
 
@@ -27,7 +28,7 @@ def test_frequency_attribution(normalize, expected_attributions):
         }
     )
 
-    expected = pl.Series(expected_attributions)
+    expected = pl.Series(expected_attributions, dtype=ATTRIBUTIONS)
 
     # Act
     expr = frequency_attribution(
@@ -56,7 +57,8 @@ def test_rank_attribution():
             REFERENCE_ATTRIBUTION,
             COMPARISON_ATTRIBUTION,
             COMPARISON_ATTRIBUTION,
-        ]
+        ],
+        dtype=ATTRIBUTIONS,
     )
 
     # Act
