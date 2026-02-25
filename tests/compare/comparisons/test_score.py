@@ -5,6 +5,7 @@ from polars.testing import assert_frame_equal, assert_frame_not_equal
 
 from wordlevel.compare.comparisons.comparison import Comparison
 from wordlevel.compare.comparisons.score import Scorer
+from wordlevel.expressions.attribution import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.expressions.utils import normalize_freqs
 
 
@@ -117,6 +118,11 @@ class TestScoreFunctionWiring:
         if check_expr is not None:
             assert df_result.select(check_expr.all()).item()
 
+        if result._method == "rank_divergence":
+            assert "attribution" in df_result.columns
+        else:
+            assert "attribution" not in df_result.columns
+
     @pytest.mark.parametrize(
         "score_func",
         [
@@ -184,6 +190,31 @@ class TestScoreFunctionWiring:
 
         for check_expr in check_exprs:
             assert df_result.select(check_expr.all()).item()
+
+        if result._method == "jensen_shannon_divergence":
+            assert "attribution" in df_result.columns
+        else:
+            assert "attribution" not in df_result.columns
+
+    @pytest.mark.parametrize(
+        "score_func, expected_attribution",
+        [
+            (lambda s: s.rank_divergence(), COMPARISON_ATTRIBUTION),
+            (lambda s: s.jensen_shannon_divergence(), REFERENCE_ATTRIBUTION),
+        ],
+    )
+    def test_attribution_wiring(self, df_mock, score_func, expected_attribution):
+        """Confirm the correct attributor is wired to each method.
+
+        'cat' is the discriminating word: equal rank in both corpora but higher normalized frequency
+        in the reference. This means that rank attribution results in 'comparison', frequency
+        attribution results in 'reference'
+        """
+        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        df_result = score_func(comparison.score)._plan(df_mock)
+
+        cat_attribution = df_result.filter(col("word") == "cat")["attribution"].item()
+        assert cat_attribution == expected_attribution
 
     @pytest.mark.parametrize(
         "score_func,parameter,value1,value2",
