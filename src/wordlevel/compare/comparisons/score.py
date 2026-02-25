@@ -12,6 +12,10 @@ from wordlevel.compare.comparisons.types import (
     DualScoreFunc,
     DualCleanScoreFunc,
 )
+from wordlevel.expressions.attribution import (
+    frequency_attribution,
+    rank_attribution,
+)
 from wordlevel.expressions.entropy import (
     tsallis_entropy_dual_dist_scores,
     tsallis_entropy_clean_dual_dist_scores,
@@ -54,6 +58,7 @@ class Scorer:
         self,
         score_func: ScoreFunc,
         requires_normed_freqs: bool = True,
+        attribute_by: Literal["frequency", "rank"] | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
@@ -68,9 +73,16 @@ class Scorer:
                 ref = self._comparison._ref
                 cmp = self._comparison._cmp
 
-            return df.with_columns(
+            df = df.with_columns(
                 score_func(freqs1=col(ref), freqs2=col(cmp)).alias("comparison_score")
             ).with_columns(col("comparison_score").abs().rank(descending=True).alias("rank"))
+
+            if attribute_by is not None:
+                df = self._attribute_scores(
+                    df=df, by=attribute_by, requires_normed_freqs=requires_normed_freqs
+                )
+
+            return df
 
         return plan
 
@@ -82,13 +94,13 @@ class Scorer:
         clean_score_func: DualCleanScoreFunc,
         reference_score: float | Literal["mean"] | pl.Expr = 0,
         requires_normed_freqs: bool = True,
+        attribute_by: Literal["frequency", "rank"] | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
 
         TODO:
-        - Check that the order of arguments are correct for reference vs comparison (freqs1 vs freqs2)
         - Make some better source of truth for the column names, especially the shift component ones
         - Move all aliases to an object that can be used as a source of truth and configuration
         """
@@ -152,9 +164,39 @@ class Scorer:
 
         def full_plan(df: PolarsFrame) -> PolarsFrame:
             """ """
-            return plot_plan(score_plan(df))
+            df = plot_plan(score_plan(df))
+
+            if attribute_by is not None:
+                df = self._attribute_scores(
+                    df=df, by=attribute_by, requires_normed_freqs=requires_normed_freqs
+                )
+
+            return df
 
         return full_plan
+
+    def _attribute_scores(
+        self,
+        df: PolarsFrame,
+        by: Literal["frequency", "rank"],
+        requires_normed_freqs: bool,
+    ) -> PolarsFrame:
+        """ """
+        if requires_normed_freqs:
+            ref = self._comparison._ref_normed
+            cmp = self._comparison._cmp_normed
+        else:
+            ref = self._comparison._ref
+            cmp = self._comparison._cmp
+
+        if by == "frequency":
+            expr = frequency_attribution(reference=col(ref), comparison=col(cmp), normalize=False)
+        elif by == "rank":
+            expr = rank_attribution(reference=col(ref), comparison=col(cmp))
+        else:
+            raise ValueError("Invalid specification of how to attribute scores")
+
+        return df.with_columns(expr.alias("attribution"))
 
     def _return_comparison(
         self,
@@ -185,7 +227,7 @@ class Scorer:
     def rank_divergence(self, alpha: float = 1.0) -> Comparison:
         """ """
         score_func = partial(rank_divergence, alpha=alpha)
-        plan = self._make_score_plan(score_func, requires_normed_freqs=False)
+        plan = self._make_score_plan(score_func, requires_normed_freqs=False, attribute_by="rank")
 
         return self._return_comparison(
             plan,
@@ -312,6 +354,7 @@ class Scorer:
             clean_score_func=jensen_shannon_divergence_clean_dual_dist_scores,
             reference_score=reference_score,
             requires_normed_freqs=True,
+            attribute_by="frequency",
         )
 
         return self._return_comparison(
