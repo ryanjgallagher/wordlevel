@@ -5,6 +5,7 @@ from polars.testing import assert_series_equal
 from wordlevel.expressions.attribution import (
     frequency_attribution,
     rank_attribution,
+    score_sign_attribution,
     REFERENCE_ATTRIBUTION,
     COMPARISON_ATTRIBUTION,
     ATTRIBUTIONS,
@@ -63,6 +64,33 @@ def test_rank_attribution():
 
     # Act
     expr = rank_attribution(reference=pl.col("ref_col"), comparison=pl.col("cmp_col"))
+    actual = df.select(expr.alias("attribution"))["attribution"]
+
+    # Assert
+    assert_series_equal(actual, expected, check_names=False)
+
+
+@pytest.mark.parametrize("comparison_is_positive", [True, False])
+def test_score_sign_attribution(comparison_is_positive):
+    """ """
+    # Arrange
+    df = pl.DataFrame({"score": [1, 0, -1]})
+
+    if comparison_is_positive:
+        expected = pl.Series(
+            [COMPARISON_ATTRIBUTION, COMPARISON_ATTRIBUTION, REFERENCE_ATTRIBUTION],
+            dtype=ATTRIBUTIONS,
+        )
+    else:
+        expected = pl.Series(
+            [REFERENCE_ATTRIBUTION, REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION],
+            dtype=ATTRIBUTIONS,
+        )
+
+    # Act
+    expr = score_sign_attribution(
+        score=pl.col("score"), comparison_is_positive=comparison_is_positive
+    )
     actual = df.select(expr.alias("attribution"))["attribution"]
 
     # Assert
