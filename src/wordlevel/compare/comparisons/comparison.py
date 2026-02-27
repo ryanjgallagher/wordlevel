@@ -104,6 +104,10 @@ class ComparisonResult:
 
         return df
 
+    @property
+    def is_attributed(self) -> bool:
+        return "attribution" in self._lf.collect_schema()
+
     @classmethod
     def from_comparison(cls, comparison: Comparison, df: PolarsFrame) -> Self:
         """ """

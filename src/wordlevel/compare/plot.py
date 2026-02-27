@@ -7,12 +7,14 @@ from polars import col
 
 from wordlevel.compare.comparisons.comparison import ComparisonResult
 from wordlevel.constants import (
+    ATTRIBUTION_COL,
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
     RANK_COL,
-    # SCORE_COL,
+    SCORE_COL,
     SHIFT_SCORE_TYPES,
 )
+from wordlevel.expressions.attribution import COMPARISON_ATTRIBUTION, REFERENCE_ATTRIBUTION
 from wordlevel.plots.shift.bars import (
     RankAxisConfig,
     ScoreAxisConfig,
@@ -65,6 +67,7 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
         show_border: bool = False,
+        split_by_corpus: bool = True,
     ) -> alt.LayerChart:
         """
         TODO:
@@ -109,6 +112,7 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
         show_border: bool = False,
+        split_by_corpus: bool = True,
     ) -> alt.LayerChart:
         """
         Detailed word shift bar plot
@@ -167,7 +171,11 @@ class Plotter:
         return InternalScoreAxisConfig(**config.asdict(), all_positive_labels=all_positive_labels)
 
     def _get_plot_df(
-        self, comparison: ComparisonResult, plot_type: PlotType, max_rank: int = 50
+        self,
+        comparison: ComparisonResult,
+        plot_type: PlotType,
+        max_rank: int = 50,
+        split_by_corpus: bool = True,
     ) -> pl.DataFrame:
         """ """
         cache_key = PlotCacheKey(alias=comparison.alias, plot_type=plot_type)
@@ -181,7 +189,9 @@ class Plotter:
 
         # Compute the dataframe if not seen in the cache
         if plot_type == "bar":
-            df_plot = self._get_bar_plot_df(df=comparison._lf, max_rank=max_rank)
+            df_plot = self._get_bar_plot_df(
+                comparison=comparison, max_rank=max_rank, split_by_corpus=split_by_corpus
+            )
         elif plot_type == "shift":
             df_plot = self._get_shift_plot_df(df=comparison._lf, max_rank=max_rank)
         else:
@@ -191,18 +201,58 @@ class Plotter:
 
         return df_plot
 
-    def _get_bar_plot_df(self, df: pl.LazyFrame, max_rank: int = 50) -> pl.DataFrame:
+    def _get_bar_plot_df(
+        self, comparison: ComparisonResult, max_rank: int = 50, split_by_corpus: bool = True
+    ) -> pl.DataFrame:
         """
-        TODO:
-        - Orient bars correctly based on frequency
-        - Unpivot
+        TODO: no magic strings
         """
-        raise NotImplementedError("Bar plot df not yet implemented")
+        lf_plot = comparison._lf.filter(col(RANK_COL) <= max_rank)
 
-    def _get_shift_plot_df(self, df: pl.LazyFrame, max_rank: int = 50) -> pl.DataFrame:
+        # Handle non-negative scores and splitting by corpus
+        ref_score = SCORE_COL
+        cmp_score = SCORE_COL
+        if comparison.is_nonnegative:
+            if split_by_corpus and comparison.is_attributed:
+                ref_score = -1 * SCORE_COL
+                cmp_score = SCORE_COL
+            elif split_by_corpus:
+                raise ValueError(
+                    f"Cannot split by corpus without attributions: {comparison.method}"
+                )
+
+        # Attribute contributions to each corpus
+        if comparison.is_attributed:
+            lf_plot = lf_plot.with_columns(
+                pl.when(col(ATTRIBUTION_COL) == REFERENCE_ATTRIBUTION)
+                .then(ref_score)
+                .otherwise(0)
+                .alias("reference"),
+                pl.when(col(ATTRIBUTION_COL) == COMPARISON_ATTRIBUTION)
+                .then(cmp_score)
+                .otherwise(0)
+                .alias("comparison"),
+            )
+        else:
+            lf_plot = lf_plot.with_columns(
+                pl.when(col(SCORE_COL) < 0).then(ref_score).otherwise(0).alias("reference"),
+                pl.when(col(SCORE_COL) >= 0).then(cmp_score).otherwise(0).alias("comparison"),
+            )
+
+        # Unpivot
+        lf_plot = lf_plot.unpivot(
+            on=["reference", "comparison"],
+            index=[self._comparator._label_col, RANK_COL],
+            value_name=PLOT_CONTRIBUTION_COL,
+            variable_name=PLOT_CONTRIBUTION_TYPE_COL,
+        )
+
+        return lf_plot.collect()
+
+    def _get_shift_plot_df(self, comparison: ComparisonResult, max_rank: int = 50) -> pl.DataFrame:
         """ """
         return (
-            df.filter(col(RANK_COL) <= max_rank)
+            comparison._lf.filter(col(RANK_COL) <= max_rank)
             .unpivot(
                 on=SHIFT_SCORE_TYPES,
                 index=[self._comparator._label_col, RANK_COL],
