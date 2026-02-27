@@ -15,6 +15,7 @@ from wordlevel.compare.comparisons.types import (
 from wordlevel.expressions.attribution import (
     frequency_attribution,
     rank_attribution,
+    score_sign_attribution,
 )
 from wordlevel.expressions.entropy import (
     tsallis_entropy_dual_dist_scores,
@@ -41,6 +42,9 @@ if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
 
 
+ATTRIBUTION_TYPE = Literal["frequency", "rank", "score_sign"]
+
+
 class Scorer:
     """ """
 
@@ -58,7 +62,7 @@ class Scorer:
         self,
         score_func: ScoreFunc,
         requires_normed_freqs: bool = True,
-        attribute_by: Literal["frequency", "rank"] | None = None,
+        attribute_by: ATTRIBUTION_TYPE | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
@@ -94,7 +98,7 @@ class Scorer:
         clean_score_func: DualCleanScoreFunc,
         reference_score: float | Literal["mean"] | pl.Expr = 0,
         requires_normed_freqs: bool = True,
-        attribute_by: Literal["frequency", "rank"] | None = None,
+        attribute_by: ATTRIBUTION_TYPE | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
@@ -178,7 +182,7 @@ class Scorer:
     def _attribute_scores(
         self,
         df: PolarsFrame,
-        by: Literal["frequency", "rank"],
+        by: ATTRIBUTION_TYPE,
         requires_normed_freqs: bool,
     ) -> PolarsFrame:
         """ """
@@ -193,6 +197,8 @@ class Scorer:
             expr = frequency_attribution(reference=col(ref), comparison=col(cmp), normalize=False)
         elif by == "rank":
             expr = rank_attribution(reference=col(ref), comparison=col(cmp))
+        elif by == "score_sign":
+            expr = score_sign_attribution(score=col("comparison_score"))
         else:
             raise ValueError("Invalid specification of how to attribute scores")
 
@@ -239,7 +245,9 @@ class Scorer:
 
     def frequency(self) -> Comparison:
         """ """
-        plan = self._make_score_plan(frequency_difference, requires_normed_freqs=False)
+        plan = self._make_score_plan(
+            frequency_difference, requires_normed_freqs=False, attribute_by="frequency"
+        )
 
         return self._return_comparison(
             plan, method="frequency", parameters=dict(), is_weighted_avg=False, is_nonnegative=False
@@ -254,6 +262,7 @@ class Scorer:
             clean_score_func=proportion_clean_dual_dist_scores,
             reference_score=reference_score,
             requires_normed_freqs=True,
+            attribute_by="frequency",
         )
 
         return self._return_comparison(
@@ -282,6 +291,7 @@ class Scorer:
             clean_score_func=tsallis_entropy_clean_dual_dist_scores,
             reference_score=reference_score,
             requires_normed_freqs=True,
+            attribute_by="score_sign",
         )
 
         return self._return_comparison(
@@ -313,6 +323,7 @@ class Scorer:
             clean_score_func=kullback_leibler_divergence_clean_dual_dist_scores,
             reference_score=reference_score,
             requires_normed_freqs=True,
+            attribute_by="score_sign",
         )
 
         return self._return_comparison(
