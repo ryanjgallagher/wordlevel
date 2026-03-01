@@ -61,8 +61,8 @@ class Scorer:
     def _make_score_plan(
         self,
         score_func: ScoreFunc,
+        attribute_by: ATTRIBUTION_TYPE,
         requires_normed_freqs: bool = True,
-        attribute_by: ATTRIBUTION_TYPE | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
@@ -81,10 +81,9 @@ class Scorer:
                 score_func(freqs1=col(ref), freqs2=col(cmp)).alias("comparison_score")
             ).with_columns(col("comparison_score").abs().rank(descending=True).alias("rank"))
 
-            if attribute_by is not None:
-                df = self._attribute_scores(
-                    df=df, by=attribute_by, requires_normed_freqs=requires_normed_freqs
-                )
+            df = self._attribute_scores(
+                df=df, by=attribute_by, requires_normed_freqs=requires_normed_freqs
+            )
 
             return df
 
@@ -96,9 +95,9 @@ class Scorer:
         freqs_cmp: str,
         score_func: DualScoreFunc,
         clean_score_func: DualCleanScoreFunc,
+        attribute_by: ATTRIBUTION_TYPE,
         reference_score: float | Literal["mean"] | pl.Expr = 0,
         requires_normed_freqs: bool = True,
-        attribute_by: ATTRIBUTION_TYPE | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
@@ -170,10 +169,9 @@ class Scorer:
             """ """
             df = plot_plan(score_plan(df))
 
-            if attribute_by is not None:
-                df = self._attribute_scores(
-                    df=df, by=attribute_by, requires_normed_freqs=requires_normed_freqs
-                )
+            df = self._attribute_scores(
+                df=df, by=attribute_by, requires_normed_freqs=requires_normed_freqs
+            )
 
             return df
 
@@ -206,7 +204,7 @@ class Scorer:
 
     def _return_comparison(
         self,
-        plan: PolarsFrame,
+        plan: ScorePlan,
         method: str,
         parameters: dict[str, Any],
         is_weighted_avg: bool,
@@ -233,7 +231,7 @@ class Scorer:
     def rank_divergence(self, alpha: float = 1.0) -> Comparison:
         """ """
         score_func = partial(rank_divergence, alpha=alpha)
-        plan = self._make_score_plan(score_func, requires_normed_freqs=False, attribute_by="rank")
+        plan = self._make_score_plan(score_func, attribute_by="rank", requires_normed_freqs=False)
 
         return self._return_comparison(
             plan,
@@ -246,7 +244,7 @@ class Scorer:
     def frequency(self) -> Comparison:
         """ """
         plan = self._make_score_plan(
-            frequency_difference, requires_normed_freqs=False, attribute_by="frequency"
+            frequency_difference, attribute_by="frequency", requires_normed_freqs=False
         )
 
         return self._return_comparison(
@@ -260,9 +258,9 @@ class Scorer:
             freqs_cmp=self._comparison._cmp,
             score_func=proportion_dual_dist_scores,
             clean_score_func=proportion_clean_dual_dist_scores,
+            attribute_by="frequency",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="frequency",
         )
 
         return self._return_comparison(
@@ -289,9 +287,9 @@ class Scorer:
             freqs_cmp=self._comparison._cmp,
             score_func=dual_score_func,
             clean_score_func=tsallis_entropy_clean_dual_dist_scores,
+            attribute_by="score_sign",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="score_sign",
         )
 
         return self._return_comparison(
@@ -321,9 +319,9 @@ class Scorer:
             freqs_cmp=self._comparison._ref,
             score_func=dual_score_func,
             clean_score_func=kullback_leibler_divergence_clean_dual_dist_scores,
+            attribute_by="score_sign",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="score_sign",
         )
 
         return self._return_comparison(
@@ -363,9 +361,9 @@ class Scorer:
             freqs_cmp=self._comparison._cmp,
             score_func=dual_score_func,
             clean_score_func=jensen_shannon_divergence_clean_dual_dist_scores,
+            attribute_by="frequency",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="frequency",
         )
 
         return self._return_comparison(
