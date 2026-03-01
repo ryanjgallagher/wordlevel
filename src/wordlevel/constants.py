@@ -7,6 +7,9 @@ ATTRIBUTION_COL = "attribution"
 PLOT_CONTRIBUTION_COL = "contribution"
 PLOT_CONTRIBUTION_TYPE_COL = "contribution_type"
 
+REFERENCE_ATTRIBUTION = "reference"
+COMPARISON_ATTRIBUTION = "comparison"
+
 SHIFT_SCORE_TYPES = [
     "more_of_negative",
     "more_of_positive",

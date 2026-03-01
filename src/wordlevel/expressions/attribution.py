@@ -1,10 +1,9 @@
 import polars as pl
 
+from wordlevel.constants import COMPARISON_ATTRIBUTION, REFERENCE_ATTRIBUTION
 from wordlevel.expressions.utils import normalize_freqs
 
 
-REFERENCE_ATTRIBUTION = "reference"
-COMPARISON_ATTRIBUTION = "comparison"
 ATTRIBUTIONS = pl.Enum([REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION])
 
 

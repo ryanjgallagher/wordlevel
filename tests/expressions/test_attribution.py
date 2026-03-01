@@ -2,12 +2,11 @@ import polars as pl
 import pytest
 from polars.testing import assert_series_equal
 
+from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.expressions.attribution import (
     frequency_attribution,
     rank_attribution,
     score_sign_attribution,
-    REFERENCE_ATTRIBUTION,
-    COMPARISON_ATTRIBUTION,
     ATTRIBUTIONS,
 )
 
