@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Literal, TYPE_CHECKING
 
 import altair as alt
 import polars as pl
+import polars.selectors as cs
 from polars import col
 
 from wordlevel.compare.comparisons.comparison import ComparisonResult
@@ -13,8 +16,9 @@ from wordlevel.constants import (
     RANK_COL,
     SCORE_COL,
     SHIFT_SCORE_TYPES,
+    COMPARISON_ATTRIBUTION,
+    REFERENCE_ATTRIBUTION,
 )
-from wordlevel.expressions.attribution import COMPARISON_ATTRIBUTION, REFERENCE_ATTRIBUTION
 from wordlevel.plots.shift.bars import (
     RankAxisConfig,
     ScoreAxisConfig,
@@ -36,6 +40,7 @@ PlotType = Literal["bar", "shift"]
 class PlotCacheKey:
     alias: str
     plot_type: PlotType
+    split_nonnegative_by_corpus: bool
 
 
 @dataclass
@@ -67,15 +72,18 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
         show_border: bool = False,
-        split_by_corpus: bool = True,
+        split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart:
         """
-        TODO:
-        - Pick defaults for height / width, or make autoscale_axes=False
-        - Add parameter for whether bars should be mirrored as positive if non-negative metric
+        Basic bar plot
         """
         comp = self._comparator.comparisons[comparison]
-        df_plot = self._get_plot_df(comparison=comp, max_rank=max_rank, plot_type="bar")
+        df_plot = self._get_plot_df(
+            comparison=comp,
+            plot_type="bar",
+            max_rank=max_rank,
+            split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+        )
 
         return shift(
             df=df_plot,
@@ -89,8 +97,10 @@ class Plotter:
             width=width,
             autoscale_axes=autoscale_axes,
             rank_axis=rank_axis,
-            score_axis=score_axis,
-            bar_config=self._process_bar_config(bar_config, detailed=False),
+            score_axis=InternalScoreAxisConfig.from_config(
+                score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
+            ),
+            bar_config=InternalBarConfig.from_config(bar_config, detailed=False),
             label_config=label_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
@@ -112,14 +122,10 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
         show_border: bool = False,
-        split_by_corpus: bool = True,
+        split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart:
         """
         Detailed word shift bar plot
-
-        TODO:
-        - Pick defaults for height / width, or make autoscale_axes=False
-        - Add parameter for whether bars should be mirrored as positive if non-negative metric
         """
         comp = self._comparator.comparisons[comparison]
         if not comp.is_weighted_avg:
@@ -127,7 +133,12 @@ class Plotter:
                 "Cannot make a word shift plot for measures that are not weighted averages"
             )
 
-        df_plot = self._get_plot_df(comparison=comp, max_rank=max_rank, plot_type="shift")
+        df_plot = self._get_plot_df(
+            comparison=comp,
+            plot_type="shift",
+            max_rank=max_rank,
+            split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+        )
 
         return shift(
             df=df_plot,
@@ -141,44 +152,29 @@ class Plotter:
             width=width,
             autoscale_axes=autoscale_axes,
             rank_axis=rank_axis,
-            score_axis=score_axis,
-            bar_config=self._process_bar_config(bar_config, detailed=True),
+            score_axis=InternalScoreAxisConfig.from_config(
+                score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
+            ),
+            bar_config=InternalBarConfig.from_config(bar_config, detailed=True),
             label_config=label_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
             show_border=show_border,
         )
 
-    @staticmethod
-    def _process_bar_config(config: BarConfig | dict | None, detailed: bool) -> InternalBarConfig:
-        """ """
-        if config is None:
-            config = BarConfig()
-        elif isinstance(config, dict):
-            config = BarConfig(**config)
-
-        return InternalBarConfig(**config.asdict(), detailed=detailed)
-
-    def _process_score_axis_config(
-        config: ScoreAxisConfig | dict | None, all_positive_labels: bool
-    ) -> InternalScoreAxisConfig:
-        """ """
-        if config is None:
-            config = ScoreAxisConfig()
-        elif isinstance(config, dict):
-            config = ScoreAxisConfig(**config)
-
-        return InternalScoreAxisConfig(**config.asdict(), all_positive_labels=all_positive_labels)
-
     def _get_plot_df(
         self,
         comparison: ComparisonResult,
         plot_type: PlotType,
         max_rank: int = 50,
-        split_by_corpus: bool = True,
+        split_nonnegative_by_corpus: bool = True,
     ) -> pl.DataFrame:
         """ """
-        cache_key = PlotCacheKey(alias=comparison.alias, plot_type=plot_type)
+        cache_key = PlotCacheKey(
+            alias=comparison.alias,
+            plot_type=plot_type,
+            split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+        )
 
         # Check cache for a previously computed version of the dataframe
         if cache_key in self._plot_dfs:
@@ -190,19 +186,28 @@ class Plotter:
         # Compute the dataframe if not seen in the cache
         if plot_type == "bar":
             df_plot = self._get_bar_plot_df(
-                comparison=comparison, max_rank=max_rank, split_by_corpus=split_by_corpus
+                comparison=comparison,
+                max_rank=max_rank,
+                split_nonnegative_by_corpus=split_nonnegative_by_corpus,
             )
         elif plot_type == "shift":
-            df_plot = self._get_shift_plot_df(df=comparison._lf, max_rank=max_rank)
+            df_plot = self._get_shift_plot_df(
+                comparison=comparison,
+                max_rank=max_rank,
+                split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+            )
         else:
-            raise ValueError("The `plot_type` is not a valid value")
+            raise ValueError(f"The `plot_type` is not a valid value: {plot_type}")
 
         self._plot_dfs[cache_key] = PlotCachedDataFrame(df=df_plot, max_rank=max_rank)
 
         return df_plot
 
     def _get_bar_plot_df(
-        self, comparison: ComparisonResult, max_rank: int = 50, split_by_corpus: bool = True
+        self,
+        comparison: ComparisonResult,
+        max_rank: int = 50,
+        split_nonnegative_by_corpus: bool = True,
     ) -> pl.DataFrame:
         """
         TODO: no magic strings
@@ -210,38 +215,26 @@ class Plotter:
         lf_plot = comparison._lf.filter(col(RANK_COL) <= max_rank)
 
         # Handle non-negative scores and splitting by corpus
-        ref_score = SCORE_COL
-        cmp_score = SCORE_COL
-        if comparison.is_nonnegative:
-            if split_by_corpus and comparison.is_attributed:
-                ref_score = -1 * SCORE_COL
-                cmp_score = SCORE_COL
-            elif split_by_corpus:
-                raise ValueError(
-                    f"Cannot split by corpus without attributions: {comparison.method}"
-                )
+        ref_score = col(SCORE_COL)
+        cmp_score = col(SCORE_COL)
+        if comparison.is_nonnegative and split_nonnegative_by_corpus:
+            ref_score = -1 * ref_score
 
         # Attribute contributions to each corpus
-        if comparison.is_attributed:
-            lf_plot = lf_plot.with_columns(
-                pl.when(col(ATTRIBUTION_COL) == REFERENCE_ATTRIBUTION)
-                .then(ref_score)
-                .otherwise(0)
-                .alias("reference"),
-                pl.when(col(ATTRIBUTION_COL) == COMPARISON_ATTRIBUTION)
-                .then(cmp_score)
-                .otherwise(0)
-                .alias("comparison"),
-            )
-        else:
-            lf_plot = lf_plot.with_columns(
-                pl.when(col(SCORE_COL) < 0).then(ref_score).otherwise(0).alias("reference"),
-                pl.when(col(SCORE_COL) >= 0).then(cmp_score).otherwise(0).alias("comparison"),
-            )
+        lf_plot = lf_plot.with_columns(
+            pl.when(col(ATTRIBUTION_COL) == REFERENCE_ATTRIBUTION)
+            .then(ref_score)
+            .otherwise(0)
+            .alias(REFERENCE_ATTRIBUTION),
+            pl.when(col(ATTRIBUTION_COL) == COMPARISON_ATTRIBUTION)
+            .then(cmp_score)
+            .otherwise(0)
+            .alias(COMPARISON_ATTRIBUTION),
+        )
 
         # Unpivot
         lf_plot = lf_plot.unpivot(
-            on=["reference", "comparison"],
+            on=[REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION],
             index=[self._comparator._label_col, RANK_COL],
             value_name=PLOT_CONTRIBUTION_COL,
             variable_name=PLOT_CONTRIBUTION_TYPE_COL,
@@ -249,15 +242,29 @@ class Plotter:
 
         return lf_plot.collect()
 
-    def _get_shift_plot_df(self, comparison: ComparisonResult, max_rank: int = 50) -> pl.DataFrame:
+    def _get_shift_plot_df(
+        self,
+        comparison: ComparisonResult,
+        max_rank: int = 50,
+        split_nonnegative_by_corpus: bool = True,
+    ) -> pl.DataFrame:
         """ """
-        return (
-            comparison._lf.filter(col(RANK_COL) <= max_rank)
-            .unpivot(
-                on=SHIFT_SCORE_TYPES,
-                index=[self._comparator._label_col, RANK_COL],
-                value_name=PLOT_CONTRIBUTION_COL,
-                variable_name=PLOT_CONTRIBUTION_TYPE_COL,
+        lf_plot = comparison._lf.filter(col(RANK_COL) <= max_rank)
+
+        # Handle non-negative scores and splitting by corpus
+        if comparison.is_nonnegative and split_nonnegative_by_corpus:
+            lf_plot = lf_plot.with_columns(
+                pl.when(col(ATTRIBUTION_COL) == REFERENCE_ATTRIBUTION)
+                .then(-1 * cs.by_name(SHIFT_SCORE_TYPES))
+                .otherwise(cs.by_name(SHIFT_SCORE_TYPES))
             )
-            .collect()
+
+        # Unpviot
+        lf_plot = lf_plot.unpivot(
+            on=SHIFT_SCORE_TYPES,
+            index=[self._comparator._label_col, RANK_COL],
+            value_name=PLOT_CONTRIBUTION_COL,
+            variable_name=PLOT_CONTRIBUTION_TYPE_COL,
         )
+
+        return lf_plot.collect()
