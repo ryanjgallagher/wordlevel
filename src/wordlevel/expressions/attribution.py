@@ -35,3 +35,20 @@ def rank_attribution(reference: pl.Expr, comparison: pl.Expr) -> pl.Expr:
         .otherwise(pl.lit(REFERENCE_ATTRIBUTION))
         .cast(ATTRIBUTIONS)
     )
+
+
+def score_sign_attribution(score: pl.Expr, comparison_is_positive: bool = True) -> pl.Expr:
+    """ """
+    if comparison_is_positive:
+        greater_than_attribution = COMPARISON_ATTRIBUTION
+        less_than_attribution = REFERENCE_ATTRIBUTION
+    else:
+        greater_than_attribution = REFERENCE_ATTRIBUTION
+        less_than_attribution = COMPARISON_ATTRIBUTION
+
+    return (
+        pl.when(score >= 0)
+        .then(pl.lit(greater_than_attribution))
+        .otherwise(pl.lit(less_than_attribution))
+        .cast(ATTRIBUTIONS)
+    )

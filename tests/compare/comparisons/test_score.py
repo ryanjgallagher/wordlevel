@@ -118,10 +118,7 @@ class TestScoreFunctionWiring:
         if check_expr is not None:
             assert df_result.select(check_expr.all()).item()
 
-        if result._method == "rank_divergence":
-            assert "attribution" in df_result.columns
-        else:
-            assert "attribution" not in df_result.columns
+        assert "attribution" in df_result.columns
 
     @pytest.mark.parametrize(
         "score_func",
@@ -191,30 +188,49 @@ class TestScoreFunctionWiring:
         for check_expr in check_exprs:
             assert df_result.select(check_expr.all()).item()
 
-        if result._method == "jensen_shannon_divergence":
-            assert "attribution" in df_result.columns
-        else:
-            assert "attribution" not in df_result.columns
+        assert "attribution" in df_result.columns
 
     @pytest.mark.parametrize(
         "score_func, expected_attribution",
         [
             (lambda s: s.rank_divergence(), COMPARISON_ATTRIBUTION),
             (lambda s: s.jensen_shannon_divergence(), REFERENCE_ATTRIBUTION),
+            (lambda s: s.frequency(), REFERENCE_ATTRIBUTION),
+            (lambda s: s.proportion(), REFERENCE_ATTRIBUTION),
         ],
     )
-    def test_attribution_wiring(self, df_mock, score_func, expected_attribution):
-        """Confirm the correct attributor is wired to each method.
+    def test_frequency_and_rank_attribution_wiring(self, df_mock, score_func, expected_attribution):
+        """Confirm frequency and rank attributors are wired to the correct methods.
 
         'cat' is the discriminating word: equal rank in both corpora but higher normalized frequency
-        in the reference. This means that rank attribution results in 'comparison', frequency
-        attribution results in 'reference'
+        in the reference. Rank attribution gives 'comparison' (cmp_rank <= ref_rank); frequency
+        attribution gives 'reference' (ref > cmp).
         """
         comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
         df_result = score_func(comparison.score)._plan(df_mock)
 
         cat_attribution = df_result.filter(col("word") == "cat")["attribution"].item()
         assert cat_attribution == expected_attribution
+
+    @pytest.mark.parametrize(
+        "score_func",
+        [
+            lambda s: s.tsallis_entropy(),
+            lambda s: s.kullback_leibler_divergence(),
+        ],
+    )
+    def test_score_sign_attribution_wiring(self, df_mock, score_func):
+        """Confirm score_sign attribution is wired to the correct methods.
+
+        Checks the invariant: positive comparison_score -> 'comparison', negative -> 'reference'.
+        This verifies the attribution column was derived from comparison_score, not from
+        frequency or rank columns.
+        """
+        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        df_result = score_func(comparison.score)._plan(df_mock)
+
+        check = (col("comparison_score") >= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
+        assert df_result.select(check.all()).item()
 
     @pytest.mark.parametrize(
         "score_func,parameter,value1,value2",
