@@ -1,7 +1,11 @@
 import pytest
 import altair as alt
 
-from wordlevel.plots.shift.shift import shift
+from wordlevel.plots.shift.shift import (
+    shift,
+    DEFAULT_PIXELS_PER_RANK,
+    DEFAULT_SCORE_AXIS_PIXEL_SIZE,
+)
 from wordlevel.plots.shift.labels import LabelConfig
 from wordlevel.plots.shift.bars import RankAxisConfig, InternalScoreAxisConfig, InternalBarConfig
 
@@ -45,38 +49,34 @@ def test_shift_autoscale_toggle(
         assert isinstance(chart.layer[2], alt.LayerChart)
 
 
-def test_shift_dimension_validation(make_mock_df, score_col, rank_col, label_col, score_type_col):
+@pytest.mark.parametrize("max_rank", [10, 50])
+@pytest.mark.parametrize("vertical", [True, False])
+def test_shift_default_dimensions(
+    make_mock_df, score_col, rank_col, label_col, score_type_col, vertical, max_rank
+):
     """
-    Check that the wrapper propagates the ValueError from shift_scales when dimensions are
-    missing
+    Check that default width and height are computed from max_rank and vertical orientation
+    when not explicitly provided
     """
-    # Case 1: autoscale=True + Vertical + No Width -> Fail
-    with pytest.raises(ValueError, match="must specify the chart's width"):
-        shift(
-            make_mock_df(),
-            score_col=score_col,
-            rank_col=rank_col,
-            label_col=label_col,
-            score_type_col=score_type_col,
-            vertical=True,
-            width=None,  # Missing width
-            autoscale_axes=True,
-        )
+    chart = shift(
+        make_mock_df(n=max_rank),
+        score_col=score_col,
+        rank_col=rank_col,
+        label_col=label_col,
+        score_type_col=score_type_col,
+        max_rank=max_rank,
+        vertical=vertical,
+    )
 
-    # Case 2: autoscale=False + Vertical + No Width -> Pass (because shift_scales is never called)
-    try:
-        shift(
-            make_mock_df(),
-            score_col=score_col,
-            rank_col=rank_col,
-            label_col=label_col,
-            score_type_col=score_type_col,
-            vertical=True,
-            width=None,
-            autoscale_axes=False,
-        )
-    except ValueError:
-        pytest.fail("shift() raised ValueError unexpectedly when autoscale_axes=False")
+    spec = chart.to_dict()
+    expected_long = max(max_rank * DEFAULT_PIXELS_PER_RANK, DEFAULT_SCORE_AXIS_PIXEL_SIZE)
+
+    if vertical:
+        assert spec["width"] == DEFAULT_SCORE_AXIS_PIXEL_SIZE
+        assert spec["height"] == expected_long
+    else:
+        assert spec["height"] == DEFAULT_SCORE_AXIS_PIXEL_SIZE
+        assert spec["width"] == expected_long
 
 
 @pytest.mark.parametrize("max_rank", [11, 40])
