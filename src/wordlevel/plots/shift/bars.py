@@ -2,6 +2,7 @@ import altair as alt
 import polars as pl
 
 from typing import Literal
+from typing_extensions import Self
 from dataclasses import dataclass
 
 from wordlevel.plots.shift.configs import shift_score_type2color, shift_score_type2bar_order
@@ -23,6 +24,15 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
     """ """
 
     all_positive_labels: bool = False
+
+    @classmethod
+    def from_config(cls, config: ScoreAxisConfig | dict | None, all_positive_labels: bool) -> Self:
+        """ """
+        if config is None:
+            config = ScoreAxisConfig()
+        elif isinstance(config, dict):
+            config = ScoreAxisConfig(**config)
+        return cls(**config.asdict(), all_positive_labels=all_positive_labels)
 
 
 @dataclass
@@ -51,6 +61,15 @@ class InternalBarConfig(BarConfig):
     """ """
 
     detailed: bool = False
+
+    @classmethod
+    def from_config(cls, config: BarConfig | dict | None, detailed: bool) -> Self:
+        """ """
+        if config is None:
+            config = BarConfig()
+        elif isinstance(config, dict):
+            config = BarConfig(**config)
+        return cls(**config.asdict(), detailed=detailed)
 
     def __post_init__(self):
         """ """
