@@ -209,9 +209,7 @@ class Plotter:
         max_rank: int = 50,
         split_nonnegative_by_corpus: bool = True,
     ) -> pl.DataFrame:
-        """
-        TODO: no magic strings
-        """
+        """ """
         lf_plot = comparison._lf.filter(col(RANK_COL) <= max_rank)
 
         # Handle non-negative scores and splitting by corpus
