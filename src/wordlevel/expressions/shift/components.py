@@ -7,47 +7,9 @@ from wordlevel.types import PolarsFrame
 from wordlevel.expressions.utils import are_same_sign, normalize_freqs
 
 
-def frequency_diff(
-    freqs1: pl.Expr,
-    freqs2: pl.Expr,
-    normalize: bool = True,
-) -> pl.Expr:
-    """ """
-    probs1 = normalize_freqs(freqs1, normalize=normalize)
-    probs2 = normalize_freqs(freqs2, normalize=normalize)
-
-    return probs2 - probs1
-
-
-def weighted_score_diff(
-    freqs1: pl.Expr,
-    freqs2: pl.Expr,
-    scores1: pl.Expr,
-    scores2: pl.Expr,
-    normalize: bool = True,
-) -> pl.Expr:
-    """ """
-    probs1 = normalize_freqs(freqs1, normalize=normalize)
-    probs2 = normalize_freqs(freqs2, normalize=normalize)
-
-    return (0.5 * probs1 + 0.5 * probs2) * (scores2 - scores1)
-
-
-def reference_score_diff(
-    scores1: pl.Expr,
-    scores2: pl.Expr,
-    reference_score: float | Literal["mean"] | pl.Expr,
-    freqs1: Optional[pl.Expr] = None,
-    normalize: bool = True,
-) -> pl.Expr:
-    """ """
-    if isinstance(reference_score, str) and reference_score == "mean":
-        if freqs1 is None:
-            raise ValueError('Must pass `freqs1` if `reference_score` is "mean"')
-
-        reference_score = (scores1 * normalize_freqs(freqs1, normalize=normalize)).sum()
-
-    return (0.5 * scores1 + 0.5 * scores2) - reference_score
+# --------------------------------------------------------------------
+# Components
+# --------------------------------------------------------------------
 
 
 def get_shift_components(
@@ -95,6 +57,54 @@ def get_shift_components(
     # fmt: on
 
     return df_comps
+
+
+def frequency_diff(
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    normalize: bool = True,
+) -> pl.Expr:
+    """ """
+    probs1 = normalize_freqs(freqs1, normalize=normalize)
+    probs2 = normalize_freqs(freqs2, normalize=normalize)
+
+    return probs2 - probs1
+
+
+def weighted_score_diff(
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    scores1: pl.Expr,
+    scores2: pl.Expr,
+    normalize: bool = True,
+) -> pl.Expr:
+    """ """
+    probs1 = normalize_freqs(freqs1, normalize=normalize)
+    probs2 = normalize_freqs(freqs2, normalize=normalize)
+
+    return (0.5 * probs1 + 0.5 * probs2) * (scores2 - scores1)
+
+
+def reference_score_diff(
+    scores1: pl.Expr,
+    scores2: pl.Expr,
+    reference_score: float | Literal["mean"] | pl.Expr,
+    freqs1: Optional[pl.Expr] = None,
+    normalize: bool = True,
+) -> pl.Expr:
+    """ """
+    if isinstance(reference_score, str) and reference_score == "mean":
+        if freqs1 is None:
+            raise ValueError('Must pass `freqs1` if `reference_score` is "mean"')
+
+        reference_score = (scores1 * normalize_freqs(freqs1, normalize=normalize)).sum()
+
+    return (0.5 * scores1 + 0.5 * scores2) - reference_score
+
+
+# --------------------------------------------------------------------
+# Plot components
+# --------------------------------------------------------------------
 
 
 def get_shift_plot_components(
