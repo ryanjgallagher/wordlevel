@@ -35,8 +35,7 @@ from wordlevel.expressions.proportions import (
 )
 from wordlevel.expressions.rank_divergence import rank_divergence
 from wordlevel.expressions.frequency import frequency_difference
-from wordlevel.expressions.shift_components import get_shift_components
-from wordlevel.expressions.shift_plot_components import get_shift_plot_components
+from wordlevel.expressions.shift.components import get_shift_components, get_shift_plot_components
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
