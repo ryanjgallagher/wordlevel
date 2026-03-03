@@ -86,26 +86,32 @@ class Scorer:
         attribute_by: ATTRIBUTION_TYPE,
         reference_score: float | Literal["mean"] | pl.Expr = 0,
         requires_normed_freqs: bool = True,
+        share_component_freqs_by: Literal["reference", "comparison"] | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
         """
-        ref_normed = self._comparison._ref_normed
-        cmp_normed = self._comparison._cmp_normed
         if requires_normed_freqs:
-            ref = ref_normed
-            cmp = cmp_normed
+            freqs_ref = self._comparison._ref_normed
+            freqs_cmp = self._comparison._cmp_normed
         else:
-            ref = self._comparison._ref
-            cmp = self._comparison._cmp
+            freqs_ref = self._comparison._ref
+            freqs_cmp = self._comparison._cmp
+
+        component_freqs_ref = freqs_ref
+        component_freqs_cmp = freqs_cmp
+        if share_component_freqs_by == "reference":
+            component_freqs_cmp = component_freqs_ref
+        elif share_component_freqs_by == "comparison":
+            component_freqs_ref = component_freqs_cmp
 
         plan = partial(
             weighted_average_score_plan,
-            freqs_to_score_ref=col(ref),
-            freqs_to_score_cmp=col(cmp),
-            normed_freqs_ref=col(ref_normed),
-            normed_freqs_cmp=col(cmp_normed),
+            score_freqs_ref=col(freqs_ref),
+            score_freqs_cmp=col(freqs_cmp),
+            component_freqs_ref=col(component_freqs_ref),
+            component_freqs_cmp=col(component_freqs_cmp),
             score_func=score_func,
             clean_score_func=clean_score_func,
             attribute_by=attribute_by,
@@ -144,7 +150,9 @@ class Scorer:
         """ """
         score_func = partial(rank_divergence, alpha=alpha)
         plan = self._make_basic_score_plan(
-            score_func, requires_normed_freqs=False, attribute_by="rank"
+            score_func,
+            attribute_by="rank",
+            requires_normed_freqs=False,
         )
 
         return self._return_comparison(
@@ -158,7 +166,9 @@ class Scorer:
     def frequency(self) -> Comparison:
         """ """
         plan = self._make_basic_score_plan(
-            frequency_difference, requires_normed_freqs=False, attribute_by="frequency"
+            frequency_difference,
+            attribute_by="frequency",
+            requires_normed_freqs=False,
         )
 
         return self._return_comparison(
@@ -168,13 +178,11 @@ class Scorer:
     def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
         """ """
         plan = self._make_weighted_avg_score_plan(
-            freqs_ref=self._comparison._ref,
-            freqs_cmp=self._comparison._cmp,
             score_func=proportion_dual_dist_scores,
             clean_score_func=proportion_clean_dual_dist_scores,
+            attribute_by="frequency",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="frequency",
         )
 
         return self._return_comparison(
@@ -192,18 +200,14 @@ class Scorer:
         reference_score: float | Literal["mean"] | pl.Expr = 0,
     ) -> Comparison:
         """ """
-        dual_score_func = partial(
-            tsallis_entropy_dual_dist_scores, alpha=alpha, base=base, normalize=False
-        )
-
         plan = self._make_weighted_avg_score_plan(
-            freqs_ref=self._comparison._ref,
-            freqs_cmp=self._comparison._cmp,
-            score_func=dual_score_func,
+            score_func=partial(
+                tsallis_entropy_dual_dist_scores, alpha=alpha, base=base, normalize=False
+            ),
             clean_score_func=tsallis_entropy_clean_dual_dist_scores,
+            attribute_by="score_sign",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="score_sign",
         )
 
         return self._return_comparison(
@@ -224,18 +228,15 @@ class Scorer:
         self, base: float = 2, reference_score: float | Literal["mean"] | pl.Expr = 0
     ) -> Comparison:
         """ """
-        dual_score_func = partial(
-            kullback_leibler_divergence_dual_dist_scores, base=base, normalize=False
-        )
-
         plan = self._make_weighted_avg_score_plan(
-            freqs_ref=self._comparison._ref,
-            freqs_cmp=self._comparison._ref,
-            score_func=dual_score_func,
+            score_func=partial(
+                kullback_leibler_divergence_dual_dist_scores, base=base, normalize=False
+            ),
             clean_score_func=kullback_leibler_divergence_clean_dual_dist_scores,
+            attribute_by="score_sign",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="score_sign",
+            share_component_freqs_by="reference",
         )
 
         return self._return_comparison(
@@ -261,23 +262,19 @@ class Scorer:
         reference_score: float | Literal["mean"] | pl.Expr = 0,
     ) -> Comparison:
         """ """
-        dual_score_func = partial(
-            jensen_shannon_divergence_dual_dist_scores,
-            alpha=alpha,
-            base=base,
-            weight1=weight_ref,
-            weight2=weight_cmp,
-            normalize=False,
-        )
-
         plan = self._make_weighted_avg_score_plan(
-            freqs_ref=self._comparison._ref,
-            freqs_cmp=self._comparison._cmp,
-            score_func=dual_score_func,
+            score_func=partial(
+                jensen_shannon_divergence_dual_dist_scores,
+                alpha=alpha,
+                base=base,
+                weight1=weight_ref,
+                weight2=weight_cmp,
+                normalize=False,
+            ),
             clean_score_func=jensen_shannon_divergence_clean_dual_dist_scores,
+            attribute_by="frequency",
             reference_score=reference_score,
             requires_normed_freqs=True,
-            attribute_by="frequency",
         )
 
         return self._return_comparison(
