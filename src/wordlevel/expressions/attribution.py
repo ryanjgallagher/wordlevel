@@ -1,11 +1,16 @@
+from typing import Literal, Optional
+
 import polars as pl
 
+from wordlevel.types import PolarsFrame
 from wordlevel.expressions.utils import normalize_freqs
 
 
 REFERENCE_ATTRIBUTION = "reference"
 COMPARISON_ATTRIBUTION = "comparison"
 ATTRIBUTIONS = pl.Enum([REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION])
+
+ATTRIBUTION_TYPE = Literal["frequency", "rank", "score_sign"]
 
 
 def frequency_attribution(
@@ -52,3 +57,32 @@ def score_sign_attribution(score: pl.Expr, comparison_is_positive: bool = True) 
         .otherwise(pl.lit(less_than_attribution))
         .cast(ATTRIBUTIONS)
     )
+
+
+def attribute_scores(
+    df: PolarsFrame,
+    by: ATTRIBUTION_TYPE,
+    reference: Optional[pl.Expr] = None,
+    comparison: Optional[pl.Expr] = None,
+    score: Optional[pl.Expr] = None,
+    normalize: bool = True,
+    attribution_alias: str = "attribution",
+) -> PolarsFrame:
+    """ """
+    if by in {"frequency", "rank"} and (reference is None or comparison is None):
+        raise ValueError(f"Need reference and comparison to attribute by {by}")
+    elif by == "score_sign" and score is None:
+        raise ValueError("Need score to attribute by score_sign")
+
+    if by == "frequency":
+        expr = frequency_attribution(
+            reference=reference, comparison=comparison, normalize=normalize
+        )
+    elif by == "rank":
+        expr = rank_attribution(reference=reference, comparison=comparison)
+    elif by == "score_sign":
+        expr = score_sign_attribution(score=score)
+    else:
+        raise ValueError("Invalid specification of how to attribute scores")
+
+    return df.with_columns(expr.alias(attribution_alias))
