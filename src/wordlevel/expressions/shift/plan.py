@@ -4,13 +4,6 @@ import polars as pl
 
 from polars import col
 
-from wordlevel.constants import (
-    ATTRIBUTION_COL,
-    SCORE_COL,
-    RANK_COL,
-    REFERENCE_ATTRIBUTION,
-    COMPARISON_ATTRIBUTION,
-)
 from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import ScoreFunc, DualScoreFunc, DualCleanScoreFunc
 from wordlevel.expressions.attribution import attribute_scores, ATTRIBUTION_TYPE
@@ -23,28 +16,33 @@ def basic_score_plan(
     freqs_cmp: pl.Expr,
     score_func: ScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
+    score_alias: str = "comparison_score",
+    rank_alias: str = "rank",
+    attribution_alias: str = "attribution",
+    reference_attribution: str = "reference",
+    comparison_attribution: str = "comparison",
 ) -> PolarsFrame:
     """
     TODO: no magic strings
     """
     attribution_cols = dict()
     if attribute_by == "score_sign":
-        attribution_cols["score"] = col(SCORE_COL)
+        attribution_cols["score"] = col(score_alias)
     else:
         attribution_cols["reference"] = freqs_ref
         attribution_cols["comparison"] = freqs_cmp
 
     df_plan = (
-        df.with_columns(score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(SCORE_COL))
-        .with_columns(col(SCORE_COL).abs().rank(descending=True).alias(RANK_COL))
+        df.with_columns(score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(score_alias))
+        .with_columns(col(score_alias).abs().rank(descending=True).alias(rank_alias))
         .pipe(
             attribute_scores,
             **attribution_cols,
             by=attribute_by,
             normalize=False,
-            reference_attribution=REFERENCE_ATTRIBUTION,
-            comparison_attribution=COMPARISON_ATTRIBUTION,
-            attribution_alias=ATTRIBUTION_COL,
+            reference_attribution=reference_attribution,
+            comparison_attribution=comparison_attribution,
+            attribution_alias=attribution_alias,
         )
     )
 
@@ -61,13 +59,18 @@ def weighted_average_score_plan(
     clean_score_func: DualCleanScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
     reference_score: float | Literal["mean"] | pl.Expr = 0,
+    score_alias: str = "comparison_score",
+    rank_alias: str = "rank",
+    attribution_alias: str = "attribution",
+    reference_attribution: str = "reference",
+    comparison_attribution: str = "comparison",
 ) -> PolarsFrame:
     """
     TODO: no magic strings
     """
     attribution_cols = dict()
     if attribute_by == "score_sign":
-        attribution_cols["score"] = col(SCORE_COL)
+        attribution_cols["score"] = col(score_alias)
     else:
         attribution_cols["reference"] = score_freqs_ref
         attribution_cols["comparison"] = score_freqs_cmp
@@ -104,8 +107,8 @@ def weighted_average_score_plan(
             frequency_diff_alias="freq_diff",
             weighted_score_diff_alias="weighted_score_diff",
             reference_score_diff_alias="ref_score_diff",
-            total_difference_alias=SCORE_COL,
-            rank_alias=RANK_COL,
+            total_difference_alias=score_alias,
+            rank_alias=rank_alias,
         )
         .pipe(
             get_shift_plot_components,
@@ -118,9 +121,9 @@ def weighted_average_score_plan(
             **attribution_cols,
             by=attribute_by,
             normalize=False,
-            reference_attribution=REFERENCE_ATTRIBUTION,
-            comparison_attribution=COMPARISON_ATTRIBUTION,
-            attribution_alias=ATTRIBUTION_COL,
+            reference_attribution=reference_attribution,
+            comparison_attribution=comparison_attribution,
+            attribution_alias=attribution_alias,
         )
         .drop("clean_score_ref", "clean_score_cmp")
         .rename({"raw_score_ref": "score_ref", "raw_score_cmp": "score_cmp"})

@@ -6,6 +6,13 @@ from typing import Any, Literal, TYPE_CHECKING
 import polars as pl
 from polars import col
 
+from wordlevel.constants import (
+    SCORE_COL,
+    RANK_COL,
+    ATTRIBUTION_COL,
+    REFERENCE_ATTRIBUTION,
+    COMPARISON_ATTRIBUTION,
+)
 from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import (
     ScoreFunc,
@@ -75,6 +82,11 @@ class Scorer:
             freqs_cmp=col(cmp),
             score_func=score_func,
             attribute_by=attribute_by,
+            score_alias=SCORE_COL,
+            rank_alias=RANK_COL,
+            attribution_alias=ATTRIBUTION_COL,
+            reference_attribution=REFERENCE_ATTRIBUTION,
+            comparison_attribution=COMPARISON_ATTRIBUTION,
         )
 
         return plan
@@ -116,6 +128,11 @@ class Scorer:
             clean_score_func=clean_score_func,
             attribute_by=attribute_by,
             reference_score=reference_score,
+            score_alias=SCORE_COL,
+            rank_alias=RANK_COL,
+            attribution_alias=ATTRIBUTION_COL,
+            reference_attribution=REFERENCE_ATTRIBUTION,
+            comparison_attribution=COMPARISON_ATTRIBUTION,
         )
 
         return plan
