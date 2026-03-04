@@ -6,17 +6,14 @@ from wordlevel.expressions.attribution import (
     frequency_attribution,
     rank_attribution,
     score_sign_attribution,
-    REFERENCE_ATTRIBUTION,
-    COMPARISON_ATTRIBUTION,
-    ATTRIBUTIONS,
 )
 
 
 @pytest.mark.parametrize(
     "normalize,expected_attributions",
     [
-        (False, [COMPARISON_ATTRIBUTION, COMPARISON_ATTRIBUTION]),
-        (True, [REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION]),
+        (False, ["comparison", "comparison"]),
+        (True, ["reference", "comparison"]),
     ],
 )
 def test_frequency_attribution(normalize, expected_attributions):
@@ -29,7 +26,7 @@ def test_frequency_attribution(normalize, expected_attributions):
         }
     )
 
-    expected = pl.Series(expected_attributions, dtype=ATTRIBUTIONS)
+    expected = pl.Series(expected_attributions, dtype=pl.Enum(["reference", "comparison"]))
 
     # Act
     expr = frequency_attribution(
@@ -53,13 +50,13 @@ def test_rank_attribution():
 
     expected = pl.Series(
         [
-            COMPARISON_ATTRIBUTION,
-            REFERENCE_ATTRIBUTION,
-            REFERENCE_ATTRIBUTION,
-            COMPARISON_ATTRIBUTION,
-            COMPARISON_ATTRIBUTION,
+            "comparison",
+            "reference",
+            "reference",
+            "comparison",
+            "comparison",
         ],
-        dtype=ATTRIBUTIONS,
+        dtype=pl.Enum(["reference", "comparison"]),
     )
 
     # Act
@@ -78,13 +75,13 @@ def test_score_sign_attribution(comparison_is_positive):
 
     if comparison_is_positive:
         expected = pl.Series(
-            [COMPARISON_ATTRIBUTION, COMPARISON_ATTRIBUTION, REFERENCE_ATTRIBUTION],
-            dtype=ATTRIBUTIONS,
+            ["comparison", "comparison", "reference"],
+            dtype=pl.Enum(["reference", "comparison"]),
         )
     else:
         expected = pl.Series(
-            [REFERENCE_ATTRIBUTION, REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION],
-            dtype=ATTRIBUTIONS,
+            ["reference", "reference", "comparison"],
+            dtype=pl.Enum(["reference", "comparison"]),
         )
 
     # Act

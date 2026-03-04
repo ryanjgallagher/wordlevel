@@ -4,6 +4,13 @@ import polars as pl
 
 from polars import col
 
+from wordlevel.constants import (
+    ATTRIBUTION_COL,
+    SCORE_COL,
+    RANK_COL,
+    REFERENCE_ATTRIBUTION,
+    COMPARISON_ATTRIBUTION,
+)
 from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import ScoreFunc, DualScoreFunc, DualCleanScoreFunc
 from wordlevel.expressions.attribution import attribute_scores, ATTRIBUTION_TYPE
@@ -22,15 +29,23 @@ def basic_score_plan(
     """
     attribution_cols = dict()
     if attribute_by == "score_sign":
-        attribution_cols["score"] = col("comparison_score")
+        attribution_cols["score"] = col(SCORE_COL)
     else:
         attribution_cols["reference"] = freqs_ref
         attribution_cols["comparison"] = freqs_cmp
 
     df_plan = (
-        df.with_columns(score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias("comparison_score"))
-        .with_columns(col("comparison_score").abs().rank(descending=True).alias("rank"))
-        .pipe(attribute_scores, **attribution_cols, by=attribute_by, normalize=False)
+        df.with_columns(score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(SCORE_COL))
+        .with_columns(col(SCORE_COL).abs().rank(descending=True).alias(RANK_COL))
+        .pipe(
+            attribute_scores,
+            **attribution_cols,
+            by=attribute_by,
+            normalize=False,
+            reference_attribution=REFERENCE_ATTRIBUTION,
+            comparison_attribution=COMPARISON_ATTRIBUTION,
+            attribution_alias=ATTRIBUTION_COL,
+        )
     )
 
     return df_plan
@@ -52,7 +67,7 @@ def weighted_average_score_plan(
     """
     attribution_cols = dict()
     if attribute_by == "score_sign":
-        attribution_cols["score"] = col("comparison_score")
+        attribution_cols["score"] = col(SCORE_COL)
     else:
         attribution_cols["reference"] = score_freqs_ref
         attribution_cols["comparison"] = score_freqs_cmp
@@ -89,7 +104,8 @@ def weighted_average_score_plan(
             frequency_diff_alias="freq_diff",
             weighted_score_diff_alias="weighted_score_diff",
             reference_score_diff_alias="ref_score_diff",
-            total_difference_alias="comparison_score",
+            total_difference_alias=SCORE_COL,
+            rank_alias=RANK_COL,
         )
         .pipe(
             get_shift_plot_components,
@@ -97,7 +113,15 @@ def weighted_average_score_plan(
             weighted_score_diff=col("weighted_score_diff"),
             reference_score_diff=col("ref_score_diff"),
         )
-        .pipe(attribute_scores, **attribution_cols, by=attribute_by, normalize=False)
+        .pipe(
+            attribute_scores,
+            **attribution_cols,
+            by=attribute_by,
+            normalize=False,
+            reference_attribution=REFERENCE_ATTRIBUTION,
+            comparison_attribution=COMPARISON_ATTRIBUTION,
+            attribution_alias=ATTRIBUTION_COL,
+        )
         .drop("clean_score_ref", "clean_score_cmp")
         .rename({"raw_score_ref": "score_ref", "raw_score_cmp": "score_cmp"})
     )

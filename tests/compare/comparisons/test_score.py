@@ -3,9 +3,9 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
+from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.compare.comparisons.comparison import Comparison
 from wordlevel.compare.comparisons.score import Scorer
-from wordlevel.expressions.attribution import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.expressions.utils import normalize_freqs
 
 
