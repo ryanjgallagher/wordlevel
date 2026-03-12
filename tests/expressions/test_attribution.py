@@ -3,6 +3,7 @@ import pytest
 from polars.testing import assert_series_equal
 
 from wordlevel.expressions.attribution import (
+    attribute_scores,
     frequency_attribution,
     rank_attribution,
     score_sign_attribution,
@@ -92,3 +93,47 @@ def test_score_sign_attribution(comparison_is_positive):
 
     # Assert
     assert_series_equal(actual, expected, check_names=False)
+
+
+@pytest.mark.parametrize(
+    "attribute_by,attribution_func",
+    [
+        ("frequency", frequency_attribution),
+        ("rank", rank_attribution),
+        ("score_sign", score_sign_attribution),
+    ],
+)
+def test_attribute_score(attribute_by, attribution_func):
+    """ """
+    # Arrange
+    df = pl.DataFrame(
+        {"ref": [1, 6, 4, 3, 2, 1], "cmp": [2, 3, 6, 7, 1, 0], "scr": [-1, 3, 2, 0, 4, 5]}
+    )
+
+    if attribute_by in {"frequency", "rank"}:
+        params = {"reference": pl.col("ref"), "comparison": pl.col("cmp")}
+    else:
+        params = {"score": pl.col("scr")}
+
+    df = df.with_columns(
+        attribution_func(
+            **params,
+            reference_attribution="attributed_to_ref",
+            comparison_attribution="attributed_to_cmp",
+        ).alias("expected_attribution")
+    )
+
+    # Act
+    df = attribute_scores(
+        df,
+        by=attribute_by,
+        reference=pl.col("ref"),
+        comparison=pl.col("cmp"),
+        score=pl.col("scr"),
+        reference_attribution="attributed_to_ref",
+        comparison_attribution="attributed_to_cmp",
+        attribution_alias="actual_attribution",
+    )
+
+    # Assert
+    assert_series_equal(df["expected_attribution"], df["actual_attribution"], check_names=False)

@@ -22,9 +22,7 @@ def basic_score_plan(
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
 ) -> PolarsFrame:
-    """
-    TODO: no magic strings
-    """
+    """ """
     attribution_cols = dict()
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
@@ -65,9 +63,7 @@ def weighted_average_score_plan(
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
 ) -> PolarsFrame:
-    """
-    TODO: no magic strings
-    """
+    """ """
     attribution_cols = dict()
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
