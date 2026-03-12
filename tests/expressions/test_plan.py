@@ -7,9 +7,6 @@ from wordlevel.constants import SHIFT_SCORE_TYPES
 from wordlevel.expressions.shift.plan import basic_score_plan, weighted_average_score_plan
 
 
-# --- Simple mock score functions ---
-
-
 def simple_score_func(freqs1: pl.Expr, freqs2: pl.Expr) -> pl.Expr:
     return freqs2 - freqs1
 
