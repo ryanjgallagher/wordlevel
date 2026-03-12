@@ -6,8 +6,7 @@ import polars as pl
 
 from wordlevel.types import PolarsFrame
 from wordlevel.compare.constants import NORMALIZATION_SUFFIX
-from wordlevel.compare.comparisons.score import Scorer
-from wordlevel.compare.comparisons.types import ScorePlan
+from wordlevel.compare.comparisons.score import Scorer, ScorePlan
 
 
 class Comparison:

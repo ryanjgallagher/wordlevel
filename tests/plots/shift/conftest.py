@@ -6,12 +6,10 @@ import pytest
 
 from polars import col
 
-from wordlevel.expressions.shift_components import (
+from wordlevel.expressions.shift.components import (
     frequency_diff,
     weighted_score_diff,
     reference_score_diff,
-)
-from wordlevel.expressions.shift_plot_components import (
     more_of_negative,
     more_of_positive,
     less_of_negative,

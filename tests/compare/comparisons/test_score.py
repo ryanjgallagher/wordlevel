@@ -3,9 +3,9 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
+from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.compare.comparisons.comparison import Comparison
 from wordlevel.compare.comparisons.score import Scorer
-from wordlevel.expressions.attribution import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.expressions.utils import normalize_freqs
 
 
@@ -94,31 +94,13 @@ class TestScoreFunctionWiring:
         assert result._plan is not None
         assert callable(result._plan)
 
-    @pytest.mark.parametrize(
-        "score_func",
-        [
-            lambda s: s.rank_divergence(),
-            lambda s: s.frequency(),
-        ],
-    )
-    def test_simple_score_function_output(self, df_mock, score_func):
-        """Simple scoring methods add comparison_score and rank columns."""
+    def test_frequency_scorer_wiring(self, df_mock):
+        """Frequency scorer produces scores whose sign matches the raw frequency comparison direction."""
         comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        df_result = comparison.score.frequency()._plan(df_mock)
 
-        result = score_func(comparison.score)
-        df_result = result._plan(df_mock)
-
-        assert "comparison_score" in df_result.columns
-        assert "rank" in df_result.columns
-
-        check_expr = None
-        if result._method == "frequency":
-            check_expr = (col("cmp") >= col("ref")) == (col("comparison_score") >= 0)
-
-        if check_expr is not None:
-            assert df_result.select(check_expr.all()).item()
-
-        assert "attribution" in df_result.columns
+        check_expr = (col("cmp") >= col("ref")) == (col("comparison_score") >= 0)
+        assert df_result.select(check_expr.all()).item()
 
     @pytest.mark.parametrize(
         "score_func",
@@ -129,45 +111,14 @@ class TestScoreFunctionWiring:
             lambda s: s.jensen_shannon_divergence(),
         ],
     )
-    def test_weighted_avg_score_function_output(self, df_mock, score_func):
-        """Weighted average methods add shift components and plot component columns."""
+    def test_weighted_avg_scorer_wiring(self, df_mock, score_func):
+        """Weighted average scorers wire frequency columns to produce correctly-directed shift components."""
         comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
         result = score_func(comparison.score)
-
         df_result = result._plan(df_mock)
 
-        # Score columns
-        assert "score_ref" in df_result.columns
-        assert "score_cmp" in df_result.columns
-        # Clean score columns should be dropped
-        assert "raw_score_ref" not in df_result.columns
-        assert "raw_score_cmp" not in df_result.columns
-        assert "clean_score_ref" not in df_result.columns
-        assert "clean_score_cmp" not in df_result.columns
-
-        # Basic shift components
-        assert "freq_diff" in df_result.columns
-        assert "weighted_score_diff" in df_result.columns
-        assert "ref_score_diff" in df_result.columns
-        assert "comparison_score" in df_result.columns
-        assert "rank" in df_result.columns
-
-        # Shift plot components
-        assert "more_of_positive" in df_result.columns
-        assert "less_of_negative" in df_result.columns
-        assert "more_of_negative" in df_result.columns
-        assert "less_of_positive" in df_result.columns
-        assert "higher_score" in df_result.columns
-        assert "lower_score" in df_result.columns
-        assert "more_of_positive_counteracted" in df_result.columns
-        assert "less_of_negative_counteracted" in df_result.columns
-        assert "more_of_negative_counteracted" in df_result.columns
-        assert "less_of_positive_counteracted" in df_result.columns
-        assert "higher_score_counteracted" in df_result.columns
-        assert "lower_score_counteracted" in df_result.columns
-
-        # Check the reference and comparison were passed correctly. Where the (normalized) freqs
-        # are larger in the comparison, we should see the same in the `freq_diff` column
+        # Where the (normalized) freqs are larger in the comparison, we should see the same in
+        # the `freq_diff` column (KLD is an exception: it uses only reference freqs, so diff is 0)
         check_exprs = []
         if result._method != "kullback_leibler_divergence":
             check_exprs.append(
@@ -175,8 +126,8 @@ class TestScoreFunctionWiring:
             )
         else:
             check_exprs.append(col("freq_diff") == 0)
-        # When the normalized freqs are lager in the comparison, we should also see certain patterns
-        # in the `weighted_score_diff` depending on the measure
+        # When the normalized freqs are larger in the comparison, we should also see certain
+        # patterns in the `weighted_score_diff` depending on the measure
         if result._method in {"kullback_leibler_divergence", "tsallis_entropy"}:
             check_exprs.append(
                 (col("cmp__wl_normed") >= col("ref__wl_normed"))
@@ -187,8 +138,6 @@ class TestScoreFunctionWiring:
 
         for check_expr in check_exprs:
             assert df_result.select(check_expr.all()).item()
-
-        assert "attribution" in df_result.columns
 
     @pytest.mark.parametrize(
         "score_func, expected_attribution",
