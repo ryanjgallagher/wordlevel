@@ -2,20 +2,19 @@ import polars as pl
 import pytest
 from polars.testing import assert_series_equal
 
-from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
 from wordlevel.expressions.attribution import (
+    attribute_scores,
     frequency_attribution,
     rank_attribution,
     score_sign_attribution,
-    ATTRIBUTIONS,
 )
 
 
 @pytest.mark.parametrize(
     "normalize,expected_attributions",
     [
-        (False, [COMPARISON_ATTRIBUTION, COMPARISON_ATTRIBUTION]),
-        (True, [REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION]),
+        (False, ["comparison", "comparison"]),
+        (True, ["reference", "comparison"]),
     ],
 )
 def test_frequency_attribution(normalize, expected_attributions):
@@ -28,7 +27,7 @@ def test_frequency_attribution(normalize, expected_attributions):
         }
     )
 
-    expected = pl.Series(expected_attributions, dtype=ATTRIBUTIONS)
+    expected = pl.Series(expected_attributions, dtype=pl.Enum(["reference", "comparison"]))
 
     # Act
     expr = frequency_attribution(
@@ -52,13 +51,13 @@ def test_rank_attribution():
 
     expected = pl.Series(
         [
-            COMPARISON_ATTRIBUTION,
-            REFERENCE_ATTRIBUTION,
-            REFERENCE_ATTRIBUTION,
-            COMPARISON_ATTRIBUTION,
-            COMPARISON_ATTRIBUTION,
+            "comparison",
+            "reference",
+            "reference",
+            "comparison",
+            "comparison",
         ],
-        dtype=ATTRIBUTIONS,
+        dtype=pl.Enum(["reference", "comparison"]),
     )
 
     # Act
@@ -77,13 +76,13 @@ def test_score_sign_attribution(comparison_is_positive):
 
     if comparison_is_positive:
         expected = pl.Series(
-            [COMPARISON_ATTRIBUTION, COMPARISON_ATTRIBUTION, REFERENCE_ATTRIBUTION],
-            dtype=ATTRIBUTIONS,
+            ["comparison", "comparison", "reference"],
+            dtype=pl.Enum(["reference", "comparison"]),
         )
     else:
         expected = pl.Series(
-            [REFERENCE_ATTRIBUTION, REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION],
-            dtype=ATTRIBUTIONS,
+            ["reference", "reference", "comparison"],
+            dtype=pl.Enum(["reference", "comparison"]),
         )
 
     # Act
@@ -94,3 +93,47 @@ def test_score_sign_attribution(comparison_is_positive):
 
     # Assert
     assert_series_equal(actual, expected, check_names=False)
+
+
+@pytest.mark.parametrize(
+    "attribute_by,attribution_func",
+    [
+        ("frequency", frequency_attribution),
+        ("rank", rank_attribution),
+        ("score_sign", score_sign_attribution),
+    ],
+)
+def test_attribute_score(attribute_by, attribution_func):
+    """ """
+    # Arrange
+    df = pl.DataFrame(
+        {"ref": [1, 6, 4, 3, 2, 1], "cmp": [2, 3, 6, 7, 1, 0], "scr": [-1, 3, 2, 0, 4, 5]}
+    )
+
+    if attribute_by in {"frequency", "rank"}:
+        params = {"reference": pl.col("ref"), "comparison": pl.col("cmp")}
+    else:
+        params = {"score": pl.col("scr")}
+
+    df = df.with_columns(
+        attribution_func(
+            **params,
+            reference_attribution="attributed_to_ref",
+            comparison_attribution="attributed_to_cmp",
+        ).alias("expected_attribution")
+    )
+
+    # Act
+    df = attribute_scores(
+        df,
+        by=attribute_by,
+        reference=pl.col("ref"),
+        comparison=pl.col("cmp"),
+        score=pl.col("scr"),
+        reference_attribution="attributed_to_ref",
+        comparison_attribution="attributed_to_cmp",
+        attribution_alias="actual_attribution",
+    )
+
+    # Assert
+    assert_series_equal(df["expected_attribution"], df["actual_attribution"], check_names=False)

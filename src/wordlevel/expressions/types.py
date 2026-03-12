@@ -1,12 +1,6 @@
-from collections.abc import Callable
 from typing import Protocol
 
 import polars as pl
-
-from wordlevel.types import PolarsFrame
-
-
-ScorePlan = Callable[[PolarsFrame], PolarsFrame]
 
 
 class ScoreFunc(Protocol):
