@@ -6,12 +6,14 @@ from typing import Any, Literal, TYPE_CHECKING
 import polars as pl
 from polars import col
 
+from wordlevel.configs import ShiftTypesConfig
 from wordlevel.constants import (
     SCORE_COL,
     RANK_COL,
     ATTRIBUTION_COL,
     REFERENCE_ATTRIBUTION,
     COMPARISON_ATTRIBUTION,
+    COUNTERACTED_SUFFIX,
 )
 from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import (
@@ -118,6 +120,8 @@ class Scorer:
         elif share_component_freqs_by == "comparison":
             component_freqs_ref = component_freqs_cmp
 
+        SHIFT_TYPES = ShiftTypesConfig()
+
         plan = partial(
             weighted_average_score_plan,
             score_freqs_ref=col(freqs_ref),
@@ -130,6 +134,13 @@ class Scorer:
             reference_score=reference_score,
             score_alias=SCORE_COL,
             rank_alias=RANK_COL,
+            more_of_positive_alias=SHIFT_TYPES.more_of_positive.name,
+            less_of_negative_alias=SHIFT_TYPES.less_of_negative.name,
+            more_of_negative_alias=SHIFT_TYPES.more_of_negative.name,
+            less_of_positive_alias=SHIFT_TYPES.less_of_positive.name,
+            higher_score_alias=SHIFT_TYPES.higher_score.name,
+            lower_score_alias=SHIFT_TYPES.lower_score.name,
+            counteracted_suffix=COUNTERACTED_SUFFIX,
             attribution_alias=ATTRIBUTION_COL,
             reference_attribution=REFERENCE_ATTRIBUTION,
             comparison_attribution=COMPARISON_ATTRIBUTION,
