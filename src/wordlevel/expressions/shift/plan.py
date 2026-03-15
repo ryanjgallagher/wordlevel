@@ -60,6 +60,13 @@ def weighted_average_score_plan(
     score_alias: str = "comparison_score",
     rank_alias: str = "rank",
     attribution_alias: str = "attribution",
+    more_of_positive_alias: str = "more_of_positive",
+    less_of_negative_alias: str = "less_of_negative",
+    more_of_negative_alias: str = "more_of_negative",
+    less_of_positive_alias: str = "less_of_positive",
+    higher_score_alias: str = "higher_score",
+    lower_score_alias: str = "lower_score",
+    counteracted_suffix: str = "_counteracted",
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
 ) -> PolarsFrame:
@@ -111,6 +118,13 @@ def weighted_average_score_plan(
             frequency_diff=col("freq_diff"),
             weighted_score_diff=col("weighted_score_diff"),
             reference_score_diff=col("ref_score_diff"),
+            more_of_positive_alias=more_of_positive_alias,
+            less_of_negative_alias=less_of_negative_alias,
+            more_of_negative_alias=more_of_negative_alias,
+            less_of_positive_alias=less_of_positive_alias,
+            higher_score_alias=higher_score_alias,
+            lower_score_alias=lower_score_alias,
+            counteracted_suffix=counteracted_suffix,
         )
         .pipe(
             attribute_scores,

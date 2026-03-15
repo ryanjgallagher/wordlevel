@@ -15,3 +15,4 @@ REFERENCE_ATTRIBUTION = "reference"
 COMPARISON_ATTRIBUTION = "comparison"
 
 SHIFT_SCORE_TYPES = [f.name for f in fields(ShiftTypesConfig)]
+COUNTERACTED_SUFFIX = "_counteracted"
