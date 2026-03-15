@@ -5,7 +5,7 @@ from typing import Literal
 from typing_extensions import Self
 from dataclasses import dataclass
 
-from wordlevel.plots.shift.configs import shift_score_type2color, shift_score_type2bar_order
+from wordlevel.configs import ShiftTypesConfig
 from wordlevel.plots.utils import to_altair_optional
 
 
@@ -74,13 +74,14 @@ class InternalBarConfig(BarConfig):
     def __post_init__(self):
         """ """
         if self.detailed:
-            self.orders = shift_score_type2bar_order
-
+            config = ShiftTypesConfig()
+            self.orders = config.orders()
+            default_colors = config.colors()
             if self.colors is None:
-                self.colors = shift_score_type2color
+                self.colors = default_colors
             else:
                 # Override default colors with those that were specified
-                self.colors = shift_score_type2color | self.colors
+                self.colors = default_colors | self.colors
         else:
             if self.colors is None:
                 self.colors = "diverging"
