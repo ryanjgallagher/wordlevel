@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Collection
+from functools import cached_property
 from types import MappingProxyType
 from typing import Mapping
 from typing_extensions import Self
@@ -10,6 +11,7 @@ import polars as pl
 from wordlevel.types import PolarsFrame
 from wordlevel.compare.constructors import from_comparator, from_polars
 from wordlevel.compare.constants import NORMALIZATION_SUFFIX
+from wordlevel.compare.plot import Plotter
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
 
@@ -87,6 +89,11 @@ class CorpusComparator:
     def df(self) -> pl.DataFrame:
         """ """
         return self._df.collect()
+
+    @cached_property
+    def plot(self) -> Plotter:
+        """ """
+        return Plotter(self)
 
     def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
         """ """

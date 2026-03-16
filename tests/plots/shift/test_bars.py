@@ -4,6 +4,7 @@ import pytest
 
 from polars.testing import assert_frame_equal
 
+from wordlevel.configs import ShiftTypesConfig
 from wordlevel.plots.shift.bars import (
     shift_bars,
     RankAxisConfig,
@@ -11,7 +12,6 @@ from wordlevel.plots.shift.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
-from wordlevel.plots.shift.configs import shift_score_type2color
 
 
 def test_returns_chart(make_mock_df, score_col, score_type_col, rank_col):
@@ -132,7 +132,7 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filt
         n_expected = n
 
     assert df_chart["rank"].max() == n_expected
-    assert df_chart.height == n_expected * len(shift_score_type2color)
+    assert df_chart.height == n_expected * len(ShiftTypesConfig().colors())
 
 
 @pytest.mark.parametrize(
@@ -395,12 +395,14 @@ def test_bar_configs_detailed(make_mock_df, score_col, score_type_col, rank_col)
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
-    assert set(scale["domain"]) == set(shift_score_type2color.keys())
-    assert set(scale["range"]) == set(shift_score_type2color.values())
+    default_colors = ShiftTypesConfig().colors()
+
+    assert set(scale["domain"]) == set(default_colors.keys())
+    assert set(scale["range"]) == set(default_colors.values())
 
     color_mapping = dict(zip(scale["domain"], scale["range"]))
-    for score_type in shift_score_type2color:
-        assert color_mapping[score_type] == shift_score_type2color[score_type]
+    for score_type, expected_color in default_colors.items():
+        assert color_mapping[score_type] == expected_color
 
     assert chart_json["encoding"]["order"]["field"] == "stacked_bar_order"
 
@@ -422,12 +424,13 @@ def test_bar_configs_detailed_custom_colors(make_mock_df, score_col, score_type_
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
+    default_colors = ShiftTypesConfig().colors()
     color_mapping = dict(zip(scale["domain"], scale["range"]))
-    for score_type in shift_score_type2color:
+    for score_type, default_color in default_colors.items():
         if score_type in custom_colors:
             assert color_mapping[score_type] == custom_colors[score_type]
         else:
-            assert color_mapping[score_type] == shift_score_type2color[score_type]
+            assert color_mapping[score_type] == default_color
 
 
 def test_bar_configs_custom_orders(make_mock_df, score_col, score_type_col, rank_col):

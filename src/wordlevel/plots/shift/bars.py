@@ -2,9 +2,10 @@ import altair as alt
 import polars as pl
 
 from typing import Literal
-from dataclasses import dataclass
+from typing_extensions import Self
+from dataclasses import asdict, dataclass
 
-from wordlevel.plots.shift.configs import shift_score_type2color, shift_score_type2bar_order
+from wordlevel.configs import ShiftTypesConfig
 from wordlevel.plots.utils import to_altair_optional
 
 
@@ -23,6 +24,15 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
     """ """
 
     all_positive_labels: bool = False
+
+    @classmethod
+    def from_config(cls, config: ScoreAxisConfig | dict | None, all_positive_labels: bool) -> Self:
+        """ """
+        if config is None:
+            config = ScoreAxisConfig()
+        elif isinstance(config, dict):
+            config = ScoreAxisConfig(**config)
+        return cls(**asdict(config), all_positive_labels=all_positive_labels)
 
 
 @dataclass
@@ -52,16 +62,26 @@ class InternalBarConfig(BarConfig):
 
     detailed: bool = False
 
+    @classmethod
+    def from_config(cls, config: BarConfig | dict | None, detailed: bool) -> Self:
+        """ """
+        if config is None:
+            config = BarConfig()
+        elif isinstance(config, dict):
+            config = BarConfig(**config)
+        return cls(**asdict(config), detailed=detailed)
+
     def __post_init__(self):
         """ """
         if self.detailed:
-            self.orders = shift_score_type2bar_order
-
+            config = ShiftTypesConfig()
+            self.orders = config.orders()
+            default_colors = config.colors()
             if self.colors is None:
-                self.colors = shift_score_type2color
+                self.colors = default_colors
             else:
                 # Override default colors with those that were specified
-                self.colors = shift_score_type2color | self.colors
+                self.colors = default_colors | self.colors
         else:
             if self.colors is None:
                 self.colors = "diverging"

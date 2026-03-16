@@ -17,7 +17,7 @@ from wordlevel.expressions.shift.components import (
     higher_score,
     lower_score,
 )
-from wordlevel.plots.shift.configs import shift_score_type2color
+from wordlevel.configs import ShiftTypesConfig
 
 
 negative_score_types = {
@@ -129,7 +129,7 @@ def make_mock_df(words, label_col, rank_col, score_col, score_type_col) -> Calla
 
         if long:
             df = df.unpivot(
-                on=shift_score_type2color.keys(),
+                on=list(ShiftTypesConfig().colors().keys()),
                 index=[label_col, rank_col],
                 variable_name=score_type_col,
                 value_name=score_col,
