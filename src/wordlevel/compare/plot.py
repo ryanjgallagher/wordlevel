@@ -5,7 +5,6 @@ from typing import Literal, TYPE_CHECKING
 
 import altair as alt
 import polars as pl
-import polars.selectors as cs
 from polars import col
 
 from wordlevel.compare.comparisons.comparison import ComparisonResult
@@ -15,10 +14,10 @@ from wordlevel.constants import (
     PLOT_CONTRIBUTION_TYPE_COL,
     RANK_COL,
     SCORE_COL,
-    SHIFT_SCORE_TYPES,
     COMPARISON_ATTRIBUTION,
     REFERENCE_ATTRIBUTION,
 )
+from wordlevel.expressions.shift.plot import bar_plot_df, shift_plot_df
 from wordlevel.plots.shift.bars import (
     RankAxisConfig,
     ScoreAxisConfig,
@@ -185,15 +184,31 @@ class Plotter:
 
         # Compute the dataframe if not seen in the cache
         if plot_type == "bar":
-            df_plot = self._get_bar_plot_df(
-                comparison=comparison,
+            df_plot = bar_plot_df(
+                lf=comparison._lf,
+                label_col=self._comparator._label_col,
+                score_col=SCORE_COL,
+                rank_col=RANK_COL,
+                attribution_col=ATTRIBUTION_COL,
+                contribution_alias=PLOT_CONTRIBUTION_COL,
+                contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
+                reference_attribution=REFERENCE_ATTRIBUTION,
+                comparison_attribution=COMPARISON_ATTRIBUTION,
                 max_rank=max_rank,
+                is_nonnegative=comparison.is_nonnegative,
                 split_nonnegative_by_corpus=split_nonnegative_by_corpus,
             )
         elif plot_type == "shift":
-            df_plot = self._get_shift_plot_df(
-                comparison=comparison,
+            df_plot = shift_plot_df(
+                df=comparison._lf,
+                label_col=self._comparator._label_col,
+                rank_col=RANK_COL,
+                attribution_col=ATTRIBUTION_COL,
+                contribution_alias=PLOT_CONTRIBUTION_COL,
+                contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
+                reference_attribution=REFERENCE_ATTRIBUTION,
                 max_rank=max_rank,
+                is_nonnegative=comparison.is_nonnegative,
                 split_nonnegative_by_corpus=split_nonnegative_by_corpus,
             )
         else:
@@ -202,67 +217,3 @@ class Plotter:
         self._plot_dfs[cache_key] = PlotCachedDataFrame(df=df_plot, max_rank=max_rank)
 
         return df_plot
-
-    def _get_bar_plot_df(
-        self,
-        comparison: ComparisonResult,
-        max_rank: int = 50,
-        split_nonnegative_by_corpus: bool = True,
-    ) -> pl.DataFrame:
-        """ """
-        lf_plot = comparison._lf.filter(col(RANK_COL) <= max_rank)
-
-        # Handle non-negative scores and splitting by corpus
-        ref_score = col(SCORE_COL)
-        cmp_score = col(SCORE_COL)
-        if comparison.is_nonnegative and split_nonnegative_by_corpus:
-            ref_score = -1 * ref_score
-
-        # Attribute contributions to each corpus
-        lf_plot = lf_plot.with_columns(
-            pl.when(col(ATTRIBUTION_COL) == REFERENCE_ATTRIBUTION)
-            .then(ref_score)
-            .otherwise(0)
-            .alias(REFERENCE_ATTRIBUTION),
-            pl.when(col(ATTRIBUTION_COL) == COMPARISON_ATTRIBUTION)
-            .then(cmp_score)
-            .otherwise(0)
-            .alias(COMPARISON_ATTRIBUTION),
-        )
-
-        # Unpivot
-        lf_plot = lf_plot.unpivot(
-            on=[REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION],
-            index=[self._comparator._label_col, RANK_COL],
-            value_name=PLOT_CONTRIBUTION_COL,
-            variable_name=PLOT_CONTRIBUTION_TYPE_COL,
-        )
-
-        return lf_plot.collect()
-
-    def _get_shift_plot_df(
-        self,
-        comparison: ComparisonResult,
-        max_rank: int = 50,
-        split_nonnegative_by_corpus: bool = True,
-    ) -> pl.DataFrame:
-        """ """
-        lf_plot = comparison._lf.filter(col(RANK_COL) <= max_rank)
-
-        # Handle non-negative scores and splitting by corpus
-        if comparison.is_nonnegative and split_nonnegative_by_corpus:
-            lf_plot = lf_plot.with_columns(
-                pl.when(col(ATTRIBUTION_COL) == REFERENCE_ATTRIBUTION)
-                .then(-1 * cs.by_name(SHIFT_SCORE_TYPES))
-                .otherwise(cs.by_name(SHIFT_SCORE_TYPES))
-            )
-
-        # Unpviot
-        lf_plot = lf_plot.unpivot(
-            on=SHIFT_SCORE_TYPES,
-            index=[self._comparator._label_col, RANK_COL],
-            value_name=PLOT_CONTRIBUTION_COL,
-            variable_name=PLOT_CONTRIBUTION_TYPE_COL,
-        )
-
-        return lf_plot.collect()

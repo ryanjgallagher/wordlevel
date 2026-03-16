@@ -3,7 +3,7 @@ import polars as pl
 
 from typing import Literal
 from typing_extensions import Self
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from wordlevel.configs import ShiftTypesConfig
 from wordlevel.plots.utils import to_altair_optional
@@ -32,7 +32,7 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
             config = ScoreAxisConfig()
         elif isinstance(config, dict):
             config = ScoreAxisConfig(**config)
-        return cls(**config.asdict(), all_positive_labels=all_positive_labels)
+        return cls(**asdict(config), all_positive_labels=all_positive_labels)
 
 
 @dataclass
@@ -69,7 +69,7 @@ class InternalBarConfig(BarConfig):
             config = BarConfig()
         elif isinstance(config, dict):
             config = BarConfig(**config)
-        return cls(**config.asdict(), detailed=detailed)
+        return cls(**asdict(config), detailed=detailed)
 
     def __post_init__(self):
         """ """

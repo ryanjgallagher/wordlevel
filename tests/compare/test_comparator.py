@@ -1,10 +1,12 @@
 import pytest
+import altair as alt
 import polars as pl
 from polars.testing import assert_frame_equal
 from types import MappingProxyType
 
 from wordlevel.compare.comparator import CorpusComparator
 from wordlevel.compare.comparisons.comparison import comp
+from wordlevel.compare.plot import Plotter
 
 
 @pytest.fixture
@@ -175,6 +177,10 @@ class TestIntegration:
         assert_frame_equal(df1.select(df_mock.columns), df_mock)
         assert_frame_equal(df2.select(df_mock.columns), df_mock)
 
+        # 7. Verify plotting works end-to-end
+        chart = comparator_new.plot.bar("1vs2")
+        assert isinstance(chart, alt.LayerChart)
+
     def test_workflow_with_jsd(self, df_mock) -> None:
         """Test workflow with Jensen-Shannon divergence scoring."""
         comparator = CorpusComparator(
@@ -214,3 +220,20 @@ class TestIntegration:
         assert "1vs2" in comparator_new.comparisons
         assert "2vs3" in comparator_new.comparisons
         assert "1vs3" in comparator_new.comparisons
+
+
+# ============================================================================
+# TestPlotWiring - Test that the plot property is correctly wired
+# ============================================================================
+
+
+class TestPlotWiring:
+    """Test that the comparator.plot cached property is correctly wired to Plotter."""
+
+    def test_plot_property_returns_plotter(self, comparator) -> None:
+        """comparator.plot returns a Plotter instance."""
+        assert isinstance(comparator.plot, Plotter)
+
+    def test_plot_property_is_cached(self, comparator) -> None:
+        """comparator.plot returns the same object on repeated access."""
+        assert comparator.plot is comparator.plot
