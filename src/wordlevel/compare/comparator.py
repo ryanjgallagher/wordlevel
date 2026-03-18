@@ -106,6 +106,48 @@ class CorpusComparator:
 
         return cls(data=init_data)
 
+    @classmethod
+    def from_list_of_freqs(
+        cls,
+        freqs: ListOfFreqs,
+        corpora: Sequence[str] | None = None,
+        label: str = LABEL,
+        freq_prefix: str = FREQ_PREFIX,
+        normalize: bool = True,
+        normalization_suffix: str = NORMALIZATION_SUFFIX,
+    ) -> Self:
+        """ """
+        init_data = from_list_of_freqs(
+            freqs=freqs,
+            corpora=corpora,
+            label=label,
+            freq_prefix=freq_prefix,
+            normalize=normalize,
+            normalization_suffix=normalization_suffix,
+        )
+
+        return cls(data=init_data)
+
+    @classmethod
+    def from_dict_of_freqs(
+        cls,
+        freqs: DictOfFreqs,
+        label: str = LABEL,
+        freq_prefix: str = FREQ_PREFIX,
+        normalize: bool = True,
+        normalization_suffix: str = NORMALIZATION_SUFFIX,
+    ) -> Self:
+        """ """
+        init_data = from_dict_of_freqs(
+            freqs=freqs,
+            label=label,
+            freq_prefix=freq_prefix,
+            normalize=normalize,
+            normalization_suffix=normalization_suffix,
+        )
+
+        return cls(data=init_data)
+
     @property
     def comparisons(self) -> Mapping[str, ComparisonResult]:
         """"""
