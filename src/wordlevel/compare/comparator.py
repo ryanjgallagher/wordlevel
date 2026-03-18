@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Collection, Mapping, Sequence
 from functools import cached_property
 from types import MappingProxyType
-from typing import Mapping
 from typing_extensions import Self
 
 import polars as pl
 
 from wordlevel.types import PolarsFrame
-from wordlevel.compare.constructors import from_comparator, from_polars
-from wordlevel.compare.constants import NORMALIZATION_SUFFIX
+from wordlevel.compare.constructors import (
+    from_comparator,
+    from_polars,
+    from_dict_of_freqs,
+    from_list_of_freqs,
+    DictOfFreqs,
+    ListOfFreqs,
+)
+from wordlevel.compare.constants import FREQ_PREFIX, LABEL, NORMALIZATION_SUFFIX
 from wordlevel.compare.plot import Plotter
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
@@ -21,9 +27,12 @@ class CorpusComparator:
 
     def __init__(
         self,
-        data: PolarsFrame | CorpusComparator | ComparatorData,
+        data: PolarsFrame | CorpusComparator | ComparatorData | DictOfFreqs | ListOfFreqs,
         label_col: str | None = None,
         freq_cols: Collection[str] | None = None,
+        corpora: Sequence[str] | None = None,
+        label: str = LABEL,
+        freq_prefix: str = FREQ_PREFIX,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> None:
@@ -37,6 +46,23 @@ class CorpusComparator:
                 df=data,
                 label_col=label_col,
                 freq_cols=freq_cols,
+                normalize=normalize,
+                normalization_suffix=normalization_suffix,
+            )
+        elif isinstance(data, Mapping):
+            init_data = from_dict_of_freqs(
+                freqs=data,
+                label=label,
+                freq_prefix=freq_prefix,
+                normalize=normalize,
+                normalization_suffix=normalization_suffix,
+            )
+        elif isinstance(data, Sequence):
+            init_data = from_list_of_freqs(
+                freqs=data,
+                corpora=corpora,
+                label=label,
+                freq_prefix=freq_prefix,
                 normalize=normalize,
                 normalization_suffix=normalization_suffix,
             )
