@@ -211,7 +211,6 @@ class TestConstructors:
             freqs,
             corpora=corpora,
             label="token",
-            freq_prefix="count_",
             normalize=normalize,
             normalization_suffix="_norm",
         )
@@ -224,8 +223,7 @@ class TestConstructors:
         assert comparator._label_col == "token"
 
         # Check freq cols are named correctly using the custom prefix
-        expected_freq_cols = {f"count_{name}" for name in expected_corpora}
-        assert comparator._freq_cols == expected_freq_cols
+        assert comparator._freq_cols == set(expected_corpora)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs])
@@ -234,7 +232,7 @@ class TestConstructors:
         # Check normalization
         if normalize:
             assert comparator._normalization_suffix == "_norm"
-            normed_freq_cols = [f"{freq_col}_norm" for freq_col in expected_freq_cols]
+            normed_freq_cols = [f"{freq_col}_norm" for freq_col in expected_corpora]
             for normed_freq_col in normed_freq_cols:
                 assert normed_freq_col in comparator._df
         else:
@@ -242,7 +240,7 @@ class TestConstructors:
             normed_freq_cols = []
 
         # Check no nulls in any frequency or normed frequency columns
-        cols_to_check = list(expected_freq_cols) + normed_freq_cols
+        cols_to_check = list(expected_corpora) + normed_freq_cols
         null_counts = comparator._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
@@ -256,7 +254,6 @@ class TestConstructors:
         comparator = constructor(
             freqs,
             label="token",
-            freq_prefix="count_",
             normalize=normalize,
             normalization_suffix="_norm",
         )
@@ -269,8 +266,7 @@ class TestConstructors:
         assert comparator._label_col == "token"
 
         # Check freq cols are named correctly using the custom prefix
-        expected_freq_cols = {f"count_{name}" for name in corpora_names}
-        assert comparator._freq_cols == expected_freq_cols
+        assert comparator._freq_cols == set(corpora_names)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs.values()])
@@ -279,7 +275,7 @@ class TestConstructors:
         # Check normalization
         if normalize:
             assert comparator._normalization_suffix == "_norm"
-            normed_freq_cols = [f"{freq_col}_norm" for freq_col in expected_freq_cols]
+            normed_freq_cols = [f"{freq_col}_norm" for freq_col in corpora_names]
             for normed_freq_col in normed_freq_cols:
                 assert normed_freq_col in comparator._df
         else:
@@ -287,7 +283,7 @@ class TestConstructors:
             normed_freq_cols = []
 
         # Check no nulls in any frequency or normed frequency columns
-        cols_to_check = list(expected_freq_cols) + normed_freq_cols
+        cols_to_check = list(corpora_names) + normed_freq_cols
         null_counts = comparator._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
         assert not any(null_counts)
 

@@ -16,7 +16,7 @@ from wordlevel.compare.constructors import (
     DictOfFreqs,
     ListOfFreqs,
 )
-from wordlevel.compare.constants import FREQ_PREFIX, LABEL, NORMALIZATION_SUFFIX
+from wordlevel.compare.constants import LABEL, NORMALIZATION_SUFFIX
 from wordlevel.compare.plot import Plotter
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
@@ -32,7 +32,6 @@ class CorpusComparator:
         freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
         label: str = LABEL,
-        freq_prefix: str = FREQ_PREFIX,
         fill_nulls: bool = True,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
@@ -55,7 +54,6 @@ class CorpusComparator:
             init_data = from_dict_of_freqs(
                 freqs=data,
                 label=label,
-                freq_prefix=freq_prefix,
                 normalize=normalize,
                 normalization_suffix=normalization_suffix,
             )
@@ -64,7 +62,6 @@ class CorpusComparator:
                 freqs=data,
                 corpora=corpora,
                 label=label,
-                freq_prefix=freq_prefix,
                 normalize=normalize,
                 normalization_suffix=normalization_suffix,
             )
@@ -116,7 +113,6 @@ class CorpusComparator:
         freqs: ListOfFreqs,
         corpora: Sequence[str] | None = None,
         label: str = LABEL,
-        freq_prefix: str = FREQ_PREFIX,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> Self:
@@ -125,7 +121,6 @@ class CorpusComparator:
             freqs=freqs,
             corpora=corpora,
             label=label,
-            freq_prefix=freq_prefix,
             normalize=normalize,
             normalization_suffix=normalization_suffix,
         )
@@ -137,7 +132,6 @@ class CorpusComparator:
         cls,
         freqs: DictOfFreqs,
         label: str = LABEL,
-        freq_prefix: str = FREQ_PREFIX,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> Self:
@@ -145,7 +139,6 @@ class CorpusComparator:
         init_data = from_dict_of_freqs(
             freqs=freqs,
             label=label,
-            freq_prefix=freq_prefix,
             normalize=normalize,
             normalization_suffix=normalization_suffix,
         )
