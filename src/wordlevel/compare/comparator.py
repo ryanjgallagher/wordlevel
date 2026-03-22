@@ -33,6 +33,7 @@ class CorpusComparator:
         corpora: Sequence[str] | None = None,
         label: str = LABEL,
         freq_prefix: str = FREQ_PREFIX,
+        fill_nulls: bool = True,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> None:
@@ -46,6 +47,7 @@ class CorpusComparator:
                 df=data,
                 label_col=label_col,
                 freq_cols=freq_cols,
+                fill_nulls=fill_nulls,
                 normalize=normalize,
                 normalization_suffix=normalization_suffix,
             )
@@ -92,6 +94,7 @@ class CorpusComparator:
         df: pl.DataFrame,
         label_col: str,
         freq_cols: Collection[str],
+        fill_nulls: bool = True,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> Self:
@@ -100,6 +103,7 @@ class CorpusComparator:
             df=df,
             label_col=label_col,
             freq_cols=freq_cols,
+            fill_nulls=fill_nulls,
             normalize=normalize,
             normalization_suffix=normalization_suffix,
         )
@@ -155,7 +159,10 @@ class CorpusComparator:
 
     @property
     def df(self) -> pl.DataFrame:
-        """ """
+        """
+        TODO: Change variable name of internal variable to `_lf`. Collect and update similar to
+              a ComparisonResult
+        """
         return self._df.collect()
 
     @cached_property
@@ -164,7 +171,9 @@ class CorpusComparator:
         return Plotter(self)
 
     def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
-        """ """
+        """
+        TODO: use pl.collect_all
+        """
         comparator = self.__class__(self)
 
         for comparison in comparisons:

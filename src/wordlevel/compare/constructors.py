@@ -159,7 +159,7 @@ def _from_freqs(
 
         words, word_freqs = zip(*word2freq.items())
         lf_corpus = pl.LazyFrame([words, word_freqs], schema=[label, freq_col])
-        lf = lf.join(lf_corpus, on=label, how="outer")
+        lf = lf.join(lf_corpus, on=label, how="full", coalesce=True)
 
     return from_polars(
         lf,
