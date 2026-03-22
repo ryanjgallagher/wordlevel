@@ -27,6 +27,7 @@ def shift(
     height: float | None = None,
     width: float | None = None,
     autoscale_axes: bool = True,
+    symmetric: bool = True,
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
     bar_config: InternalBarConfig | dict | None = None,
@@ -92,6 +93,7 @@ def shift(
             vertical=vertical,
             width=width,
             height=height,
+            symmetric=symmetric,
             config=label_config,
             scale_factor=scale_factor,
         )

@@ -16,6 +16,7 @@ def shift_scales(
     vertical: bool = True,
     width: float | None = None,
     height: float | None = None,
+    symmetric: bool = True,
     config: LabelConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
@@ -52,6 +53,7 @@ def shift_scales(
         rank_col=rank_col,
         label_col=label_col,
         size=size,
+        symmetric=symmetric,
         fontsize=fontsize,
         on_bar_ends=config.on_bar_ends,
         pad=config.pad,
@@ -98,6 +100,7 @@ def get_scale_limits(
     label_col: str,
     size: float,
     fontsize: float,
+    symmetric: bool = True,
     on_bar_ends: bool = True,
     pad: float = 5,
     font_width_to_height_ratio: float = 0.6,
@@ -127,12 +130,17 @@ def get_scale_limits(
     else:
         estimated_width = pl.max_horizontal(col("bar_length"), col("label_width"))
 
+    if symmetric:
+        min_limit = (-1 * scale_factor * col("estimated_width").max()).alias("negative_limit")
+    else:
+        min_limit = pl.lit(0)
+
     df_lims = df_lims.with_columns(
         (estimated_width + units_per_pixel * pad).alias("estimated_width")
     ).select(
         pl.lit(1).alias(rank_col),
         (scale_factor * col("estimated_width").max()).alias("positive_limit"),
-        (-1 * scale_factor * col("estimated_width").max()).alias("negative_limit"),
+        min_limit,
     )
 
     return df_lims

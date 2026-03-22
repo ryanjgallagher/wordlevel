@@ -95,6 +95,7 @@ class Plotter:
             height=height,
             width=width,
             autoscale_axes=autoscale_axes,
+            symmetric=(not comp.is_nonnegative) or split_nonnegative_by_corpus,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
@@ -150,6 +151,7 @@ class Plotter:
             height=height,
             width=width,
             autoscale_axes=autoscale_axes,
+            symmetric=(not comp.is_nonnegative) or split_nonnegative_by_corpus,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
