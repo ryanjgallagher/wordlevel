@@ -68,7 +68,7 @@ class TestScoreFunctionWiring:
         corpus1 = "freq_1990"
         corpus2 = "freq_2000"
 
-        comparison = Comparison(corpus1, corpus2, normalization_suffix="_normed")
+        comparison = Comparison(corpus1, corpus2)
         result = score_func(comparison.score)
 
         # Returns new Comparison instance
@@ -78,7 +78,6 @@ class TestScoreFunctionWiring:
         # Preserves original fields
         assert result._ref == corpus1
         assert result._cmp == corpus2
-        assert result._normalization_suffix == "_normed"
 
         # Sets correct metadata fields
         assert result._method == expected_method
@@ -96,8 +95,8 @@ class TestScoreFunctionWiring:
 
     def test_frequency_scorer_wiring(self, df_mock):
         """Frequency scorer produces scores whose sign matches the raw frequency comparison direction."""
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
-        df_result = comparison.score.frequency()._plan(df_mock)
+        comparison = Comparison("ref", "cmp")
+        df_result = comparison.score.frequency()._plan(df_mock, "word", "__wl_normed")
 
         check_expr = (col("cmp") >= col("ref")) == (col("comparison_score") >= 0)
         assert df_result.select(check_expr.all()).item()
@@ -113,9 +112,9 @@ class TestScoreFunctionWiring:
     )
     def test_weighted_avg_scorer_wiring(self, df_mock, score_func):
         """Weighted average scorers wire frequency columns to produce correctly-directed shift components."""
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        comparison = Comparison("ref", "cmp")
         result = score_func(comparison.score)
-        df_result = result._plan(df_mock)
+        df_result = result._plan(df_mock, "word", "__wl_normed")
 
         # Where the (normalized) freqs are larger in the comparison, we should see the same in
         # the `freq_diff` column (KLD is an exception: it uses only reference freqs, so diff is 0)
@@ -155,8 +154,8 @@ class TestScoreFunctionWiring:
         in the reference. Rank attribution gives 'comparison' (cmp_rank <= ref_rank); frequency
         attribution gives 'reference' (ref > cmp).
         """
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
-        df_result = score_func(comparison.score)._plan(df_mock)
+        comparison = Comparison("ref", "cmp")
+        df_result = score_func(comparison.score)._plan(df_mock, "word", "__wl_normed")
 
         cat_attribution = df_result.filter(col("word") == "cat")["attribution"].item()
         assert cat_attribution == expected_attribution
@@ -175,8 +174,8 @@ class TestScoreFunctionWiring:
         This verifies the attribution column was derived from comparison_score, not from
         frequency or rank columns.
         """
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
-        df_result = score_func(comparison.score)._plan(df_mock)
+        comparison = Comparison("ref", "cmp")
+        df_result = score_func(comparison.score)._plan(df_mock, "word", "__wl_normed")
 
         check = (col("comparison_score") >= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
         assert df_result.select(check.all()).item()
@@ -202,8 +201,8 @@ class TestScoreFunctionWiring:
         result1 = score_func(comparison.score, {parameter: value1})
         result2 = score_func(comparison.score, {parameter: value2})
 
-        df_result1 = result1._plan(df_mock)
-        df_result2 = result2._plan(df_mock)
+        df_result1 = result1._plan(df_mock, "word", "__wl_normed")
+        df_result2 = result2._plan(df_mock, "word", "__wl_normed")
 
         assert_frame_not_equal(
             df_result1, df_result2, check_row_order=False, check_column_order=False
@@ -220,14 +219,14 @@ class TestScoreFunctionWiring:
     )
     def test_reference_score_wiring(self, df_mock, score_func):
         """ """
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        comparison = Comparison("ref", "cmp")
         result_ref1 = score_func(comparison.score, 0)
         result_ref2 = score_func(comparison.score, "mean")
-        result_ref3 = score_func(comparison.score, col("ref").sum())
+        result_ref3 = score_func(comparison.score, col("ref__wl_normed").pow(2).sum())
 
-        df_ref1 = result_ref1._plan(df_mock)
-        df_ref2 = result_ref2._plan(df_mock)
-        df_ref3 = result_ref3._plan(df_mock)
+        df_ref1 = result_ref1._plan(df_mock, "word", "__wl_normed")
+        df_ref2 = result_ref2._plan(df_mock, "word", "__wl_normed")
+        df_ref3 = result_ref3._plan(df_mock, "word", "__wl_normed")
 
         # If wiring is correct, these dataframes must differ
         assert_frame_not_equal(df_ref1, df_ref2)
@@ -282,7 +281,7 @@ class TestAliasing:
     )
     def test_method_aliases_are_equivalent(self, df_mock, method_alias, method) -> None:
         """"""
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        comparison = Comparison("ref", "cmp")
 
         method_result = method(comparison.score)
         alias_result = method_alias(comparison.score)
@@ -293,8 +292,8 @@ class TestAliasing:
         assert alias_result._is_weighted_avg == method_result._is_weighted_avg
 
         # Check plans produce identical dataframes
-        df_method = method_result._plan(df_mock)
-        df_alias = alias_result._plan(df_mock)
+        df_method = method_result._plan(df_mock, "word", "__wl_normed")
+        df_alias = alias_result._plan(df_mock, "word", "__wl_normed")
 
         assert_frame_equal(df_method, df_alias, check_row_order=False, check_column_order=False)
 
@@ -317,11 +316,11 @@ class TestEdgeCases:
             }
         )
 
-        comparison = Comparison("my_ref", "my_cmp", normalization_suffix="_normed")
+        comparison = Comparison("my_ref", "my_cmp")
         result = score_func(comparison.score)
 
         with pytest.raises(Exception):
-            result._plan(df_normed)
+            result._plan(df_normed, "word", "_normed")
 
     @pytest.mark.parametrize(
         "score_func",
@@ -342,11 +341,42 @@ class TestEdgeCases:
             }
         )
 
-        comparison = Comparison("my_ref", "my_cmp", normalization_suffix="_normed")
+        comparison = Comparison("my_ref", "my_cmp")
         result = score_func(comparison.score)
 
         with pytest.raises(Exception):
-            result._plan(df_raw)
+            result._plan(df_raw, "word", "_normed")
+
+    @pytest.mark.parametrize(
+        "score_func",
+        [
+            lambda s: s.rank_divergence(),
+            lambda s: s.frequency(),
+            lambda s: s.proportion(),
+            lambda s: s.jensen_shannon_divergence(),
+        ],
+    )
+    def test_plan_uses_provided_label_and_suffix(self, df_mock, score_func):
+        """Plans use the label_col and normalization_suffix passed at execution time, not hardcoded values."""
+        comparison = Comparison("ref", "cmp")
+        result = score_func(comparison.score)
+
+        df_renamed = df_mock.rename(
+            {"word": "token", "ref__wl_normed": "ref_norm", "cmp__wl_normed": "cmp_norm"}
+        )
+
+        df_result_default = result._plan(df_mock, "word", "__wl_normed")
+        df_result_renamed = result._plan(df_renamed, "token", "_norm")
+
+        # The renamed result should use "token" as the label column, not "word"
+        assert "token" in df_result_renamed.columns
+        assert "word" not in df_result_renamed.columns
+
+        # Scores should be identical regardless of column naming
+        assert_frame_equal(
+            df_result_default.sort("word").select("comparison_score"),
+            df_result_renamed.sort("token").select("comparison_score"),
+        )
 
     def test_rank_divergence_with_negative_alpha(self, df_mock):
         """Test that rank_divergence raises ValueError for negative alpha."""
@@ -355,11 +385,11 @@ class TestEdgeCases:
 
         # Error should be raised during plan execution
         with pytest.raises(ValueError, match="alpha must be non-negative"):
-            result._plan(df_mock)
+            result._plan(df_mock, "word", "__wl_normed")
 
     def test_calling_score_twice_overrides_previous(self, df_mock):
         """Calling a second scoring method on a scored Comparison overrides the first."""
-        comparison = Comparison("ref", "cmp", normalization_suffix="__wl_normed")
+        comparison = Comparison("ref", "cmp")
 
         scored_once = comparison.score.rank_divergence()
         scored_twice = scored_once.score.jensen_shannon_divergence()
@@ -369,6 +399,6 @@ class TestEdgeCases:
         assert scored_twice._parameters != scored_once._parameters
 
         # The second plan should produce weighted-avg columns, not simple score columns
-        df_result = scored_twice._plan(df_mock)
+        df_result = scored_twice._plan(df_mock, "word", "__wl_normed")
         assert "freq_diff" in df_result.columns
         assert "weighted_score_diff" in df_result.columns

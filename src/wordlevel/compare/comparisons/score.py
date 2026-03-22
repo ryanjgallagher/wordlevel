@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
 
 
-ScorePlan = Callable[[PolarsFrame], PolarsFrame]
+ScorePlan = Callable[[PolarsFrame, str, str], PolarsFrame]
 
 
 class Scorer:
@@ -71,25 +71,30 @@ class Scorer:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
         """
-        if requires_normed_freqs:
-            ref = self._comparison._ref_normed
-            cmp = self._comparison._cmp_normed
-        else:
-            ref = self._comparison._ref
-            cmp = self._comparison._cmp
+        ref = self._comparison._ref
+        cmp = self._comparison._cmp
 
-        plan = partial(
-            basic_score_plan,
-            freqs_ref=col(ref),
-            freqs_cmp=col(cmp),
-            score_func=score_func,
-            attribute_by=attribute_by,
-            score_alias=SCORE_COL,
-            rank_alias=RANK_COL,
-            attribution_alias=ATTRIBUTION_COL,
-            reference_attribution=REFERENCE_ATTRIBUTION,
-            comparison_attribution=COMPARISON_ATTRIBUTION,
-        )
+        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+            if requires_normed_freqs:
+                ref_col = f"{ref}{normalization_suffix}"
+                cmp_col = f"{cmp}{normalization_suffix}"
+            else:
+                ref_col = ref
+                cmp_col = cmp
+
+            return basic_score_plan(
+                df,
+                freqs_ref=col(ref_col),
+                freqs_cmp=col(cmp_col),
+                label=col(label_col),
+                score_func=score_func,
+                attribute_by=attribute_by,
+                score_alias=SCORE_COL,
+                rank_alias=RANK_COL,
+                attribution_alias=ATTRIBUTION_COL,
+                reference_attribution=REFERENCE_ATTRIBUTION,
+                comparison_attribution=COMPARISON_ATTRIBUTION,
+            )
 
         return plan
 
@@ -106,45 +111,50 @@ class Scorer:
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
         """
-        if requires_normed_freqs:
-            freqs_ref = self._comparison._ref_normed
-            freqs_cmp = self._comparison._cmp_normed
-        else:
-            freqs_ref = self._comparison._ref
-            freqs_cmp = self._comparison._cmp
-
-        component_freqs_ref = freqs_ref
-        component_freqs_cmp = freqs_cmp
-        if share_component_freqs_by == "reference":
-            component_freqs_cmp = component_freqs_ref
-        elif share_component_freqs_by == "comparison":
-            component_freqs_ref = component_freqs_cmp
+        ref = self._comparison._ref
+        cmp = self._comparison._cmp
 
         SHIFT_TYPES = ShiftTypesConfig()
 
-        plan = partial(
-            weighted_average_score_plan,
-            score_freqs_ref=col(freqs_ref),
-            score_freqs_cmp=col(freqs_cmp),
-            component_freqs_ref=col(component_freqs_ref),
-            component_freqs_cmp=col(component_freqs_cmp),
-            score_func=score_func,
-            clean_score_func=clean_score_func,
-            attribute_by=attribute_by,
-            reference_score=reference_score,
-            score_alias=SCORE_COL,
-            rank_alias=RANK_COL,
-            more_of_positive_alias=SHIFT_TYPES.more_of_positive.name,
-            less_of_negative_alias=SHIFT_TYPES.less_of_negative.name,
-            more_of_negative_alias=SHIFT_TYPES.more_of_negative.name,
-            less_of_positive_alias=SHIFT_TYPES.less_of_positive.name,
-            higher_score_alias=SHIFT_TYPES.higher_score.name,
-            lower_score_alias=SHIFT_TYPES.lower_score.name,
-            counteracted_suffix=COUNTERACTED_SUFFIX,
-            attribution_alias=ATTRIBUTION_COL,
-            reference_attribution=REFERENCE_ATTRIBUTION,
-            comparison_attribution=COMPARISON_ATTRIBUTION,
-        )
+        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+            if requires_normed_freqs:
+                freqs_ref = f"{ref}{normalization_suffix}"
+                freqs_cmp = f"{cmp}{normalization_suffix}"
+            else:
+                freqs_ref = ref
+                freqs_cmp = cmp
+
+            component_freqs_ref = freqs_ref
+            component_freqs_cmp = freqs_cmp
+            if share_component_freqs_by == "reference":
+                component_freqs_cmp = component_freqs_ref
+            elif share_component_freqs_by == "comparison":
+                component_freqs_ref = component_freqs_cmp
+
+            return weighted_average_score_plan(
+                df,
+                score_freqs_ref=col(freqs_ref),
+                score_freqs_cmp=col(freqs_cmp),
+                component_freqs_ref=col(component_freqs_ref),
+                component_freqs_cmp=col(component_freqs_cmp),
+                label=col(label_col),
+                score_func=score_func,
+                clean_score_func=clean_score_func,
+                attribute_by=attribute_by,
+                reference_score=reference_score,
+                score_alias=SCORE_COL,
+                rank_alias=RANK_COL,
+                more_of_positive_alias=SHIFT_TYPES.more_of_positive.name,
+                less_of_negative_alias=SHIFT_TYPES.less_of_negative.name,
+                more_of_negative_alias=SHIFT_TYPES.more_of_negative.name,
+                less_of_positive_alias=SHIFT_TYPES.less_of_positive.name,
+                higher_score_alias=SHIFT_TYPES.higher_score.name,
+                lower_score_alias=SHIFT_TYPES.lower_score.name,
+                counteracted_suffix=COUNTERACTED_SUFFIX,
+                attribution_alias=ATTRIBUTION_COL,
+                reference_attribution=REFERENCE_ATTRIBUTION,
+                comparison_attribution=COMPARISON_ATTRIBUTION,
+            )
 
         return plan
 
@@ -171,7 +181,6 @@ class Scorer:
             is_weighted_avg=is_weighted_avg,
             is_nonnegative=is_nonnegative,
             plan=plan,
-            normalization_suffix=self._comparison._normalization_suffix,
         )
 
     def rank_divergence(self, alpha: float = 1.0) -> Comparison:

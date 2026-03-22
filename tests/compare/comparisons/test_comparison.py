@@ -1,14 +1,7 @@
 import pytest
 
-from wordlevel.compare.constructors import NORMALIZATION_SUFFIX
 from wordlevel.compare.comparisons.comparison import Comparison, comp
 from wordlevel.compare.comparisons.score import Scorer
-
-
-def assert_correct_normed_suffixes(comparison: Comparison, ref: str, cmp: str, suffix: str) -> None:
-    """ """
-    assert comparison._ref_normed == f"{ref}{suffix}"
-    assert comparison._cmp_normed == f"{cmp}{suffix}"
 
 
 def test_initialization_defaults() -> None:
@@ -26,7 +19,7 @@ def test_initialization_defaults() -> None:
 def test_initialization_with_all_parameters() -> None:
     """Test that all explicitly provided parameters are stored correctly."""
 
-    def mock_function(df):
+    def mock_function(df, label_col, normalization_suffix):
         return df
 
     mock_plan = mock_function
@@ -39,7 +32,6 @@ def test_initialization_with_all_parameters() -> None:
         method="jensen_shannon",
         is_weighted_avg=True,
         plan=mock_plan,
-        normalization_suffix="_custom",
         parameters=params,
     )
 
@@ -49,42 +41,8 @@ def test_initialization_with_all_parameters() -> None:
     assert comparison._method == "jensen_shannon"
     assert comparison._is_weighted_avg is True
     assert comparison._plan is mock_plan
-    assert comparison._normalization_suffix == "_custom"
     assert comparison._parameters == {"alpha": 1.5, "base": 2}
     assert comparison._parameters is not params  # Parameters are copied
-
-
-@pytest.mark.parametrize(
-    "ref_col, cmp_col, suffix",
-    [
-        ("frequency1", "frequency2", "_suffix"),
-        ("freqs1", "freqs2", "_normed"),
-        ("props1", "props2", ""),
-    ],
-)
-def test_normed_column_names(ref_col: str, cmp_col: str, suffix: str) -> None:
-    """ """
-    comparison = Comparison(reference=ref_col, comparison=cmp_col, normalization_suffix=suffix)
-
-    assert_correct_normed_suffixes(comparison, ref_col, cmp_col, suffix)
-
-
-@pytest.mark.parametrize("ref_col, cmp_col", [("freqs1", "freqs2")])
-def test_normed_column_names_default(ref_col: str, cmp_col: str) -> None:
-    """ """
-    comparison = Comparison(ref_col, cmp_col)
-
-    assert_correct_normed_suffixes(comparison, ref_col, cmp_col, NORMALIZATION_SUFFIX)
-
-
-def test_normed_column_names_dynamic() -> None:
-    """ """
-    new_suffix = "_a_new_suffix"
-
-    comparison = Comparison("ref", "cmp")
-    comparison._normalization_suffix = new_suffix
-
-    assert_correct_normed_suffixes(comparison, "ref", "cmp", new_suffix)
 
 
 @pytest.mark.parametrize("alias", ["alias1", "another_alias"])
@@ -101,7 +59,6 @@ def test_alias(alias: str) -> None:
 
     assert new_comparison._ref == comparison._ref
     assert new_comparison._cmp == comparison._cmp
-    assert new_comparison._normalization_suffix == comparison._normalization_suffix
 
 
 def test_alias_chaining() -> None:
@@ -182,5 +139,3 @@ def test_constructor(ref_col: str, cmp_col: str) -> None:
     assert isinstance(comparison, Comparison)
     assert comparison._ref == ref_col
     assert comparison._cmp == cmp_col
-    assert comparison._ref_normed.startswith(ref_col)
-    assert comparison._cmp_normed.startswith(cmp_col)

@@ -29,7 +29,7 @@ def df_mock() -> pl.DataFrame:
 def simple_plan():
     """Basic scoring plan that adds a comparison_score column."""
 
-    def plan(df: PolarsFrame) -> PolarsFrame:
+    def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
         return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("difference"))
 
     return plan
@@ -65,7 +65,7 @@ def test_initialization(
     df_mock, simple_plan, method, is_weighted_avg, is_nonnegative, parameters
 ) -> None:
     """Test initialization with different scoring methods and parameters."""
-    lf = simple_plan(df_mock).lazy()
+    lf = simple_plan(df_mock, "word", "__wl_normed").lazy()
 
     result = ComparisonResult(
         _lf=lf,
@@ -102,7 +102,9 @@ class TestFromComparison:
         if is_lazy:
             df_mock = df_mock.lazy()
 
-        result = ComparisonResult.from_comparison(valid_comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
 
         assert result.reference == valid_comparison._ref
         assert result.comparison == valid_comparison._cmp
@@ -131,7 +133,9 @@ class TestFromComparison:
         setattr(comparison, f"_{missing_field}", None)
 
         with pytest.raises(ValueError, match=error_msg):
-            ComparisonResult.from_comparison(comparison, df_mock)
+            ComparisonResult.from_comparison(
+                comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            )
 
 
 # ============================================================================
@@ -144,7 +148,9 @@ class TestLazyEvaluation:
 
     def test_df_returns_dataframe(self, valid_comparison, df_mock) -> None:
         """Test that .df property returns a DataFrame, not LazyFrame."""
-        result = ComparisonResult.from_comparison(valid_comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
         df = result.df
 
         assert isinstance(df, pl.DataFrame)
@@ -152,7 +158,9 @@ class TestLazyEvaluation:
 
     def test_df_multiple_accesses_return_equivalent_data(self, valid_comparison, df_mock) -> None:
         """Test that multiple .df accesses return equivalent DataFrames."""
-        result = ComparisonResult.from_comparison(valid_comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
 
         df1 = result.df
         df2 = result.df
@@ -166,7 +174,9 @@ class TestLazyEvaluation:
         """Test that plan execution is deferred until .df is accessed."""
         execution_count = {"count": 0}
 
-        def counting_plan(df: PolarsFrame) -> PolarsFrame:
+        def counting_plan(
+            df: PolarsFrame, label_col: str, normalization_suffix: str
+        ) -> PolarsFrame:
             execution_count["count"] += 1
             return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("score"))
 
@@ -182,7 +192,9 @@ class TestLazyEvaluation:
         )
 
         # Creating the result should execute the plan once upon initialization
-        result = ComparisonResult.from_comparison(comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
         assert execution_count["count"] == 1
 
         # Accessing .df should collect, but not re-execute the plan
@@ -210,7 +222,9 @@ class TestLazyEvaluation:
 )
 def test_fields_cannot_be_reassigned(valid_comparison, df_mock, field_name, new_value) -> None:
     """Test that frozen dataclass prevents field reassignment."""
-    result = ComparisonResult.from_comparison(valid_comparison, df_mock)
+    result = ComparisonResult.from_comparison(
+        valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+    )
 
     with pytest.raises(AttributeError):
         setattr(result, field_name, new_value)
@@ -225,7 +239,9 @@ class TestParameterIndependence:
     def test_from_comparison_parameters_are_copied(self, valid_comparison, df_mock) -> None:
         """Test that parameters dict is copied, not shared."""
         original_params = valid_comparison._parameters
-        result = ComparisonResult.from_comparison(valid_comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
 
         # Modify the original parameters
         original_params["alpha"] = 2.0
@@ -238,8 +254,12 @@ class TestParameterIndependence:
 
     def test_parameters_are_not_shared_between_results(self, df_mock, valid_comparison) -> None:
         """Test that multiple ComparisonResults don't share parameters dict."""
-        result1 = ComparisonResult.from_comparison(valid_comparison, df_mock)
-        result2 = ComparisonResult.from_comparison(valid_comparison, df_mock)
+        result1 = ComparisonResult.from_comparison(
+            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
+        result2 = ComparisonResult.from_comparison(
+            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
 
         # Modify one result's parameters
         result1.parameters["alpha"] = 2.0
@@ -270,7 +290,9 @@ class TestDataFrameExecution:
             parameters=dict(),
         )
 
-        result = ComparisonResult.from_comparison(comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
         result_df = result.df
 
         assert "difference" in result_df.columns
@@ -279,7 +301,7 @@ class TestDataFrameExecution:
     def test_complex_plan_execution(self, df_mock) -> None:
         """Test that a complex plan with multiple columns works correctly."""
 
-        def complex_plan(df: PolarsFrame) -> PolarsFrame:
+        def complex_plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
             diff_col = pl.col("ref") - pl.col("cmp")
             return df.with_columns(
                 [
@@ -300,7 +322,9 @@ class TestDataFrameExecution:
             parameters=dict(),
         )
 
-        result = ComparisonResult.from_comparison(comparison, df_mock)
+        result = ComparisonResult.from_comparison(
+            comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        )
         result_df = result.df
 
         assert "comparison_score" in result_df.columns
@@ -309,3 +333,65 @@ class TestDataFrameExecution:
 
         assert result_df["comparison_score"].to_list() == [80, 20, -55]
         assert result_df["average"].to_list() == [60.0, 40.0, 52.5]
+
+
+# ============================================================================
+# TestLabelAndSuffixWiring - Test that label_col and normalization_suffix are
+# passed through correctly to the plan
+# ============================================================================
+
+
+class TestLabelAndSuffixWiring:
+    """Test that label_col and normalization_suffix are correctly forwarded to the plan."""
+
+    @pytest.mark.parametrize("label_col", ["word", "token", "term"])
+    def test_label_col_is_forwarded_to_plan(self, df_mock, label_col) -> None:
+        """Test that label_col is forwarded to the plan at execution time."""
+        received = {}
+
+        def capturing_plan(df: PolarsFrame, lc: str, ns: str) -> PolarsFrame:
+            received["label_col"] = lc
+            return df
+
+        comparison = Comparison(
+            "ref",
+            "cmp",
+            alias="test",
+            method="test",
+            is_weighted_avg=False,
+            is_nonnegative=False,
+            plan=capturing_plan,
+            parameters=dict(),
+        )
+
+        ComparisonResult.from_comparison(
+            comparison, df_mock, label_col=label_col, normalization_suffix="__wl_normed"
+        )
+
+        assert received["label_col"] == label_col
+
+    @pytest.mark.parametrize("normalization_suffix", ["__wl_normed", "_normed", "_norm"])
+    def test_normalization_suffix_is_forwarded_to_plan(self, df_mock, normalization_suffix) -> None:
+        """Test that normalization_suffix is forwarded to the plan at execution time."""
+        received = {}
+
+        def capturing_plan(df: PolarsFrame, lc: str, ns: str) -> PolarsFrame:
+            received["normalization_suffix"] = ns
+            return df
+
+        comparison = Comparison(
+            "ref",
+            "cmp",
+            alias="test",
+            method="test",
+            is_weighted_avg=False,
+            is_nonnegative=False,
+            plan=capturing_plan,
+            parameters=dict(),
+        )
+
+        ComparisonResult.from_comparison(
+            comparison, df_mock, label_col="word", normalization_suffix=normalization_suffix
+        )
+
+        assert received["normalization_suffix"] == normalization_suffix

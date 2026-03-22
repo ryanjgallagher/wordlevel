@@ -170,8 +170,12 @@ class CorpusComparator:
         comparator = self.__class__(self)
 
         for comparison in comparisons:
-            comparison = comparison._with_normalization_suffix(self._normalization_suffix)
-            result = ComparisonResult.from_comparison(comparison, self._df)
+            result = ComparisonResult.from_comparison(
+                comparison,
+                self._df,
+                label_col=self._label_col,
+                normalization_suffix=self._normalization_suffix,
+            )
             comparator._comparisons[result.alias] = result
 
         return comparator

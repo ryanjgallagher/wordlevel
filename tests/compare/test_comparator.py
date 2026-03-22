@@ -115,28 +115,35 @@ class TestComparatorProperties:
         df2 = comparator.df
         assert_frame_equal(df1, df2)
 
-    def test_suffix_injection(self, df_mock) -> None:
-        """Test that comparisons use comparator's normalization suffix."""
+    def test_property_injection(self, df_mock) -> None:
+        """Test that comparisons use comparator's label column and normalization suffix."""
+        df_renamed = df_mock.rename({"word": "token"})
         comparator = CorpusComparator(
-            df_mock,
-            label_col="word",
+            df_renamed,
+            label_col="token",
             freq_cols=["freq1", "freq2"],
             normalize=True,
             normalization_suffix="__custom",
         )
 
-        comparator_new = comparator.with_comparisons(comp("freq1", "freq2").score.proportion())
+        comparator_new = comparator.with_comparisons(
+            comp("freq1", "freq2").score.proportion().alias("test_injection")
+        )
 
-        # Verify normalized columns with custom suffix exist in DataFrame
+        # Verify the comparator's DataFrame has both raw and custom-normalized columns
         df = comparator_new.df
-        assert "freq1" in df.columns
-        assert "freq2" in df.columns
+        assert "token" in df.columns
         assert "freq1__custom" in df.columns
         assert "freq2__custom" in df.columns
-
-        # Verify standard suffix is not present
         assert "freq1__wl_normed" not in df.columns
         assert "freq2__wl_normed" not in df.columns
+
+        # Verify the comparison result uses the custom label and normalization suffix
+        result_df = comparator_new.comparisons["test_injection"].df
+        assert "token" in result_df.columns
+        assert "freq1__custom" in result_df.columns
+        assert "freq2__custom" in result_df.columns
+        assert "freq1__wl_normed" not in result_df.columns
 
 
 # ============================================================================
@@ -174,9 +181,8 @@ class TestIntegration:
         assert RANK_COL in df1.columns
         assert RANK_COL in df2.columns
 
-        # 6. Verify original data is preserved
-        assert_frame_equal(df1.select(df_mock.columns), df_mock)
-        assert_frame_equal(df2.select(df_mock.columns), df_mock)
+        # 6. Verify original data is preserved in the comparator itself
+        assert_frame_equal(comparator_new.df.select(df_mock.columns), df_mock)
 
         # 7. Verify plotting works end-to-end
         chart = comparator_new.plot.bar("1vs2")
