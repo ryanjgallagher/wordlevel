@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Collection, Mapping, Sequence
 from functools import cached_property
 from types import MappingProxyType
-from typing import Mapping
 from typing_extensions import Self
 
 import polars as pl
 
 from wordlevel.types import PolarsFrame
-from wordlevel.compare.constructors import from_comparator, from_polars
-from wordlevel.compare.constants import NORMALIZATION_SUFFIX
+from wordlevel.compare.constructors import (
+    from_comparator,
+    from_polars,
+    from_dict_of_freqs,
+    from_list_of_freqs,
+    DictOfFreqs,
+    ListOfFreqs,
+)
+from wordlevel.compare.constants import FREQ_PREFIX, LABEL, NORMALIZATION_SUFFIX
 from wordlevel.compare.plot import Plotter
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
@@ -21,9 +27,13 @@ class CorpusComparator:
 
     def __init__(
         self,
-        data: PolarsFrame | CorpusComparator | ComparatorData,
+        data: PolarsFrame | CorpusComparator | ComparatorData | DictOfFreqs | ListOfFreqs,
         label_col: str | None = None,
         freq_cols: Collection[str] | None = None,
+        corpora: Sequence[str] | None = None,
+        label: str = LABEL,
+        freq_prefix: str = FREQ_PREFIX,
+        fill_nulls: bool = True,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> None:
@@ -37,6 +47,24 @@ class CorpusComparator:
                 df=data,
                 label_col=label_col,
                 freq_cols=freq_cols,
+                fill_nulls=fill_nulls,
+                normalize=normalize,
+                normalization_suffix=normalization_suffix,
+            )
+        elif isinstance(data, Mapping):
+            init_data = from_dict_of_freqs(
+                freqs=data,
+                label=label,
+                freq_prefix=freq_prefix,
+                normalize=normalize,
+                normalization_suffix=normalization_suffix,
+            )
+        elif isinstance(data, Sequence):
+            init_data = from_list_of_freqs(
+                freqs=data,
+                corpora=corpora,
+                label=label,
+                freq_prefix=freq_prefix,
                 normalize=normalize,
                 normalization_suffix=normalization_suffix,
             )
@@ -66,6 +94,7 @@ class CorpusComparator:
         df: pl.DataFrame,
         label_col: str,
         freq_cols: Collection[str],
+        fill_nulls: bool = True,
         normalize: bool = True,
         normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> Self:
@@ -74,6 +103,49 @@ class CorpusComparator:
             df=df,
             label_col=label_col,
             freq_cols=freq_cols,
+            fill_nulls=fill_nulls,
+            normalize=normalize,
+            normalization_suffix=normalization_suffix,
+        )
+
+        return cls(data=init_data)
+
+    @classmethod
+    def from_list_of_freqs(
+        cls,
+        freqs: ListOfFreqs,
+        corpora: Sequence[str] | None = None,
+        label: str = LABEL,
+        freq_prefix: str = FREQ_PREFIX,
+        normalize: bool = True,
+        normalization_suffix: str = NORMALIZATION_SUFFIX,
+    ) -> Self:
+        """ """
+        init_data = from_list_of_freqs(
+            freqs=freqs,
+            corpora=corpora,
+            label=label,
+            freq_prefix=freq_prefix,
+            normalize=normalize,
+            normalization_suffix=normalization_suffix,
+        )
+
+        return cls(data=init_data)
+
+    @classmethod
+    def from_dict_of_freqs(
+        cls,
+        freqs: DictOfFreqs,
+        label: str = LABEL,
+        freq_prefix: str = FREQ_PREFIX,
+        normalize: bool = True,
+        normalization_suffix: str = NORMALIZATION_SUFFIX,
+    ) -> Self:
+        """ """
+        init_data = from_dict_of_freqs(
+            freqs=freqs,
+            label=label,
+            freq_prefix=freq_prefix,
             normalize=normalize,
             normalization_suffix=normalization_suffix,
         )
@@ -87,7 +159,10 @@ class CorpusComparator:
 
     @property
     def df(self) -> pl.DataFrame:
-        """ """
+        """
+        TODO: Change variable name of internal variable to `_lf`. Collect and update similar to
+              a ComparisonResult
+        """
         return self._df.collect()
 
     @cached_property
@@ -96,7 +171,9 @@ class CorpusComparator:
         return Plotter(self)
 
     def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
-        """ """
+        """
+        TODO: use pl.collect_all
+        """
         comparator = self.__class__(self)
 
         for comparison in comparisons:
