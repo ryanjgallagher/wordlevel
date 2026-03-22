@@ -14,6 +14,7 @@ def basic_score_plan(
     df: PolarsFrame,
     freqs_ref: pl.Expr,
     freqs_cmp: pl.Expr,
+    label: pl.Expr,
     score_func: ScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
     score_alias: str = "comparison_score",
@@ -31,7 +32,12 @@ def basic_score_plan(
         attribution_cols["comparison"] = freqs_cmp
 
     df_plan = (
-        df.with_columns(score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(score_alias))
+        df.select(
+            label,
+            freqs_ref,
+            freqs_cmp,
+            score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(score_alias),
+        )
         .with_columns(
             col(score_alias).abs().rank(descending=True, method="ordinal").alias(rank_alias)
         )
@@ -55,6 +61,7 @@ def weighted_average_score_plan(
     score_freqs_cmp: pl.Expr,
     component_freqs_ref: pl.Expr,
     component_freqs_cmp: pl.Expr,
+    label: pl.Expr,
     score_func: DualScoreFunc,
     clean_score_func: DualCleanScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
@@ -80,8 +87,16 @@ def weighted_average_score_plan(
         attribution_cols["reference"] = score_freqs_ref
         attribution_cols["comparison"] = score_freqs_cmp
 
+    # Select only the score columns for the reference and comparison corpora (and not all others)
+    # Avoid duplicate column selection error if the component freqs are the same as the score freqs
+    score_cols_to_select = [score_freqs_ref, score_freqs_cmp]
+    if score_freqs_ref.meta.output_name() != component_freqs_ref.meta.output_name():
+        score_cols_to_select += [component_freqs_ref, component_freqs_cmp]
+
     df_plan = (
-        df.with_columns(
+        df.select(
+            label,
+            *score_cols_to_select,
             *score_func(
                 freqs1=score_freqs_ref,
                 freqs2=score_freqs_cmp,
