@@ -4,7 +4,7 @@ from dataclasses import fields
 
 from wordlevel.configs import ShiftTypesConfig
 
-RANK_COL = "rank"
+RANK_COL = "score_rank"
 SCORE_COL = "comparison_score"
 ATTRIBUTION_COL = "attribution"
 

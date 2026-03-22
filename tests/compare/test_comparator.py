@@ -4,6 +4,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 from types import MappingProxyType
 
+from wordlevel.constants import SCORE_COL, RANK_COL
 from wordlevel.compare.comparator import CorpusComparator
 from wordlevel.compare.comparisons.comparison import comp
 from wordlevel.compare.plot import Plotter
@@ -168,10 +169,10 @@ class TestIntegration:
         df2 = comparator_new.comparisons["2vs3"].df
 
         # 5. Verify scores exist and are valid
-        assert "comparison_score" in df1.columns
-        assert "comparison_score" in df2.columns
-        assert "rank" in df1.columns
-        assert "rank" in df2.columns
+        assert SCORE_COL in df1.columns
+        assert SCORE_COL in df2.columns
+        assert RANK_COL in df1.columns
+        assert RANK_COL in df2.columns
 
         # 6. Verify original data is preserved
         assert_frame_equal(df1.select(df_mock.columns), df_mock)
@@ -196,8 +197,8 @@ class TestIntegration:
         df_result = result.df
 
         # Verify JSD-specific columns exist
-        assert "comparison_score" in df_result.columns
-        assert "rank" in df_result.columns
+        assert SCORE_COL in df_result.columns
+        assert RANK_COL in df_result.columns
 
         # Verify metadata
         assert result.method == "jensen_shannon_divergence"
