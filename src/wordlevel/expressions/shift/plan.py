@@ -32,7 +32,9 @@ def basic_score_plan(
 
     df_plan = (
         df.with_columns(score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(score_alias))
-        .with_columns(col(score_alias).abs().rank(descending=True).alias(rank_alias))
+        .with_columns(
+            col(score_alias).abs().rank(descending=True, method="ordinal").alias(rank_alias)
+        )
         .pipe(
             attribute_scores,
             **attribution_cols,

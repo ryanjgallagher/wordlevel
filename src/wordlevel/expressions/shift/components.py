@@ -52,7 +52,7 @@ def get_shift_components(
 
         if include_rank:
             df_comps = df_comps.with_columns(
-                col(total_difference_alias).abs().rank(descending=True).alias(rank_alias)
+                col(total_difference_alias).abs().rank(descending=True, method='ordinal').alias(rank_alias)
             )
     # fmt: on
 

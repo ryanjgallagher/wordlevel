@@ -87,7 +87,7 @@ class TestBasicScorePlan:
         )
 
         # scores = [5, -1, -3, 4]; abs desc ranks: 5->1, 4->2, 3->3, 1->4 -> [1, 4, 3, 2]
-        expected = pl.Series([1.0, 4.0, 3.0, 2.0])
+        expected = pl.Series([1, 4, 3, 2], dtype=pl.UInt32)
         polars.testing.assert_series_equal(df_result["rank"], expected, check_names=False)
 
     @pytest.mark.parametrize(
