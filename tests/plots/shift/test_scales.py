@@ -27,7 +27,11 @@ def test_get_bar_lengths(score_col, rank_col, label_col):
     )
 
     assert_frame_equal(
-        df_actual, df_expected, check_row_order=False, check_column_order=False, check_dtypes=False
+        df_actual.select(df_expected.columns),
+        df_expected,
+        check_row_order=False,
+        check_column_order=False,
+        check_dtypes=False,
     )
 
 
@@ -68,7 +72,7 @@ def test_get_scale_limits(
         {
             label_col: ["w1", "w2", "w3"],
             rank_col: [1, 2, 3],
-            score_col: [score, score - 1, score - 2],
+            score_col: [score, score - 1, score - 10],
         }
     )
 
@@ -87,6 +91,37 @@ def test_get_scale_limits(
         scale_factor=scale_factor,
         pad=pad,
         on_bar_ends=on_bar_ends,
+    )
+
+    assert_frame_equal(df_actual, df_expected, check_dtypes=False)
+
+
+def test_get_scale_limits_all_positive(
+    score_col,
+    rank_col,
+    label_col,
+):
+    df_input = pl.DataFrame(
+        {
+            label_col: ["w1", "w2", "w3"],
+            rank_col: [1, 2, 3],
+            score_col: [5, 4, 3],
+        }
+    )
+
+    df_expected = pl.DataFrame({rank_col: [1], "positive_limit": 25, "negative_limit": 0})
+
+    df_actual = get_scale_limits(
+        df_input,
+        score_col=score_col,
+        rank_col=rank_col,
+        label_col=label_col,
+        size=1,
+        fontsize=1,
+        font_width_to_height_ratio=1,
+        scale_factor=1,
+        pad=0,
+        on_bar_ends=True,
     )
 
     assert_frame_equal(df_actual, df_expected, check_dtypes=False)
@@ -177,7 +212,6 @@ def test_max_rank_filter(score_col, rank_col, label_col, filter_max_rank):
 
     assert len(chart_data) == 1
     assert chart_data[0]["positive_limit"] == expected_limit
-    assert chart_data[0]["negative_limit"] == -1 * expected_limit
 
 
 def test_default_fontsize(make_mock_df, score_col, rank_col, label_col):

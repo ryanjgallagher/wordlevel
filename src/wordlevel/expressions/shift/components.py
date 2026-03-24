@@ -47,12 +47,12 @@ def get_shift_components(
     if include_total_difference:
         df_comps = df_comps.with_columns(
             (col(frequency_diff_alias) * col(reference_score_diff_alias) + col(weighted_score_diff_alias))
-            .alias(total_difference_alias)
+            .alias(total_difference_alias),
         )
 
         if include_rank:
             df_comps = df_comps.with_columns(
-                col(total_difference_alias).abs().rank(descending=True, method='ordinal').alias(rank_alias)
+                col(total_difference_alias).abs().rank(descending=True, method='ordinal').alias(rank_alias),
             )
     # fmt: on
 

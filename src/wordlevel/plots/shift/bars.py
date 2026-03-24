@@ -227,7 +227,7 @@ def shift_bars(
     # Create chart layer
     bars_chart = (
         alt.Chart(df)
-        .mark_bar(clip=True)
+        .mark_bar()
         .encode(x=x_axis, y=y_axis, color=color, order=score_type_orders)
         .properties(**chart_size, view=axes_view)
     )
