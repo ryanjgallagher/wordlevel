@@ -36,12 +36,15 @@ def simple_clean_score_func(
 class TestBasicScorePlan:
     def test_output_columns(self) -> None:
         """Score, rank, and attribution columns appear alongside input columns."""
-        df = pl.DataFrame({"freqs_ref": [1.0, 2.0, 3.0], "freqs_cmp": [3.0, 2.0, 1.0]})
+        df = pl.DataFrame(
+            {"word": ["a", "b", "c"], "freqs_ref": [1.0, 2.0, 3.0], "freqs_cmp": [3.0, 2.0, 1.0]}
+        )
 
         df_result = basic_score_plan(
             df,
             freqs_ref=col("freqs_ref"),
             freqs_cmp=col("freqs_cmp"),
+            label=col("word"),
             score_func=simple_score_func,
             attribute_by="frequency",
             score_alias="my_score",
@@ -49,6 +52,7 @@ class TestBasicScorePlan:
             attribution_alias="my_attr",
         )
 
+        assert "word" in df_result.columns
         assert "my_score" in df_result.columns
         assert "my_rank" in df_result.columns
         assert "my_attr" in df_result.columns
@@ -57,12 +61,19 @@ class TestBasicScorePlan:
 
     def test_score_values(self) -> None:
         """Score column contains the output of the score function."""
-        df = pl.DataFrame({"freqs_ref": [1.0, 3.0, 8.0, 5.0], "freqs_cmp": [6.0, 2.0, 5.0, 9.0]})
+        df = pl.DataFrame(
+            {
+                "token": ["a", "b", "c", "d"],
+                "freqs_ref": [1.0, 3.0, 8.0, 5.0],
+                "freqs_cmp": [6.0, 2.0, 5.0, 9.0],
+            }
+        )
 
         df_result = basic_score_plan(
             df,
             freqs_ref=col("freqs_ref"),
             freqs_cmp=col("freqs_cmp"),
+            label=col("token"),
             score_func=simple_score_func,
             attribute_by="frequency",
             score_alias="score",
@@ -74,12 +85,19 @@ class TestBasicScorePlan:
 
     def test_ranking(self) -> None:
         """Rank column is the absolute-value descending rank of the score."""
-        df = pl.DataFrame({"freqs_ref": [1.0, 3.0, 8.0, 5.0], "freqs_cmp": [6.0, 2.0, 5.0, 9.0]})
+        df = pl.DataFrame(
+            {
+                "word": ["a", "b", "c", "d"],
+                "freqs_ref": [1.0, 3.0, 8.0, 5.0],
+                "freqs_cmp": [6.0, 2.0, 5.0, 9.0],
+            }
+        )
 
         df_result = basic_score_plan(
             df,
             freqs_ref=col("freqs_ref"),
             freqs_cmp=col("freqs_cmp"),
+            label=col("word"),
             score_func=simple_score_func,
             attribute_by="frequency",
             score_alias="score",
@@ -87,7 +105,7 @@ class TestBasicScorePlan:
         )
 
         # scores = [5, -1, -3, 4]; abs desc ranks: 5->1, 4->2, 3->3, 1->4 -> [1, 4, 3, 2]
-        expected = pl.Series([1.0, 4.0, 3.0, 2.0])
+        expected = pl.Series([1, 4, 3, 2], dtype=pl.UInt32)
         polars.testing.assert_series_equal(df_result["rank"], expected, check_names=False)
 
     @pytest.mark.parametrize(
@@ -120,12 +138,19 @@ class TestBasicScorePlan:
         expected_attribution: list[str],
     ) -> None:
         """The correct columns are wired to attribution for each attribute_by strategy."""
-        df = pl.DataFrame({"freqs_ref": [1.0, 3.0, 8.0, 5.0], "freqs_cmp": [6.0, 2.0, 5.0, 9.0]})
+        df = pl.DataFrame(
+            {
+                "word": ["a", "b", "c", "d"],
+                "freqs_ref": [1.0, 3.0, 8.0, 5.0],
+                "freqs_cmp": [6.0, 2.0, 5.0, 9.0],
+            }
+        )
 
         df_result = basic_score_plan(
             df,
             freqs_ref=col("freqs_ref"),
             freqs_cmp=col("freqs_cmp"),
+            label=col("word"),
             score_func=score_func,
             attribute_by=attribute_by,
             attribution_alias="attribution",
@@ -140,6 +165,7 @@ class TestWeightedAverageScorePlan:
         """Output contains all required columns and none of the intermediate ones."""
         df = pl.DataFrame(
             {
+                "token": ["a", "b", "c", "d"],
                 "freqs_ref": [0.4, 0.3, 0.2, 0.1],
                 "freqs_cmp": [0.1, 0.2, 0.3, 0.4],
             }
@@ -151,6 +177,7 @@ class TestWeightedAverageScorePlan:
             score_freqs_cmp=col("freqs_cmp"),
             component_freqs_ref=col("freqs_ref"),
             component_freqs_cmp=col("freqs_cmp"),
+            label=col("token"),
             score_func=simple_dual_score_func,
             clean_score_func=simple_clean_score_func,
             attribute_by="frequency",
@@ -160,6 +187,7 @@ class TestWeightedAverageScorePlan:
         )
         cols = set(df_result.columns)
 
+        assert "token" in cols
         assert "score_ref" in cols
         assert "score_cmp" in cols
         assert "freq_diff" in cols
@@ -198,7 +226,7 @@ class TestWeightedAverageScorePlan:
     )
     def test_attribution(self, attribute_by: str, expected_attribution: list[str]) -> None:
         """The correct columns are wired to attribution for each attribute_by strategy."""
-        df = pl.DataFrame({"freqs_ref": [0.2, 0.3], "freqs_cmp": [0.8, 0.7]})
+        df = pl.DataFrame({"word": ["a", "b"], "freqs_ref": [0.2, 0.3], "freqs_cmp": [0.8, 0.7]})
 
         df_result = weighted_average_score_plan(
             df,
@@ -206,6 +234,7 @@ class TestWeightedAverageScorePlan:
             score_freqs_cmp=col("freqs_cmp"),
             component_freqs_ref=col("freqs_ref"),
             component_freqs_cmp=col("freqs_cmp"),
+            label=col("word"),
             score_func=simple_dual_score_func,
             clean_score_func=simple_clean_score_func,
             attribute_by=attribute_by,

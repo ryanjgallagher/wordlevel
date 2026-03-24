@@ -88,7 +88,7 @@ def get_bar_lengths(
         df, score_col=score_col, rank_col=rank_col, label_col=label_col
     )
 
-    return df_positions.select(label_col, rank_col, col(score_col).abs().alias("bar_length"))
+    return df_positions.with_columns(col(score_col).abs().alias("bar_length"))
 
 
 def get_scale_limits(
@@ -127,12 +127,18 @@ def get_scale_limits(
     else:
         estimated_width = pl.max_horizontal(col("bar_length"), col("label_width"))
 
+    any_are_negative = df_lims.select((col(score_col) < 0).max()).item()
+    if any_are_negative:
+        min_limit = -1 * scale_factor * col("estimated_width").max()
+    else:
+        min_limit = pl.lit(0)
+
     df_lims = df_lims.with_columns(
         (estimated_width + units_per_pixel * pad).alias("estimated_width")
     ).select(
         pl.lit(1).alias(rank_col),
         (scale_factor * col("estimated_width").max()).alias("positive_limit"),
-        (-1 * scale_factor * col("estimated_width").max()).alias("negative_limit"),
+        min_limit.alias("negative_limit"),
     )
 
     return df_lims

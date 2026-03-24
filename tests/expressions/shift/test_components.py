@@ -157,8 +157,9 @@ class TestShiftComponents:
             "diff_of_weighted_scores": [1.875, 6.25],  # [0.375 * 5, 0.625 * 10]
             "diff_with_reference_score": [-0.5, 2.0],  # [7.5 - 8.0, 10.0 - 8.0]
             "overall_difference": [2.0, 6.75],         # [(-0.25 * -0.5) + 1.875, (0.25 * 2.0) + 6.25]
-            "rank": [2.0, 1.0],                        # abs([2.0, 6.75]) ranked descending
+            "rank": [2, 1],                            # abs([2.0, 6.75]) ranked descending
         })
+        df_expected = df_expected.with_columns(pl.col("rank").cast(pl.UInt32))
         if not include_total_difference:
             df_expected = df_expected.drop('overall_difference')
         if not include_rank:
