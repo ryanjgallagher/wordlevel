@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal, TYPE_CHECKING
+from typing import Any, Literal, Mapping, TYPE_CHECKING
 
 import polars as pl
 from polars import col
@@ -34,10 +34,6 @@ from wordlevel.expressions.jensen_shannon_divergence import (
     jensen_shannon_divergence_dual_dist_scores,
     jensen_shannon_divergence_clean_dual_dist_scores,
 )
-from wordlevel.expressions.proportions import (
-    proportion_dual_dist_scores,
-    proportion_clean_dual_dist_scores,
-)
 from wordlevel.expressions.rank_divergence import rank_divergence
 from wordlevel.expressions.frequency import frequency_difference
 from wordlevel.expressions.shift.plan import basic_score_plan, weighted_average_score_plan
@@ -47,6 +43,24 @@ if TYPE_CHECKING:
 
 
 ScorePlan = Callable[[PolarsFrame, str, str], PolarsFrame]
+
+
+def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
+    def func(freqs1: pl.Expr, freqs2: pl.Expr, alias1: str, alias2: str) -> tuple[pl.Expr, pl.Expr]:
+        return expr1.alias(alias1), expr2.alias(alias2)
+
+    return func
+
+
+def _passthrough_clean_score_func(
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    scores1: pl.Expr,
+    scores2: pl.Expr,
+    alias1: str,
+    alias2: str,
+) -> tuple[pl.Expr, pl.Expr]:
+    return scores1.alias(alias1), scores2.alias(alias2)
 
 
 class Scorer:
@@ -198,8 +212,8 @@ class Scorer:
     def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
         """ """
         plan = self._make_weighted_avg_score_plan(
-            score_func=proportion_dual_dist_scores,
-            clean_score_func=proportion_clean_dual_dist_scores,
+            score_func=_fixed_dual_score_func(pl.lit(1), pl.lit(1)),
+            clean_score_func=_passthrough_clean_score_func,
             attribute_by="frequency",
             reference_score=reference_score,
             requires_normed_freqs=True,
@@ -212,6 +226,18 @@ class Scorer:
             is_weighted_avg=True,
             is_nonnegative=False,
         )
+
+    def lexicon(
+        self,
+        lexicon: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_reference: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_comparison: Mapping[str, float] | PolarsFrame | None = None,
+        label_col: str | None = None,
+        score_col: str | None = None,
+        reference_score: float | Literal["mean"] | pl.Expr = 0,
+        impute: float | Literal["mean"] | pl.Expr = 0,
+    ) -> Comparison:
+        """ """
 
     def tsallis_entropy(
         self,
