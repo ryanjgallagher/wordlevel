@@ -2,13 +2,12 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.lexicons.lexicon import join_lexicon
+from wordlevel.lexicons.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
 
 
 LABEL_COL = "word"
 LEXICON_LABEL_COL = "token"
 LEXICON_SCORE_COL = "sentiment"
-LEXICON_SCORE_COL_IF_NOT_PROVIDED = "lexicon_score"
 
 
 @pytest.fixture
@@ -38,7 +37,8 @@ def lexicon_df(lexicon_dict) -> pl.DataFrame:
 
 class TestJoinLexicon:
     @pytest.mark.parametrize(
-        "score_col,expected_score_col", [(None, "lexicon_score"), ("my_score", "my_score")]
+        "score_col,expected_score_col",
+        [(None, DEFAULT_LEXICON_SCORE_COL), ("my_score", "my_score")],
     )
     def test_dict_input(self, df_words, lexicon_dict, score_col, expected_score_col):
         result = join_lexicon(
@@ -95,11 +95,11 @@ class TestImputation:
         expected = pl.DataFrame(
             {
                 LABEL_COL: ["the", "cat", "dog", "fish"],
-                LEXICON_SCORE_COL_IF_NOT_PROVIDED: [1.0, 3.0, 7.0, expected_fish_score],
+                DEFAULT_LEXICON_SCORE_COL: [1.0, 3.0, 7.0, expected_fish_score],
             }
         )
         assert_frame_equal(
-            result.select(LABEL_COL, LEXICON_SCORE_COL_IF_NOT_PROVIDED),
+            result.select(LABEL_COL, DEFAULT_LEXICON_SCORE_COL),
             expected,
             check_row_order=False,
         )

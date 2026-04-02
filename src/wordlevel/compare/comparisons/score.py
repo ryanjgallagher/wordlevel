@@ -37,6 +37,7 @@ from wordlevel.expressions.jensen_shannon_divergence import (
 from wordlevel.expressions.rank_divergence import rank_divergence
 from wordlevel.expressions.frequency import frequency_difference
 from wordlevel.expressions.shift.plan import basic_score_plan, weighted_average_score_plan
+from wordlevel.lexicons.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
@@ -172,6 +173,69 @@ class Scorer:
 
         return plan
 
+    def _make_lexicon_join_plan(
+        self,
+        lexicon: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_ref: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_cmp: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_label_col: str | None = None,
+        lexicon_score_col: str | None = None,
+        score_alias_ref: str | None = None,
+        score_alias_cmp: str | None = None,
+        impute: float | Literal["mean"] | pl.Expr = 0,
+    ) -> Callable[[PolarsFrame, str], PolarsFrame]:
+        """ """
+        if lexicon is None and lexicon_ref is None and lexicon_cmp is None:
+            raise ValueError(
+                "Must specify at least one of `lexicon`, `lexicon_ref`, or `lexicon_cmp`"
+            )
+        if lexicon is not None and (lexicon_ref is not None or lexicon_cmp is not None):
+            raise ValueError(
+                "`lexicon` is ambiguous when `lexicon_ref` or `lexicon_cmp` is also specified"
+            )
+
+        if lexicon is not None:
+            lexicon_ref = lexicon
+            lexicon_cmp = lexicon
+        else:
+            if lexicon_ref is None:
+                lexicon_ref = lexicon_cmp
+            if lexicon_cmp is None:
+                lexicon_cmp = lexicon_ref
+
+        if lexicon_score_col is None:
+            score_col_to_rename = DEFAULT_LEXICON_SCORE_COL
+        else:
+            score_col_to_rename = lexicon_score_col
+
+        if score_alias_ref is None:
+            score_alias_ref = f"{score_col_to_rename}_ref"
+        if score_alias_cmp is None:
+            score_alias_cmp = f"{score_col_to_rename}_cmp"
+
+        def plan(df: PolarsFrame, label_col: str) -> PolarsFrame:
+            df = join_lexicon(
+                df,
+                lexicon_ref,
+                df_label_col=label_col,
+                lexicon_label_col=lexicon_label_col,
+                lexicon_score_col=lexicon_score_col,
+                impute=impute,
+            ).rename({score_col_to_rename: score_alias_ref})
+
+            df = join_lexicon(
+                df,
+                lexicon_cmp,
+                df_label_col=label_col,
+                lexicon_label_col=lexicon_label_col,
+                lexicon_score_col=lexicon_score_col,
+                impute=impute,
+            ).rename({score_col_to_rename: score_alias_cmp})
+
+            return df
+
+        return plan
+
     def _return_comparison(
         self,
         plan: ScorePlan,
@@ -238,6 +302,38 @@ class Scorer:
         impute: float | Literal["mean"] | pl.Expr = 0,
     ) -> Comparison:
         """ """
+        score_alias_ref = "lexicon_score_ref"
+        score_alias_cmp = "lexicon_score_cmp"
+
+        join_plan = self._make_lexicon_join_plan(
+            lexicon=lexicon,
+            lexicon_ref=lexicon_reference,
+            lexicon_cmp=lexicon_comparison,
+            lexicon_label_col=label_col,
+            lexicon_score_col=score_col,
+            score_alias_ref=score_alias_ref,
+            score_alias_cmp=score_alias_cmp,
+            impute=impute,
+        )
+        score_plan = self._make_weighted_avg_score_plan(
+            score_func=_fixed_dual_score_func(col(score_alias_ref), col(score_alias_cmp)),
+            clean_score_func=_passthrough_clean_score_func,
+            attribute_by="score_sign",
+            reference_score=reference_score,
+            requires_normed_freqs=True,
+        )
+
+        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+            df = join_plan(df, label_col=label_col)
+            return score_plan(df, label_col=label_col, normalization_suffix=normalization_suffix)
+
+        return self._return_comparison(
+            plan,
+            method="lexicon",
+            parameters={"reference_score": reference_score, "impute": impute},
+            is_weighted_avg=True,
+            is_nonnegative=False,
+        )
 
     def tsallis_entropy(
         self,

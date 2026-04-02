@@ -6,6 +6,9 @@ from polars import col
 from wordlevel.types import PolarsFrame
 
 
+DEFAULT_LEXICON_SCORE_COL = "lexicon_score"
+
+
 def join_lexicon(
     df: PolarsFrame,
     lexicon: Mapping[str, float] | PolarsFrame,
@@ -31,7 +34,7 @@ def join_lexicon(
         )
     elif isinstance(lexicon, Mapping):
         if lexicon_score_col is None:
-            lexicon_score_col = "lexicon_score"
+            lexicon_score_col = DEFAULT_LEXICON_SCORE_COL
 
         df_scores = _join_lexicon_from_mapping(
             df=df.lazy(),
