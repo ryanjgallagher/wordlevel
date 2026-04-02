@@ -103,11 +103,11 @@ def _get_imputation_expression(
     df_lexicon: pl.LazyFrame, lexicon_score_col: str, impute: float | Literal["mean"] | pl.Expr = 0
 ) -> pl.Expr:
     """ """
-    if impute == "mean":
-        return pl.lit(df_lexicon.select(col(lexicon_score_col).mean()).collect().item())
-    elif isinstance(impute, pl.Expr):
+    if isinstance(impute, pl.Expr):
         return impute
     elif isinstance(impute, (int, float)) and not isinstance(impute, bool):
         return pl.lit(impute)
+    elif impute == "mean":
+        return pl.lit(df_lexicon.select(col(lexicon_score_col).mean()).collect().item())
     else:
         raise ValueError("Invalid input provided to `impute`")
