@@ -183,23 +183,6 @@ class Scorer:
             plan=plan,
         )
 
-    def rank_divergence(self, alpha: float = 1.0) -> Comparison:
-        """ """
-        score_func = partial(rank_divergence, alpha=alpha)
-        plan = self._make_basic_score_plan(
-            score_func,
-            attribute_by="rank",
-            requires_normed_freqs=False,
-        )
-
-        return self._return_comparison(
-            plan,
-            method="rank_divergence",
-            parameters={"alpha": alpha},
-            is_weighted_avg=False,
-            is_nonnegative=True,
-        )
-
     def frequency(self) -> Comparison:
         """ """
         plan = self._make_basic_score_plan(
@@ -343,4 +326,21 @@ class Scorer:
             weight_ref=weight_ref,
             weight_cmp=weight_cmp,
             reference_score=reference_score,
+        )
+
+    def rank_divergence(self, alpha: float = 1.0) -> Comparison:
+        """ """
+        score_func = partial(rank_divergence, alpha=alpha)
+        plan = self._make_basic_score_plan(
+            score_func,
+            attribute_by="rank",
+            requires_normed_freqs=False,
+        )
+
+        return self._return_comparison(
+            plan,
+            method="rank_divergence",
+            parameters={"alpha": alpha},
+            is_weighted_avg=False,
+            is_nonnegative=True,
         )
