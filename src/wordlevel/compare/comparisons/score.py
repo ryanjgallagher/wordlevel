@@ -37,7 +37,7 @@ from wordlevel.expressions.jensen_shannon_divergence import (
 from wordlevel.expressions.rank_divergence import rank_divergence
 from wordlevel.expressions.frequency import frequency_difference
 from wordlevel.expressions.shift.plan import basic_score_plan, weighted_average_score_plan
-from wordlevel.lexicons.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.expressions.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison

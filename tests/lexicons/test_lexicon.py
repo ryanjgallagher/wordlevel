@@ -2,7 +2,7 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.lexicons.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.expressions.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
 
 
 LABEL_COL = "word"
