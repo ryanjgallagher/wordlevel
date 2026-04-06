@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Mapping
 
 import polars as pl
 
@@ -8,6 +8,7 @@ from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import ScoreFunc, DualScoreFunc, DualCleanScoreFunc
 from wordlevel.expressions.attribution import attribute_scores, ATTRIBUTION_TYPE
 from wordlevel.expressions.shift.components import get_shift_components, get_shift_plot_components
+from wordlevel.expressions.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
 
 
 def basic_score_plan(
@@ -157,3 +158,62 @@ def weighted_average_score_plan(
     )
 
     return df_plan
+
+
+def lexicon_join_plan(
+    df: PolarsFrame,
+    df_label_col: str,
+    lexicon: Mapping[str, float] | PolarsFrame | None = None,
+    lexicon_ref: Mapping[str, float] | PolarsFrame | None = None,
+    lexicon_cmp: Mapping[str, float] | PolarsFrame | None = None,
+    lexicon_label_col: str | None = None,
+    lexicon_score_col: str | None = None,
+    score_alias_ref: str | None = None,
+    score_alias_cmp: str | None = None,
+    impute: float | Literal["mean"] | pl.Expr = 0,
+) -> PolarsFrame:
+    """ """
+    if lexicon is None and lexicon_ref is None and lexicon_cmp is None:
+        raise ValueError("Must specify at least one of the lexicon parameters")
+    if lexicon is not None and (lexicon_ref is not None or lexicon_cmp is not None):
+        raise ValueError(
+            "`lexicon` is ambiguous when the reference or comparison lexicons are also specified"
+        )
+
+    if lexicon is not None:
+        lexicon_ref = lexicon
+        lexicon_cmp = lexicon
+    else:
+        if lexicon_ref is None:
+            lexicon_ref = lexicon_cmp
+        if lexicon_cmp is None:
+            lexicon_cmp = lexicon_ref
+
+    if lexicon_score_col is None:
+        score_col_to_rename = DEFAULT_LEXICON_SCORE_COL
+    else:
+        score_col_to_rename = lexicon_score_col
+
+    if score_alias_ref is None:
+        score_alias_ref = f"{score_col_to_rename}_ref"
+    if score_alias_cmp is None:
+        score_alias_cmp = f"{score_col_to_rename}_cmp"
+
+    df = join_lexicon(
+        df,
+        lexicon_ref,
+        df_label_col=df_label_col,
+        lexicon_label_col=lexicon_label_col,
+        lexicon_score_col=lexicon_score_col,
+        impute=impute,
+    ).rename({score_col_to_rename: score_alias_ref})
+    df = join_lexicon(
+        df,
+        lexicon_cmp,
+        df_label_col=df_label_col,
+        lexicon_label_col=lexicon_label_col,
+        lexicon_score_col=lexicon_score_col,
+        impute=impute,
+    ).rename({score_col_to_rename: score_alias_cmp})
+
+    return df
