@@ -3,7 +3,7 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
-from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION
+from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION, SCORE_COL
 from wordlevel.compare.comparisons.comparison import Comparison
 from wordlevel.compare.comparisons.score import Scorer
 from wordlevel.expressions.utils import normalize_freqs
@@ -57,6 +57,12 @@ class TestScoreFunctionWiring:
                 lambda s: s.jensen_shannon_divergence(),
                 "jensen_shannon_divergence",
                 ["alpha", "base", "weight_ref", "weight_cmp", "reference_score"],
+                True,
+            ),
+            (
+                lambda s: s.lexicon(lexicon={"the": 1.0}),
+                "lexicon",
+                ["reference_score", "impute"],
                 True,
             ),
         ],
@@ -165,6 +171,7 @@ class TestScoreFunctionWiring:
         [
             lambda s: s.tsallis_entropy(),
             lambda s: s.kullback_leibler_divergence(),
+            lambda s: s.lexicon(lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0}),
         ],
     )
     def test_score_sign_attribution_wiring(self, df_mock, score_func):
@@ -215,6 +222,9 @@ class TestScoreFunctionWiring:
             lambda s, ref_score: s.tsallis_entropy(reference_score=ref_score),
             lambda s, ref_score: s.kullback_leibler_divergence(reference_score=ref_score),
             lambda s, ref_score: s.jensen_shannon_divergence(reference_score=ref_score),
+            lambda s, ref_score: s.lexicon(
+                lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0}, reference_score=ref_score
+            ),
         ],
     )
     def test_reference_score_wiring(self, df_mock, score_func):
@@ -329,6 +339,7 @@ class TestEdgeCases:
             lambda s: s.tsallis_entropy(),
             lambda s: s.kullback_leibler_divergence(),
             lambda s: s.jensen_shannon_divergence(),
+            lambda s: s.lexicon(lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0}),
         ],
     )
     def test_weighted_avg_score_functions_use_normed_freq_columns(self, score_func):
@@ -354,6 +365,7 @@ class TestEdgeCases:
             lambda s: s.frequency(),
             lambda s: s.proportion(),
             lambda s: s.jensen_shannon_divergence(),
+            lambda s: s.lexicon(lexicon={"the": 1.0, "cat": 1.0, "dog": 1.0}),
         ],
     )
     def test_plan_uses_provided_label_and_suffix(self, df_mock, score_func):
@@ -402,3 +414,48 @@ class TestEdgeCases:
         df_result = scored_twice._plan(df_mock, "word", "__wl_normed")
         assert "freq_diff" in df_result.columns
         assert "weighted_score_diff" in df_result.columns
+
+
+class TestLexiconScorer:
+    def test_weighted_avg_output_columns(self, df_mock) -> None:
+        """Plan is wired to weighted_average_score_plan, producing all weighted-avg columns."""
+        comparison = Comparison("ref", "cmp")
+        df_result = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0})._plan(
+            df_mock, "word", "__wl_normed"
+        )
+
+        assert "freq_diff" in df_result.columns
+        assert "weighted_score_diff" in df_result.columns
+        assert "ref_score_diff" in df_result.columns
+        assert SCORE_COL in df_result.columns
+
+    def test_lexicon_scores_affect_comparison_score(self, df_mock) -> None:
+        """Different lexicons produce different comparison scores, proving lexicon scores flow through."""
+        comparison = Comparison("ref", "cmp")
+        df_flat = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 1.0, "dog": 1.0})._plan(
+            df_mock, "word", "__wl_normed"
+        )
+        df_varied = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0})._plan(
+            df_mock, "word", "__wl_normed"
+        )
+
+        assert_frame_not_equal(
+            df_flat.select(SCORE_COL),
+            df_varied.select(SCORE_COL),
+        )
+
+    def test_lexicon_reference_comparison_routing(self, df_mock) -> None:
+        """lexicon_reference and lexicon_comparison are wired to their respective sides."""
+        lex_a = {"the": 1.0, "cat": 5.0, "dog": -3.0}
+        lex_b = {"the": -1.0, "cat": 2.0, "dog": 8.0}
+
+        comparison = Comparison("ref", "cmp")
+        df_single = comparison.score.lexicon(lexicon=lex_a)._plan(df_mock, "word", "__wl_normed")
+        df_split = comparison.score.lexicon(
+            lexicon_reference=lex_a, lexicon_comparison=lex_b
+        )._plan(df_mock, "word", "__wl_normed")
+
+        assert_frame_not_equal(
+            df_single.select(SCORE_COL),
+            df_split.select(SCORE_COL),
+        )
