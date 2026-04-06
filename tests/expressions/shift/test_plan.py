@@ -2,9 +2,49 @@ import pytest
 import polars as pl
 import polars.testing
 from polars import col
+from polars.testing import assert_series_equal, assert_series_not_equal
 
 from wordlevel.constants import SHIFT_SCORE_TYPES
-from wordlevel.expressions.shift.plan import basic_score_plan, weighted_average_score_plan
+from wordlevel.expressions.lexicon import DEFAULT_LEXICON_SCORE_COL
+from wordlevel.expressions.shift.plan import (
+    basic_score_plan,
+    weighted_average_score_plan,
+    lexicon_join_plan,
+)
+
+
+_LABEL_COL = "word"
+_LEXICON_LABEL_COL = "token"
+_LEXICON_SCORE_COL = "sentiment"
+
+
+@pytest.fixture
+def df_words() -> pl.DataFrame:
+    return pl.DataFrame(
+        {
+            _LABEL_COL: ["the", "cat", "dog", "fish"],
+            "freq": [100, 50, 25, 10],
+        }
+    )
+
+
+@pytest.fixture
+def lexicon_dict() -> dict[str, float]:
+    return {"the": 1.0, "cat": 3.0, "dog": 7.0}
+
+
+@pytest.fixture
+def lexicon_dict_alt() -> dict[str, float]:
+    return {"the": 2.0, "cat": 4.0, "dog": 5.0, "fish": 9.0}
+
+
+@pytest.fixture
+def lexicon_df(lexicon_dict) -> pl.DataFrame:
+    return pl.DataFrame(
+        list(lexicon_dict.items()),
+        schema=[_LEXICON_LABEL_COL, _LEXICON_SCORE_COL],
+        orient="row",
+    )
 
 
 def simple_score_func(freqs1: pl.Expr, freqs2: pl.Expr) -> pl.Expr:
@@ -81,7 +121,7 @@ class TestBasicScorePlan:
 
         # simple_score_func = freqs_cmp - freqs_ref = [5, -1, -3, 4]
         expected = pl.Series([5.0, -1.0, -3.0, 4.0])
-        polars.testing.assert_series_equal(df_result["score"], expected, check_names=False)
+        assert_series_equal(df_result["score"], expected, check_names=False)
 
     def test_ranking(self) -> None:
         """Rank column is the absolute-value descending rank of the score."""
@@ -106,7 +146,7 @@ class TestBasicScorePlan:
 
         # scores = [5, -1, -3, 4]; abs desc ranks: 5->1, 4->2, 3->3, 1->4 -> [1, 4, 3, 2]
         expected = pl.Series([1, 4, 3, 2], dtype=pl.UInt32)
-        polars.testing.assert_series_equal(df_result["rank"], expected, check_names=False)
+        assert_series_equal(df_result["rank"], expected, check_names=False)
 
     @pytest.mark.parametrize(
         "attribute_by, score_func, expected_attribution",
@@ -157,7 +197,7 @@ class TestBasicScorePlan:
         )
 
         expected = pl.Series(expected_attribution, dtype=pl.Enum(["reference", "comparison"]))
-        polars.testing.assert_series_equal(df_result["attribution"], expected, check_names=False)
+        assert_series_equal(df_result["attribution"], expected, check_names=False)
 
 
 class TestWeightedAverageScorePlan:
@@ -243,4 +283,150 @@ class TestWeightedAverageScorePlan:
         )
 
         expected = pl.Series(expected_attribution, dtype=pl.Enum(["reference", "comparison"]))
-        polars.testing.assert_series_equal(df_result["attribution"], expected, check_names=False)
+        assert_series_equal(df_result["attribution"], expected, check_names=False)
+
+
+class TestLexiconJoinPlan:
+    @pytest.mark.parametrize(
+        "lexicon_score_col, score_alias_ref, score_alias_cmp, expected_alias_ref, expected_alias_cmp",
+        [
+            # All None: aliases derive from DEFAULT_LEXICON_SCORE_COL
+            (
+                None,
+                None,
+                None,
+                f"{DEFAULT_LEXICON_SCORE_COL}_ref",
+                f"{DEFAULT_LEXICON_SCORE_COL}_cmp",
+            ),
+            # Custom aliases override everything
+            (None, "my_ref", "my_cmp", "my_ref", "my_cmp"),
+            # Custom lexicon_score_col with no aliases: aliases derive from it
+            (
+                _LEXICON_SCORE_COL,
+                None,
+                None,
+                f"{_LEXICON_SCORE_COL}_ref",
+                f"{_LEXICON_SCORE_COL}_cmp",
+            ),
+        ],
+    )
+    def test_dict_lexicon_output(
+        self,
+        df_words,
+        lexicon_dict,
+        lexicon_score_col,
+        score_alias_ref,
+        score_alias_cmp,
+        expected_alias_ref,
+        expected_alias_cmp,
+    ) -> None:
+        """ """
+        result = lexicon_join_plan(
+            df_words,
+            df_label_col=_LABEL_COL,
+            lexicon=lexicon_dict,
+            lexicon_score_col=lexicon_score_col,
+            score_alias_ref=score_alias_ref,
+            score_alias_cmp=score_alias_cmp,
+        )
+
+        assert expected_alias_ref in result.columns
+        assert expected_alias_cmp in result.columns
+        assert _LABEL_COL in result.columns
+        assert "freq" in result.columns
+
+    @pytest.mark.parametrize(
+        "score_alias_ref, score_alias_cmp, expected_alias_ref, expected_alias_cmp",
+        [
+            # All None: aliases derive from DEFAULT_LEXICON_SCORE_COL
+            (None, None, f"{_LEXICON_SCORE_COL}_ref", f"{_LEXICON_SCORE_COL}_cmp"),
+            # Custom aliases override everything
+            ("my_ref", "my_cmp", "my_ref", "my_cmp"),
+        ],
+    )
+    def test_dataframe_lexicon_input(
+        self,
+        df_words,
+        lexicon_df,
+        score_alias_ref,
+        score_alias_cmp,
+        expected_alias_ref,
+        expected_alias_cmp,
+    ) -> None:
+        """ """
+        result = lexicon_join_plan(
+            df_words,
+            df_label_col=_LABEL_COL,
+            lexicon=lexicon_df,
+            lexicon_label_col=_LEXICON_LABEL_COL,
+            lexicon_score_col=_LEXICON_SCORE_COL,
+            score_alias_ref=score_alias_ref,
+            score_alias_cmp=score_alias_cmp,
+        )
+
+        assert expected_alias_ref in result.columns
+        assert expected_alias_cmp in result.columns
+        assert _LABEL_COL in result.columns
+        assert "freq" in result.columns
+
+    @pytest.mark.parametrize(
+        "lexicon_keyword",
+        [("lexicon"), ("lexicon_ref"), ("lexicon_cmp")],
+    )
+    def test_single_lexicon_scores_are_identical(
+        self, df_words, lexicon_dict, lexicon_keyword
+    ) -> None:
+        """When a single lexicon is used for both sides, ref and cmp scores are identical."""
+        result = lexicon_join_plan(
+            df_words,
+            df_label_col=_LABEL_COL,
+            score_alias_ref="score_ref",
+            score_alias_cmp="score_cmp",
+            **{lexicon_keyword: lexicon_dict},
+        )
+
+        assert_series_equal(result["score_ref"], result["score_cmp"], check_names=False)
+
+    def test_separate_lexicons_give_different_scores(
+        self, df_words, lexicon_dict, lexicon_dict_alt
+    ) -> None:
+        """When `lexicon_ref` and `lexicon_cmp` differ, scores in each column differ."""
+        result = lexicon_join_plan(
+            df_words,
+            df_label_col=_LABEL_COL,
+            lexicon_ref=lexicon_dict,
+            lexicon_cmp=lexicon_dict_alt,
+            score_alias_ref="score_ref",
+            score_alias_cmp="score_cmp",
+        )
+
+        assert_series_not_equal(result["score_ref"], result["score_cmp"], check_names=False)
+
+    class TestValidation:
+        def test_no_lexicon_raises(self, df_words) -> None:
+            with pytest.raises(ValueError, match="lexicon"):
+                lexicon_join_plan(df_words, df_label_col=_LABEL_COL)
+
+        @pytest.mark.parametrize(
+            "lexicon_keyword",
+            [("lexicon_ref"), ("lexicon_cmp")],
+        )
+        def test_lexicon_and_lexicon_ref_raises(
+            self, df_words, lexicon_dict, lexicon_keyword
+        ) -> None:
+            with pytest.raises(ValueError, match="ambiguous"):
+                lexicon_join_plan(
+                    df_words,
+                    df_label_col=_LABEL_COL,
+                    lexicon=lexicon_dict,
+                    **{lexicon_keyword: lexicon_dict},
+                )
+
+        def test_lexicon_and_lexicon_cmp_raises(self, df_words, lexicon_dict) -> None:
+            with pytest.raises(ValueError, match="ambiguous"):
+                lexicon_join_plan(
+                    df_words,
+                    df_label_col=_LABEL_COL,
+                    lexicon=lexicon_dict,
+                    lexicon_cmp=lexicon_dict,
+                )
