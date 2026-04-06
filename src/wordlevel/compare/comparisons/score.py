@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal, TYPE_CHECKING
+from typing import Any, Literal, Mapping, TYPE_CHECKING
 
 import polars as pl
 from polars import col
@@ -34,19 +34,37 @@ from wordlevel.expressions.jensen_shannon_divergence import (
     jensen_shannon_divergence_dual_dist_scores,
     jensen_shannon_divergence_clean_dual_dist_scores,
 )
-from wordlevel.expressions.proportions import (
-    proportion_dual_dist_scores,
-    proportion_clean_dual_dist_scores,
-)
 from wordlevel.expressions.rank_divergence import rank_divergence
 from wordlevel.expressions.frequency import frequency_difference
-from wordlevel.expressions.shift.plan import basic_score_plan, weighted_average_score_plan
+from wordlevel.expressions.shift.plan import (
+    basic_score_plan,
+    weighted_average_score_plan,
+    lexicon_join_plan,
+)
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
 
 
 ScorePlan = Callable[[PolarsFrame, str, str], PolarsFrame]
+
+
+def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
+    def func(freqs1: pl.Expr, freqs2: pl.Expr, alias1: str, alias2: str) -> tuple[pl.Expr, pl.Expr]:
+        return expr1.alias(alias1), expr2.alias(alias2)
+
+    return func
+
+
+def _passthrough_clean_score_func(
+    freqs1: pl.Expr,
+    freqs2: pl.Expr,
+    scores1: pl.Expr,
+    scores2: pl.Expr,
+    alias1: str,
+    alias2: str,
+) -> tuple[pl.Expr, pl.Expr]:
+    return scores1.alias(alias1), scores2.alias(alias2)
 
 
 class Scorer:
@@ -183,23 +201,6 @@ class Scorer:
             plan=plan,
         )
 
-    def rank_divergence(self, alpha: float = 1.0) -> Comparison:
-        """ """
-        score_func = partial(rank_divergence, alpha=alpha)
-        plan = self._make_basic_score_plan(
-            score_func,
-            attribute_by="rank",
-            requires_normed_freqs=False,
-        )
-
-        return self._return_comparison(
-            plan,
-            method="rank_divergence",
-            parameters={"alpha": alpha},
-            is_weighted_avg=False,
-            is_nonnegative=True,
-        )
-
     def frequency(self) -> Comparison:
         """ """
         plan = self._make_basic_score_plan(
@@ -215,8 +216,8 @@ class Scorer:
     def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
         """ """
         plan = self._make_weighted_avg_score_plan(
-            score_func=proportion_dual_dist_scores,
-            clean_score_func=proportion_clean_dual_dist_scores,
+            score_func=_fixed_dual_score_func(pl.lit(1), pl.lit(1)),
+            clean_score_func=_passthrough_clean_score_func,
             attribute_by="frequency",
             reference_score=reference_score,
             requires_normed_freqs=True,
@@ -226,6 +227,52 @@ class Scorer:
             plan,
             method="proportion",
             parameters={"reference_score": reference_score},
+            is_weighted_avg=True,
+            is_nonnegative=False,
+        )
+
+    def lexicon(
+        self,
+        lexicon: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_reference: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_comparison: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_label_col: str | None = None,
+        lexicon_score_col: str | None = None,
+        reference_score: float | Literal["mean"] | pl.Expr = 0,
+        impute: float | Literal["mean"] | pl.Expr = 0,
+    ) -> Comparison:
+        """ """
+        score_alias_ref = "lexicon_score_ref"
+        score_alias_cmp = "lexicon_score_cmp"
+
+        score_plan = self._make_weighted_avg_score_plan(
+            score_func=_fixed_dual_score_func(col(score_alias_ref), col(score_alias_cmp)),
+            clean_score_func=_passthrough_clean_score_func,
+            attribute_by="score_sign",
+            reference_score=reference_score,
+            requires_normed_freqs=True,
+        )
+
+        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+            df = lexicon_join_plan(
+                df,
+                df_label_col=label_col,
+                lexicon=lexicon,
+                lexicon_ref=lexicon_reference,
+                lexicon_cmp=lexicon_comparison,
+                lexicon_label_col=lexicon_label_col,
+                lexicon_score_col=lexicon_score_col,
+                score_alias_ref=score_alias_ref,
+                score_alias_cmp=score_alias_cmp,
+                impute=impute,
+            )
+
+            return score_plan(df, label_col=label_col, normalization_suffix=normalization_suffix)
+
+        return self._return_comparison(
+            plan,
+            method="lexicon",
+            parameters={"reference_score": reference_score, "impute": impute},
             is_weighted_avg=True,
             is_nonnegative=False,
         )
@@ -343,4 +390,21 @@ class Scorer:
             weight_ref=weight_ref,
             weight_cmp=weight_cmp,
             reference_score=reference_score,
+        )
+
+    def rank_divergence(self, alpha: float = 1.0) -> Comparison:
+        """ """
+        score_func = partial(rank_divergence, alpha=alpha)
+        plan = self._make_basic_score_plan(
+            score_func,
+            attribute_by="rank",
+            requires_normed_freqs=False,
+        )
+
+        return self._return_comparison(
+            plan,
+            method="rank_divergence",
+            parameters={"alpha": alpha},
+            is_weighted_avg=False,
+            is_nonnegative=True,
         )
