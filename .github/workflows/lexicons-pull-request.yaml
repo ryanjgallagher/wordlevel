@@ -51,6 +51,6 @@ jobs:
 
       - name: Download and process lexicons
         if: ${{ matrix.lexicon.processor_changed == true }}
-        uses: ./.github/actions/process-data
+        uses: ./.github/actions/process-lexicons
         with:
           lexicon: ${{ matrix.lexicon.name }}
