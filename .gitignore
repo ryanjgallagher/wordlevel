@@ -209,4 +209,7 @@ pyrightconfig.json
 # AI automations
 .claude/
 
+# Lexicon data
+lexicons/*/data/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,macos

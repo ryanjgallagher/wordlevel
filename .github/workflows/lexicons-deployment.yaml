@@ -1,0 +1,79 @@
+name: Deploy lexicons
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      # Only trigger this workflow if files inside the lexicons/ folder change
+      - 'lexicons/**'
+
+jobs:
+  # ==========================================
+  # JOB 1: Detect and Categorize Changes
+  # ==========================================
+  changed-lexicons:
+    runs-on: ubuntu-latest
+    outputs:
+      lexicon_changes: ${{ steps.detect.outputs.lexicon_changes }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changes
+        id: detect
+        uses: ./.github/actions/detect-changed-lexicons
+
+
+  # ==========================================
+  # JOB 2: Process and Upload Lexicons
+  # ==========================================
+  deploy-lexicons:
+    needs: changed-lexicons
+    if: ${{ needs.changed-lexicons.outputs.lexicon_changes != '[]' && needs.changed-lexicons.outputs.lexicon_changes != '' }}
+    runs-on: ubuntu-latest
+    environment: huggingface
+    strategy:
+      matrix:
+        lexicon: ${{ fromJSON(needs.changed-lexicons.outputs.lexicon_changes) }}
+        
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          
+      - name: Install Python dependencies
+        run: uv sync --all-extras --dev
+
+      # --- Download and process lexicon ---
+      - name: Download and process lexicon
+        if: ${{ matrix.lexicon.processor_changed == true }}
+        uses: ./.github/actions/process-lexicons
+        with:
+          lexicon: ${{ matrix.lexicon.name }}
+
+      # --- Upload lexicon ---
+      - name: Upload lexicon
+        if: ${{ matrix.lexicon.processor_changed == true }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: uv run python -m lexicons.huggingface --mode upload --data processed --lexicon ${{ matrix.lexicon.name }}
+
+      # --- Upload metadata ---
+      - name: Upload README.md
+        if: ${{ matrix.lexicon.readme_changed == true }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: uv run python -m lexicons.huggingface --mode upload --lexicon ${{ matrix.lexicon.name }} --metadata README.md
+
+      - name: Upload LICENSE
+        if: ${{ matrix.lexicon.license_changed == true }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: uv run python -m lexicons.huggingface --mode upload --lexicon ${{ matrix.lexicon.name }} --metadata LICENSE
