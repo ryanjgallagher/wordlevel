@@ -63,7 +63,7 @@ jobs:
         if: ${{ matrix.lexicon.processor_changed == true }}
         uses: ./.github/actions/process-lexicons
         with:
-          lexicon_name: ${{ matrix.lexicon.name }}
+          lexicon: ${{ matrix.lexicon.name }}
 
       # --- Upload lexicon ---
       - name: Upload lexicon
