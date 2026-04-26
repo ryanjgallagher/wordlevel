@@ -1,0 +1,21 @@
+name: 'Detect Changed Lexicons'
+description: 'Determines which lexicons changed and how'
+
+outputs:
+  lexicon_changes:
+    description: "A JSON array of lexicons and booleans indicating how they have changed"
+    value: ${{ steps.detect-lexicons.outputs.lexicon_changes }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Changed Files
+      id: changed-files
+      uses: tj-actions/changed-files@v47.0.5
+      with:
+        files: lexicons/**
+
+    - name: Detected Changed Lexicon Files
+      id: detect-lexicons
+      shell: bash
+      run: python .github/scripts/get_changed_lexicons.py "${{ steps.changed-files.outputs.all_changed_files }}"
