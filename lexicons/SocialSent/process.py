@@ -11,8 +11,8 @@ CENTER_SCORE = 0
 
 def process_lexicon(year: str) -> None:
     """
-    https://nlp.stanford.edu/projects/socialsent/
-    https://arxiv.org/abs/1606.02820
+    Processes the raw SocialSent historical data for a particular decade into Parquet. Assumes that
+    there is one TSV per year, `data/raw/{year}.tsv`
     """
 
     scores_f = f"{BASE_DIR}/data/raw/{year}.tsv"

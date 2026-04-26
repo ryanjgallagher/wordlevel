@@ -2,6 +2,8 @@
 
 SocialSent is a natural language processing project for constructing domain-specific sentiment lexicons. Specifically, this dataset is a series of sentiment lexicons constructed for each decade from 1850 to 2000. Each lexicon represents the inferred sentiment of the top 5,000 non-stop words, based on the [Corpus of Historical American English](https://www.english-corpora.org//coha/).
 
+This data is made available under the [Public Domain Dedication and License v1.0](https://opendatacommons.org/licenses/pddl/1-0/).
+
 ## Citation
 
 If you use this lexicon, please cite the following paper.
