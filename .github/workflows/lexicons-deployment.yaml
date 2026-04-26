@@ -1,14 +1,7 @@
-name: Process Lexicons
+name: Deploy lexicons
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      # Only trigger this workflow if files inside the lexicons/ folder change
-      - 'lexicons/**'
-  # TODO: remove below trigger
-  pull_request:
     branches:
       - main
     paths:
