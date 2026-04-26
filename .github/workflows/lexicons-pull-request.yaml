@@ -1,4 +1,4 @@
-name: Process Lexicons on Pull Request
+name: Process lexicons (PR)
 
 on:
   pull_request:
@@ -24,7 +24,7 @@ jobs:
 
       - name: Detect Changes
         id: detect
-        uses: ./.github/actions/detect-changes
+        uses: ./.github/actions/detect-changed-lexicons
 
   # ==========================================
   # JOB 2: Process Lexicons (No Uploading)
