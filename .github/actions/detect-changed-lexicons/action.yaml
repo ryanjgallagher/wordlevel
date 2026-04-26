@@ -18,4 +18,4 @@ runs:
     - name: Detected Changed Lexicon Files
       id: detect-lexicons
       shell: bash
-      run: python .github/scripts/get_changed_lexicons.py "${{ steps.changed-files.outputs.all_changed_files }}"
+      run: python .github/scripts/process_lexicons.py "${{ steps.changed-files.outputs.all_changed_files }}"
