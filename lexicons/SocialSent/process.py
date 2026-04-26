@@ -35,6 +35,8 @@ def process_lexicon(year: str) -> None:
 
 
 if __name__ == "__main__":
+    os.makedirs(f"{BASE_DIR}/data/processed", exist_ok=True)
+
     year_fs = os.listdir(f"{BASE_DIR}/data/raw")
     years = sorted([year.split(".")[0] for year in year_fs if "README" not in year])
 
