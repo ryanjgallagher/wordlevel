@@ -12,7 +12,7 @@ jobs:
   # ==========================================
   # JOB 1: Detect and Categorize Changes
   # ==========================================
-  detect-changes:
+  changed-lexicons:
     runs-on: ubuntu-latest
     outputs:
       lexicon_changes: ${{ steps.detect.outputs.lexicon_changes }}
@@ -30,12 +30,12 @@ jobs:
   # JOB 2: Process Lexicons (No Uploading)
   # ==========================================
   process-lexicons:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.lexicon_changes != '[]' && needs.detect-changes.outputs.lexicon_changes != '' }}
+    needs: changed-lexicons
+    if: ${{ needs.changed-lexicons.outputs.lexicon_changes != '[]' && needs.changed-lexicons.outputs.lexicon_changes != '' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        lexicon: ${{ fromJSON(needs.detect-changes.outputs.lexicon_changes) }}
+        lexicon: ${{ fromJSON(needs.changed-lexicons.outputs.lexicon_changes) }}
     
     steps:
       - name: Checkout branch
