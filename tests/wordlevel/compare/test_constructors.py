@@ -173,7 +173,7 @@ class TestConstructors:
         if normalize:
             assert comparator._normalization_suffix == normalization_suffix
             for norm_freq_col in [f"{freq_col}{normalization_suffix}" for freq_col in freq_cols]:
-                assert norm_freq_col in comparator._df
+                assert norm_freq_col in comparator._df.collect_schema()
         else:
             assert comparator._normalization_suffix == ""
 
@@ -234,7 +234,7 @@ class TestConstructors:
             assert comparator._normalization_suffix == "_norm"
             normed_freq_cols = [f"{freq_col}_norm" for freq_col in expected_corpora]
             for normed_freq_col in normed_freq_cols:
-                assert normed_freq_col in comparator._df
+                assert normed_freq_col in comparator._df.collect_schema()
         else:
             assert comparator._normalization_suffix == ""
             normed_freq_cols = []
@@ -277,7 +277,7 @@ class TestConstructors:
             assert comparator._normalization_suffix == "_norm"
             normed_freq_cols = [f"{freq_col}_norm" for freq_col in corpora_names]
             for normed_freq_col in normed_freq_cols:
-                assert normed_freq_col in comparator._df
+                assert normed_freq_col in comparator._df.collect_schema()
         else:
             assert comparator._normalization_suffix == ""
             normed_freq_cols = []
