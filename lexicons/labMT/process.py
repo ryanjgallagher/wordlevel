@@ -1,17 +1,16 @@
 import os
-import pathlib
 
 import polars as pl
 
+from lexicons.processor import LexiconProcessor
 
-BASE_DIR = pathlib.Path(__file__).parent.resolve()
 
 MIN_SCORE = 1
 CENTER_SCORE = 5
 MAX_SCORE = 9
 
 
-def process_lexicon(language: str) -> None:
+class labMTProcessor(LexiconProcessor):
     """
     Processes the raw labMT sentment data for a particular language into Parquet. Assumes that there
     are two files per language, one with the words, and one with the scores, and that the words and
@@ -21,26 +20,38 @@ def process_lexicon(language: str) -> None:
     `data/raw/{language}/labMTscores-{language}.csv`
     """
 
-    words_f = f"{BASE_DIR}/data/raw/{language}/labMTwords-{language}.csv"
-    scores_f = f"{BASE_DIR}/data/raw/{language}/labMTscores-{language}.csv"
+    @property
+    def lexicon_name(self) -> str:
+        return "labMT"
 
-    words = open(words_f).read().splitlines()
-    scores = [float(score) for score in open(scores_f).read().splitlines()]
+    def _process_lexicon(self) -> None:
+        """ """
+        languages = os.listdir(f"{self.base_dir}/data/raw")
 
-    df = pl.DataFrame({"token": words, "score": scores}).sort("score", descending=True)
+        for language in languages:
+            self._process_language(language=language)
 
-    output_f = f"{BASE_DIR}/data/processed/{language}.parquet"
+    def _process_language(self, language: str) -> None:
+        """ """
+        words_f = f"{self.base_dir}/data/raw/{language}/labMTwords-{language}.csv"
+        scores_f = f"{self.base_dir}/data/raw/{language}/labMTscores-{language}.csv"
 
-    df.write_parquet(
-        output_f,
-        metadata={"min": str(MIN_SCORE), "center": str(CENTER_SCORE), "max": str(MAX_SCORE)},
-    )
+        words = open(words_f).read().splitlines()
+        scores = [float(score) for score in open(scores_f).read().splitlines()]
+
+        df = pl.DataFrame({"token": words, "score": scores}).sort("score", descending=True)
+
+        df.write_parquet(
+            f"{self.base_dir}/data/processed/{language}.parquet",
+            metadata={"min": str(MIN_SCORE), "center": str(CENTER_SCORE), "max": str(MAX_SCORE)},
+        )
+
+    def _generate_types(self) -> None:
+        """ """
+        languages = sorted(f.stem for f in (self.base_dir / "data" / "processed").glob("*.parquet"))
+
+        self._write_literals(values=languages, variable="labMTLanguage")
 
 
 if __name__ == "__main__":
-    os.makedirs(f"{BASE_DIR}/data/processed", exist_ok=True)
-
-    languages = os.listdir(f"{BASE_DIR}/data/raw")
-
-    for language in languages:
-        process_lexicon(language)
+    labMTProcessor().process()
