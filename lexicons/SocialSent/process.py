@@ -1,44 +1,51 @@
 import os
-import pathlib
 
 import polars as pl
 
+from lexicons.processor import LexiconProcessor
 
-BASE_DIR = pathlib.Path(__file__).parent.resolve()
 
 CENTER_SCORE = 0
 
 
-def process_lexicon(year: str) -> None:
-    """
-    Processes the raw SocialSent historical data for a particular decade into Parquet. Assumes that
-    there is one TSV per year, `data/raw/{year}.tsv`
-    """
+class SocialSentProcessor(LexiconProcessor):
+    """ """
 
-    scores_f = f"{BASE_DIR}/data/raw/{year}.tsv"
+    @property
+    def lexicon_name(self) -> str:
+        return "SocialSent"
 
-    df = (
-        pl.read_csv(scores_f, has_header=False, separator="\t")
-        .select(pl.col("column_1").alias("token"), pl.col("column_2").alias("score"))
-        .sort("score", descending=True)
-    )
+    def _process_lexicon(self) -> None:
+        """ """
+        year_fs = os.listdir(f"{self.base_dir}/data/raw")
+        years = sorted([year.split(".")[0] for year in year_fs if "README" not in year])
 
-    output_f = f"{BASE_DIR}/data/processed/{year}.parquet"
+        for year in years:
+            self._process_year(year=year)
 
-    min_score = df["score"].min()
-    max_score = df["score"].max()
+    def _process_year(self, year: str) -> None:
+        """ """
+        scores_f = f"{self.base_dir}/data/raw/{year}.tsv"
 
-    df.write_parquet(
-        output_f,
-        metadata={"min": str(min_score), "center": str(CENTER_SCORE), "max": str(max_score)},
-    )
+        df = (
+            pl.read_csv(scores_f, has_header=False, separator="\t")
+            .select(pl.col("column_1").alias("token"), pl.col("column_2").alias("score"))
+            .sort("score", descending=True)
+        )
+
+        min_score = df["score"].min()
+        max_score = df["score"].max()
+
+        df.write_parquet(
+            f"{self.base_dir}/data/processed/{year}.parquet",
+            metadata={"min": str(min_score), "center": str(CENTER_SCORE), "max": str(max_score)},
+        )
+
+    def _generate_types(self) -> None:
+        years = sorted(f.stem for f in (self.base_dir / "data" / "processed").glob("*.parquet"))
+
+        self._write_literals(values=years, variable="SocialSentYear")
 
 
 if __name__ == "__main__":
-    os.makedirs(f"{BASE_DIR}/data/processed", exist_ok=True)
-
-    year_fs = os.listdir(f"{BASE_DIR}/data/raw")
-    years = sorted([year.split(".")[0] for year in year_fs if "README" not in year])
-
-    for year in years:
-        process_lexicon(year)
+    SocialSentProcessor().process()
