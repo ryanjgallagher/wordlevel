@@ -5,9 +5,8 @@ import polars as pl
 from lexicons.processor import LexiconProcessor
 
 
-MIN_SCORE = 1
-CENTER_SCORE = 5
-MAX_SCORE = 9
+MIN_SCORE = 1.0
+MAX_SCORE = 9.0
 
 
 class labMTProcessor(LexiconProcessor):
@@ -23,6 +22,10 @@ class labMTProcessor(LexiconProcessor):
     @property
     def lexicon_name(self) -> str:
         return "labMT"
+
+    @property
+    def center_score(self) -> float:
+        return 5.0
 
     def _process_lexicon(self) -> None:
         """ """
@@ -41,9 +44,10 @@ class labMTProcessor(LexiconProcessor):
 
         df = pl.DataFrame({"token": words, "score": scores}).sort("score", descending=True)
 
-        df.write_parquet(
-            f"{self.base_dir}/data/processed/{language}.parquet",
-            metadata={"min": str(MIN_SCORE), "center": str(CENTER_SCORE), "max": str(MAX_SCORE)},
+        self._write_lexicon(
+            df,
+            filepath=f"{language}.parquet",
+            metadata={"min": str(MIN_SCORE), "max": str(MAX_SCORE)},
         )
 
     def _generate_types(self) -> None:

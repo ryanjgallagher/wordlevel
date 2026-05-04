@@ -41,6 +41,7 @@ from wordlevel.expressions.shift.plan import (
     weighted_average_score_plan,
     lexicon_join_plan,
 )
+from wordlevel.lexicons.lexicon import Lexicon
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
@@ -233,17 +234,41 @@ class Scorer:
 
     def lexicon(
         self,
-        lexicon: Mapping[str, float] | PolarsFrame | None = None,
-        lexicon_reference: Mapping[str, float] | PolarsFrame | None = None,
-        lexicon_comparison: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_reference: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_comparison: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
         lexicon_label_col: str | None = None,
         lexicon_score_col: str | None = None,
-        reference_score: float | Literal["mean"] | pl.Expr = 0,
+        reference_score: float | Literal["mean", "center"] | pl.Expr | None = None,
         impute: float | Literal["mean"] | pl.Expr = 0,
     ) -> Comparison:
         """ """
         score_alias_ref = "lexicon_score_ref"
         score_alias_cmp = "lexicon_score_cmp"
+
+        if reference_score is None:
+            is_lexicon = (
+                isinstance(lexicon, Lexicon)
+                or isinstance(lexicon_reference, Lexicon)
+                or isinstance(lexicon_comparison, Lexicon)
+            )
+            if is_lexicon:
+                reference_score = "center"
+            else:
+                reference_score = 0
+
+        if not isinstance(reference_score, pl.Expr) and (reference_score == "center"):
+            if isinstance(lexicon, Lexicon):
+                reference_score = lexicon.center
+            elif isinstance(lexicon_reference, Lexicon):
+                reference_score = lexicon_reference.center
+            elif isinstance(lexicon_comparison, Lexicon):
+                reference_score = lexicon_comparison.center
+            else:
+                raise ValueError(
+                    "Cannot determine the 'center' to use as a reference score because a "
+                    "pre-defined lexicon was not provided"
+                )
 
         score_plan = self._make_weighted_avg_score_plan(
             score_func=_fixed_dual_score_func(col(score_alias_ref), col(score_alias_cmp)),

@@ -5,15 +5,16 @@ import polars as pl
 from lexicons.processor import LexiconProcessor
 
 
-CENTER_SCORE = 0
-
-
 class SocialSentProcessor(LexiconProcessor):
     """ """
 
     @property
     def lexicon_name(self) -> str:
         return "SocialSent"
+
+    @property
+    def center_score(self) -> float:
+        return 0.0
 
     def _process_lexicon(self) -> None:
         """ """
@@ -36,9 +37,8 @@ class SocialSentProcessor(LexiconProcessor):
         min_score = df["score"].min()
         max_score = df["score"].max()
 
-        df.write_parquet(
-            f"{self.base_dir}/data/processed/{year}.parquet",
-            metadata={"min": str(min_score), "center": str(CENTER_SCORE), "max": str(max_score)},
+        self._write_lexicon(
+            df, filepath=f"{year}.parquet", metadata={"min": str(min_score), "max": str(max_score)}
         )
 
     def _generate_types(self) -> None:

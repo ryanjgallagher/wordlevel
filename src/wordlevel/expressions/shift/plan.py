@@ -9,6 +9,7 @@ from wordlevel.expressions.types import ScoreFunc, DualScoreFunc, DualCleanScore
 from wordlevel.expressions.attribution import attribute_scores, ATTRIBUTION_TYPE
 from wordlevel.expressions.shift.components import get_shift_components, get_shift_plot_components
 from wordlevel.expressions.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.lexicons.lexicon import Lexicon
 
 
 def basic_score_plan(
@@ -163,9 +164,9 @@ def weighted_average_score_plan(
 def lexicon_join_plan(
     df: PolarsFrame,
     df_label_col: str,
-    lexicon: Mapping[str, float] | PolarsFrame | None = None,
-    lexicon_ref: Mapping[str, float] | PolarsFrame | None = None,
-    lexicon_cmp: Mapping[str, float] | PolarsFrame | None = None,
+    lexicon: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+    lexicon_ref: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+    lexicon_cmp: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
     lexicon_label_col: str | None = None,
     lexicon_score_col: str | None = None,
     score_alias_ref: str | None = None,
@@ -189,10 +190,12 @@ def lexicon_join_plan(
         if lexicon_cmp is None:
             lexicon_cmp = lexicon_ref
 
-    if lexicon_score_col is None:
-        score_col_to_rename = DEFAULT_LEXICON_SCORE_COL
-    else:
+    if lexicon_score_col is not None:
         score_col_to_rename = lexicon_score_col
+    elif isinstance(lexicon_ref, Lexicon):
+        score_col_to_rename = lexicon_ref.score_col
+    else:
+        score_col_to_rename = DEFAULT_LEXICON_SCORE_COL
 
     if score_alias_ref is None:
         score_alias_ref = f"{score_col_to_rename}_ref"

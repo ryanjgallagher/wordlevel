@@ -11,6 +11,7 @@ from wordlevel.expressions.shift.plan import (
     weighted_average_score_plan,
     lexicon_join_plan,
 )
+from wordlevel.lexicons.lexicon import Lexicon
 
 
 _LABEL_COL = "word"
@@ -326,6 +327,40 @@ class TestLexiconJoinPlan:
             df_label_col=_LABEL_COL,
             lexicon=lexicon_dict,
             lexicon_score_col=lexicon_score_col,
+            score_alias_ref=score_alias_ref,
+            score_alias_cmp=score_alias_cmp,
+        )
+
+        assert expected_alias_ref in result.columns
+        assert expected_alias_cmp in result.columns
+        assert _LABEL_COL in result.columns
+        assert "freq" in result.columns
+
+    @pytest.mark.parametrize(
+        "score_alias_ref, score_alias_cmp, expected_alias_ref, expected_alias_cmp",
+        [
+            # All None: aliases derive from lexicon.score_col
+            (None, None, "score_ref", "score_cmp"),
+            # Custom aliases override everything
+            ("my_ref", "my_cmp", "my_ref", "my_cmp"),
+        ],
+    )
+    def test_lexicon_input(
+        self,
+        df_words,
+        score_alias_ref,
+        score_alias_cmp,
+        expected_alias_ref,
+        expected_alias_cmp,
+    ) -> None:
+        lexicon = Lexicon(
+            lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 3.0, 7.0]}),
+            center=5.0,
+        )
+        result = lexicon_join_plan(
+            df_words,
+            df_label_col=_LABEL_COL,
+            lexicon=lexicon,
             score_alias_ref=score_alias_ref,
             score_alias_cmp=score_alias_cmp,
         )
