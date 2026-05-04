@@ -41,6 +41,7 @@ from wordlevel.expressions.shift.plan import (
     weighted_average_score_plan,
     lexicon_join_plan,
 )
+from wordlevel.lexicons.lexicon import Lexicon
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
@@ -233,9 +234,9 @@ class Scorer:
 
     def lexicon(
         self,
-        lexicon: Mapping[str, float] | PolarsFrame | None = None,
-        lexicon_reference: Mapping[str, float] | PolarsFrame | None = None,
-        lexicon_comparison: Mapping[str, float] | PolarsFrame | None = None,
+        lexicon: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_reference: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+        lexicon_comparison: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
         lexicon_label_col: str | None = None,
         lexicon_score_col: str | None = None,
         reference_score: float | Literal["mean"] | pl.Expr = 0,

@@ -4,6 +4,7 @@ import polars as pl
 from polars import col
 
 from wordlevel.types import PolarsFrame
+from wordlevel.lexicons.lexicon import Lexicon
 
 
 DEFAULT_LEXICON_SCORE_COL = "lexicon_score"
@@ -11,14 +12,23 @@ DEFAULT_LEXICON_SCORE_COL = "lexicon_score"
 
 def join_lexicon(
     df: PolarsFrame,
-    lexicon: Mapping[str, float] | PolarsFrame,
+    lexicon: Lexicon | Mapping[str, float] | PolarsFrame,
     df_label_col: str,
     lexicon_label_col: str | None = None,
     lexicon_score_col: str | None = None,
     impute: float | Literal["mean"] | pl.Expr = 0,
 ) -> PolarsFrame:
     """ """
-    if isinstance(lexicon, (pl.DataFrame, pl.LazyFrame)):
+    if isinstance(lexicon, Lexicon):
+        df_scores = _join_lexicon_from_dataframe(
+            df=df.lazy(),
+            df_lexicon=lexicon.lf,
+            df_label_col=df_label_col,
+            lexicon_label_col=lexicon.label_col,
+            lexicon_score_col=lexicon.score_col,
+            impute=impute,
+        )
+    elif isinstance(lexicon, (pl.DataFrame, pl.LazyFrame)):
         if lexicon_label_col is None:
             raise ValueError("Must specify `lexicon_label_col` if the lexicon is a dataframe")
         elif lexicon_score_col is None:
