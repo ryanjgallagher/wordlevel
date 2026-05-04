@@ -2,6 +2,8 @@ import os
 import pathlib
 from abc import ABC, abstractmethod
 
+import polars as pl
+
 
 class LexiconProcessor(ABC):
     """ """
@@ -16,6 +18,11 @@ class LexiconProcessor(ABC):
     @property
     @abstractmethod
     def lexicon_name(self) -> str:
+        """ """
+
+    @property
+    @abstractmethod
+    def center_score(self) -> float:
         """ """
 
     def process(self) -> None:
@@ -38,6 +45,16 @@ class LexiconProcessor(ABC):
         os.makedirs(self.base_dir / "data" / "raw", exist_ok=True)
         os.makedirs(self.base_dir / "data" / "processed", exist_ok=True)
         os.makedirs(self.types_dir, exist_ok=True)
+
+    def _write_lexicon(
+        self, df: pl.DataFrame, filepath: str, metadata: dict[str, str] | None = None
+    ) -> None:
+        """ """
+        all_metadata = {"center": str(self.center_score)}
+        if metadata is not None:
+            all_metadata = all_metadata | metadata
+
+        df.write_parquet(f"{self.base_dir}/data/processed/{filepath}", metadata=all_metadata)
 
     def _create_types_file(self) -> None:
         """ """
