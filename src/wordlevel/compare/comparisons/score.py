@@ -257,7 +257,7 @@ class Scorer:
             else:
                 reference_score = 0
 
-        if reference_score == "center":
+        if not isinstance(reference_score, pl.Expr) and (reference_score == "center"):
             if isinstance(lexicon, Lexicon):
                 reference_score = lexicon.center
             elif isinstance(lexicon_reference, Lexicon):

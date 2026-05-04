@@ -7,6 +7,7 @@ from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION, S
 from wordlevel.compare.comparisons.comparison import Comparison
 from wordlevel.compare.comparisons.score import Scorer
 from wordlevel.expressions.utils import normalize_freqs
+from wordlevel.lexicons.lexicon import Lexicon
 
 
 @pytest.fixture
@@ -417,6 +418,47 @@ class TestEdgeCases:
 
 
 class TestLexiconScorer:
+    def test_lexicon_object_execution(self, df_mock) -> None:
+        """A Lexicon object flows through Scorer.lexicon() to plan execution without error."""
+        lexicon = Lexicon(
+            lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 5.0, -3.0]}),
+            center=5.0,
+        )
+        comparison = Comparison("ref", "cmp")
+        df_result = comparison.score.lexicon(lexicon=lexicon)._plan(df_mock, "word", "__wl_normed")
+
+        assert SCORE_COL in df_result.columns
+        assert df_result.height == df_mock.height
+
+    def test_default_reference_score_is_lexicon_center(self) -> None:
+        """When no reference_score is given, it defaults to lexicon.center."""
+        lexicon = Lexicon(
+            lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 5.0, -3.0]}),
+            center=5.0,
+        )
+        comparison = Comparison("ref", "cmp")
+        result = comparison.score.lexicon(lexicon=lexicon)
+
+        assert result._parameters["reference_score"] == lexicon.center
+
+    def test_explicit_center_resolves_to_lexicon_center(self) -> None:
+        """reference_score='center' resolves to lexicon.center."""
+        lexicon = Lexicon(
+            lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 5.0, -3.0]}),
+            center=5.0,
+        )
+        comparison = Comparison("ref", "cmp")
+        result = comparison.score.lexicon(lexicon=lexicon, reference_score="center")
+
+        assert result._parameters["reference_score"] == lexicon.center
+
+    def test_center_without_lexicon_raises(self) -> None:
+        """reference_score='center' raises ValueError when no Lexicon object is provided."""
+        comparison = Comparison("ref", "cmp")
+
+        with pytest.raises(ValueError, match="center"):
+            comparison.score.lexicon(lexicon={"the": 1.0}, reference_score="center")
+
     def test_weighted_avg_output_columns(self, df_mock) -> None:
         """Plan is wired to weighted_average_score_plan, producing all weighted-avg columns."""
         comparison = Comparison("ref", "cmp")

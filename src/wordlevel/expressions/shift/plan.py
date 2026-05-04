@@ -190,10 +190,12 @@ def lexicon_join_plan(
         if lexicon_cmp is None:
             lexicon_cmp = lexicon_ref
 
-    if lexicon_score_col is None:
-        score_col_to_rename = DEFAULT_LEXICON_SCORE_COL
-    else:
+    if lexicon_score_col is not None:
         score_col_to_rename = lexicon_score_col
+    elif isinstance(lexicon_ref, Lexicon):
+        score_col_to_rename = lexicon_ref.score_col
+    else:
+        score_col_to_rename = DEFAULT_LEXICON_SCORE_COL
 
     if score_alias_ref is None:
         score_alias_ref = f"{score_col_to_rename}_ref"

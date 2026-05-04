@@ -3,6 +3,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 from wordlevel.expressions.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.lexicons.lexicon import Lexicon
 
 
 LABEL_COL = "word"
@@ -55,6 +56,23 @@ class TestJoinLexicon:
         assert_frame_equal(
             result.select(LABEL_COL, expected_score_col), expected, check_row_order=False
         )
+        assert "freq" in result.columns
+
+    def test_lexicon_input(self, df_words):
+        lexicon = Lexicon(
+            lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 3.0, 7.0]}),
+            center=5.0,
+        )
+        result = join_lexicon(df_words, lexicon, df_label_col=LABEL_COL)
+
+        expected = pl.DataFrame(
+            {
+                LABEL_COL: ["the", "cat", "dog", "fish"],
+                "score": [1.0, 3.0, 7.0, 0.0],
+            }
+        )
+
+        assert_frame_equal(result.select(LABEL_COL, "score"), expected, check_row_order=False)
         assert "freq" in result.columns
 
     def test_dataframe_input(self, df_words, lexicon_df):
