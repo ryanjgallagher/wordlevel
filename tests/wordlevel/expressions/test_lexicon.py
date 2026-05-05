@@ -43,7 +43,7 @@ class TestJoinLexicon:
     )
     def test_dict_input(self, df_words, lexicon_dict, score_col, expected_score_col):
         result = join_lexicon(
-            df_words, lexicon_dict, df_label_col=LABEL_COL, lexicon_score_col=score_col
+            df_words, lexicon_dict, df_label_col=LABEL_COL, lexicon_score_col=score_col, impute=0
         )
 
         expected = pl.DataFrame(
@@ -63,7 +63,7 @@ class TestJoinLexicon:
             lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 3.0, 7.0]}),
             center=5.0,
         )
-        result = join_lexicon(df_words, lexicon, df_label_col=LABEL_COL)
+        result = join_lexicon(df_words, lexicon, df_label_col=LABEL_COL, impute=0)
 
         expected = pl.DataFrame(
             {
@@ -82,6 +82,7 @@ class TestJoinLexicon:
             df_label_col=LABEL_COL,
             lexicon_label_col=LEXICON_LABEL_COL,
             lexicon_score_col=LEXICON_SCORE_COL,
+            impute=0,
         )
 
         expected = pl.DataFrame(
@@ -100,12 +101,7 @@ class TestJoinLexicon:
 class TestImputation:
     @pytest.mark.parametrize(
         "impute, expected_fish_score",
-        [
-            (0.0, 0.0),
-            (5.0, 5.0),
-            ("mean", (1.0 + 3.0 + 7.0) / 3),
-            (pl.lit(2.5), 2.5),
-        ],
+        [(0.0, 0.0), (5.0, 5.0), ("mean", (1.0 + 3.0 + 7.0) / 3), (pl.lit(2.5), 2.5), (None, None)],
     )
     def test_missing_words_are_imputed(self, df_words, lexicon_dict, impute, expected_fish_score):
         result = join_lexicon(df_words, lexicon_dict, df_label_col=LABEL_COL, impute=impute)
