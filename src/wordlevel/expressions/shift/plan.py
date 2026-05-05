@@ -171,7 +171,8 @@ def lexicon_join_plan(
     lexicon_score_col: str | None = None,
     score_alias_ref: str | None = None,
     score_alias_cmp: str | None = None,
-    impute: float | Literal["mean"] | pl.Expr = 0,
+    impute: float | Literal["borrow", "mean"] | pl.Expr | None = None,
+    drop_null_scores: bool = True,
 ) -> PolarsFrame:
     """ """
     if lexicon is None and lexicon_ref is None and lexicon_cmp is None:
@@ -202,13 +203,17 @@ def lexicon_join_plan(
     if score_alias_cmp is None:
         score_alias_cmp = f"{score_col_to_rename}_cmp"
 
+    impute_strategy = impute
+    if isinstance(impute, str) and (impute == "borrow"):
+        impute_strategy = None
+
     df = join_lexicon(
         df,
         lexicon_ref,
         df_label_col=df_label_col,
         lexicon_label_col=lexicon_label_col,
         lexicon_score_col=lexicon_score_col,
-        impute=impute,
+        impute=impute_strategy,
     ).rename({score_col_to_rename: score_alias_ref})
     df = join_lexicon(
         df,
@@ -216,7 +221,22 @@ def lexicon_join_plan(
         df_label_col=df_label_col,
         lexicon_label_col=lexicon_label_col,
         lexicon_score_col=lexicon_score_col,
-        impute=impute,
+        impute=impute_strategy,
     ).rename({score_col_to_rename: score_alias_cmp})
+
+    if isinstance(impute, str) and impute == "borrow":
+        df = df.with_columns(
+            pl.when(col(score_alias_ref).is_null())
+            .then(col(score_alias_cmp))
+            .otherwise(col(score_alias_ref))
+            .alias(score_alias_ref),
+            pl.when(col(score_alias_cmp).is_null())
+            .then(col(score_alias_ref))
+            .otherwise(col(score_alias_cmp))
+            .alias(score_alias_cmp),
+        )
+
+    if drop_null_scores:
+        df = df.filter(col(score_alias_ref).is_not_null() & col(score_alias_cmp).is_not_null())
 
     return df
