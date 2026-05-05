@@ -1,3 +1,4 @@
+from functools import cached_property
 from dataclasses import dataclass
 
 from pathlib import Path
@@ -16,6 +17,10 @@ class Lexicon:
     center: float
     label_col: str = "token"
     score_col: str = "score"
+
+    @cached_property
+    def df(self) -> pl.DataFrame:
+        return self.lf.collect()
 
 
 def load_lexicon(
