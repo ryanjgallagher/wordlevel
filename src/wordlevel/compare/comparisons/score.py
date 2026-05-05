@@ -240,7 +240,7 @@ class Scorer:
         lexicon_label_col: str | None = None,
         lexicon_score_col: str | None = None,
         reference_score: float | Literal["mean", "center"] | pl.Expr | None = None,
-        impute: float | Literal["mean"] | pl.Expr = 0,
+        impute: float | Literal["borrow", "mean"] | pl.Expr = "borrow",
     ) -> Comparison:
         """ """
         score_alias_ref = "lexicon_score_ref"
@@ -290,6 +290,7 @@ class Scorer:
                 score_alias_ref=score_alias_ref,
                 score_alias_cmp=score_alias_cmp,
                 impute=impute,
+                drop_null_scores=True,
             )
 
             return score_plan(df, label_col=label_col, normalization_suffix=normalization_suffix)
