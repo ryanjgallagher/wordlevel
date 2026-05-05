@@ -16,7 +16,7 @@ def join_lexicon(
     df_label_col: str,
     lexicon_label_col: str | None = None,
     lexicon_score_col: str | None = None,
-    impute: float | Literal["mean"] | pl.Expr = 0,
+    impute: float | Literal["mean"] | pl.Expr | None = None,
 ) -> PolarsFrame:
     """ """
     if isinstance(lexicon, Lexicon):
@@ -70,22 +70,23 @@ def _join_lexicon_from_dataframe(
     df_label_col: str,
     lexicon_label_col: str,
     lexicon_score_col: str,
-    impute: float | Literal["mean"] | pl.Expr = 0,
+    impute: float | Literal["mean"] | pl.Expr | None = None,
 ) -> pl.LazyFrame:
     """ """
     if lexicon_score_col in df.collect_schema().names():
         raise ValueError(f"Column '{lexicon_score_col}' already exists in the dataframe.")
 
-    impute_expr = _get_imputation_expression(
-        df_lexicon, lexicon_score_col=lexicon_score_col, impute=impute
-    )
+    df_scores = df.join(df_lexicon, left_on=df_label_col, right_on=lexicon_label_col, how="left")
 
-    df_scores = df.join(
-        df_lexicon, left_on=df_label_col, right_on=lexicon_label_col, how="left"
-    ).select(
-        pl.all().exclude(lexicon_score_col),
-        col(lexicon_score_col).fill_null(impute_expr),
-    )
+    if impute is not None:
+        impute_expr = _get_imputation_expression(
+            df_lexicon, lexicon_score_col=lexicon_score_col, impute=impute
+        )
+
+        df_scores = df_scores.select(
+            pl.all().exclude(lexicon_score_col),
+            col(lexicon_score_col).fill_null(impute_expr),
+        )
 
     return df_scores
 
@@ -95,7 +96,7 @@ def _join_lexicon_from_mapping(
     lexicon: Mapping[str, float],
     df_label_col: str,
     lexicon_score_alias: str,
-    impute: float | Literal["mean"] | pl.Expr = 0,
+    impute: float | Literal["mean"] | pl.Expr | None = None,
 ) -> pl.LazyFrame:
     """ """
     df_lexicon = pl.LazyFrame(

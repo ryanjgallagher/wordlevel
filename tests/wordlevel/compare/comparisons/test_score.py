@@ -501,3 +501,19 @@ class TestLexiconScorer:
             df_single.select(SCORE_COL),
             df_split.select(SCORE_COL),
         )
+
+    def test_impute_parameter_wiring(self, df_mock) -> None:
+        """Different `impute` strategies produce different outputs when the lexicon is partial."""
+        lexicon = {"the": 1.0, "cat": 5.0}  # missing "dog"
+        comparison = Comparison("ref", "cmp")
+
+        df_borrow = comparison.score.lexicon(lexicon=lexicon, impute="borrow")._plan(
+            df_mock, "word", "__wl_normed"
+        )
+        df_zero = comparison.score.lexicon(lexicon=lexicon, impute=0.0)._plan(
+            df_mock, "word", "__wl_normed"
+        )
+
+        # With single-lexicon borrow + drop_null_scores=True, "dog" is dropped.
+        # With impute=0.0, "dog" is kept with score 0. Heights differ.
+        assert df_borrow.height != df_zero.height

@@ -465,3 +465,116 @@ class TestLexiconJoinPlan:
                     lexicon=lexicon_dict,
                     lexicon_cmp=lexicon_dict,
                 )
+
+    class TestImputation:
+        def test_default_drops_words_missing_from_lexicon(self, df_words, lexicon_dict) -> None:
+            """With default impute=None, words not in the lexicon are dropped."""
+            result = lexicon_join_plan(
+                df_words,
+                df_label_col=_LABEL_COL,
+                lexicon=lexicon_dict,
+                score_alias_ref="score_ref",
+                score_alias_cmp="score_cmp",
+            )
+
+            # "fish" is in df_words but not lexicon_dict
+            assert "fish" not in result[_LABEL_COL].to_list()
+            assert result["score_ref"].is_not_null().all()
+            assert result["score_cmp"].is_not_null().all()
+
+        def test_drop_null_scores_disabled_keeps_nulls(self, df_words, lexicon_dict) -> None:
+            """With drop_null_scores=False and impute=None, null scores are retained."""
+            result = lexicon_join_plan(
+                df_words,
+                df_label_col=_LABEL_COL,
+                lexicon=lexicon_dict,
+                score_alias_ref="score_ref",
+                score_alias_cmp="score_cmp",
+                drop_null_scores=False,
+            )
+
+            assert "fish" in result[_LABEL_COL].to_list()
+            fish_row = result.filter(col(_LABEL_COL) == "fish")
+            assert fish_row["score_ref"].item() is None
+            assert fish_row["score_cmp"].item() is None
+
+        def test_borrow_fills_missing_score_from_other_corpus(self) -> None:
+            """With impute='borrow', a null in one column is filled from the other."""
+            df = pl.DataFrame({_LABEL_COL: ["the", "dog", "fish"], "freq": [100, 25, 10]})
+            lexicon_ref = {"the": 1.0, "fish": 9.0}  # missing "dog"
+            lexicon_cmp = {"the": 2.0, "dog": 5.0}  # missing "fish"
+
+            result = lexicon_join_plan(
+                df,
+                df_label_col=_LABEL_COL,
+                lexicon_ref=lexicon_ref,
+                lexicon_cmp=lexicon_cmp,
+                score_alias_ref="score_ref",
+                score_alias_cmp="score_cmp",
+                impute="borrow",
+                drop_null_scores=False,
+            )
+
+            assert set(result[_LABEL_COL].to_list()) == {"the", "dog", "fish"}
+
+            # "dog" missing from ref, borrowed from cmp
+            dog_row = result.filter(col(_LABEL_COL) == "dog")
+            assert dog_row["score_ref"].item() == 5.0
+            assert dog_row["score_cmp"].item() == 5.0
+
+            # "fish" missing from cmp, borrowed from ref
+            fish_row = result.filter(col(_LABEL_COL) == "fish")
+            assert fish_row["score_ref"].item() == 9.0
+            assert fish_row["score_cmp"].item() == 9.0
+
+            # "the" present in both lexicons - each keeps its own value
+            the_row = result.filter(col(_LABEL_COL) == "the")
+            assert the_row["score_ref"].item() == 1.0
+            assert the_row["score_cmp"].item() == 2.0
+
+        def test_borrow_with_drop_null_scores_removes_words_missing_from_both_lexicons(
+            self,
+        ) -> None:
+            """Borrow plus drop_null_scores=True removes words missing from both lexicons."""
+            df = pl.DataFrame({_LABEL_COL: ["the", "fish", "tree"], "freq": [100, 10, 5]})
+            lexicon_ref = {"the": 1.0}  # missing "fish" and "tree"
+            lexicon_cmp = {"the": 2.0, "fish": 9.0}  # missing "tree"
+
+            result = lexicon_join_plan(
+                df,
+                df_label_col=_LABEL_COL,
+                lexicon_ref=lexicon_ref,
+                lexicon_cmp=lexicon_cmp,
+                score_alias_ref="score_ref",
+                score_alias_cmp="score_cmp",
+                impute="borrow",
+                drop_null_scores=True,
+            )
+
+            # "tree" missing from both lexicons - dropped
+            assert "tree" not in result[_LABEL_COL].to_list()
+            # "fish" missing from ref, borrowed from cmp
+            fish_row = result.filter(col(_LABEL_COL) == "fish")
+            assert fish_row["score_ref"].item() == 9.0
+            assert fish_row["score_cmp"].item() == 9.0
+
+        def test_drop_null_scores_removes_rows_when_only_one_score_is_null(
+            self,
+        ) -> None:
+            """drop_null_scores=True drops rows even when only one of the score columns is null."""
+            df = pl.DataFrame({_LABEL_COL: ["the", "cat"], "freq": [100, 50]})
+            lexicon_ref = {"the": 1.0, "cat": 3.0}  # has both words
+            lexicon_cmp = {"the": 2.0}  # missing "cat"
+
+            result = lexicon_join_plan(
+                df,
+                df_label_col=_LABEL_COL,
+                lexicon_ref=lexicon_ref,
+                lexicon_cmp=lexicon_cmp,
+                score_alias_ref="score_ref",
+                score_alias_cmp="score_cmp",
+                drop_null_scores=True,
+            )
+
+            # "cat" has a non-null score_ref but a null score_cmp -- should still be dropped
+            assert result[_LABEL_COL].to_list() == ["the"]
