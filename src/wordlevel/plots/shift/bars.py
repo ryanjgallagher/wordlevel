@@ -52,7 +52,7 @@ class RankAxisConfig:
 class BarConfig:
     """ """
 
-    colors: dict[str, str] | Literal["diverging", "category"] = None
+    colors: dict[str, str] | Literal["diverging", "category"] | None = None
     orders: dict[str, int] | None = None
 
 
@@ -77,11 +77,12 @@ class InternalBarConfig(BarConfig):
             config = ShiftTypesConfig()
             self.orders = config.orders()
             default_colors = config.colors()
-            if self.colors is None:
-                self.colors = default_colors
-            else:
+            if isinstance(self.colors, dict):
                 # Override default colors with those that were specified
                 self.colors = default_colors | self.colors
+            else:
+                # None or Literal — fall back to detailed defaults
+                self.colors = default_colors
         else:
             if self.colors is None:
                 self.colors = "diverging"
@@ -95,8 +96,8 @@ def shift_bars(
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
-    height: float = None,
-    width: float = None,
+    height: float | None = None,
+    width: float | None = None,
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
     bars: InternalBarConfig | dict | None = None,
@@ -169,7 +170,7 @@ def shift_bars(
         rank_label_rotation = 0
 
     # Configure the score types and colors
-    if bars.detailed:
+    if bars.detailed and isinstance(bars.colors, dict):
         score_types = list(bars.colors.keys())
     else:
         # Get the score types from the data, in case user missed any colors they passed in a dict
@@ -212,7 +213,7 @@ def shift_bars(
 
     color = alt.Color(
         f"{score_type_col}:N",
-        scale=alt.Scale(domain=score_types, range=score_type_colors),
+        scale=alt.Scale(domain=score_types, range=to_altair_optional(score_type_colors)),
         legend=legend,
     )
 

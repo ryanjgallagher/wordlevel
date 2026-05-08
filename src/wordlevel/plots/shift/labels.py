@@ -5,8 +5,12 @@ import altair as alt
 import polars as pl
 
 from polars import col
+from altair.vegalite.v5.schema._typing import FontWeight_T as FontWeight
 
 from wordlevel.plots.utils import to_altair_optional
+
+
+DEFAULT_LABEL_SIZE: float = 11
 
 
 @dataclass
@@ -15,8 +19,8 @@ class LabelConfig:
 
     pad: float = 5
     color: str = "black"
-    size: float | None = 11
-    weight: str | int = "normal"
+    size: float | None = DEFAULT_LABEL_SIZE
+    weight: FontWeight = "normal"
     rotation: float | None = None
     mirror_rotation: bool = True
     on_bar_ends: bool = True
@@ -155,7 +159,7 @@ def to_readable_angle(angle: float) -> float:
         return angle
 
 
-def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict[str, float]:
+def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict[str, str | float]:
     """
     Calculates the static alignment and padding for a single bar direction
     and text rotation.
@@ -210,7 +214,10 @@ def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict
 
 
 def to_conditional_expr(
-    score_col: str, key: str, positive_params: dict[str, float], negative_params: dict[str, float]
+    score_col: str,
+    key: str,
+    positive_params: dict[str, str | float],
+    negative_params: dict[str, str | float],
 ) -> alt.ExprRef:
     """ """
     pos_val = positive_params[key]
