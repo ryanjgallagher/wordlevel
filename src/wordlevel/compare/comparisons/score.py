@@ -1,7 +1,6 @@
 from __future__ import annotations
-from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal, Mapping, TYPE_CHECKING
+from typing import Any, Literal, Mapping, Protocol, TYPE_CHECKING
 
 import polars as pl
 from polars import col
@@ -15,7 +14,6 @@ from wordlevel.constants import (
     COMPARISON_ATTRIBUTION,
     COUNTERACTED_SUFFIX,
 )
-from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import (
     ScoreFunc,
     DualScoreFunc,
@@ -47,7 +45,13 @@ if TYPE_CHECKING:
     from wordlevel.compare.comparisons.comparison import Comparison
 
 
-ScorePlan = Callable[[PolarsFrame, str, str], PolarsFrame]
+class ScorePlan(Protocol):
+    def __call__(
+        self,
+        df: pl.DataFrame | pl.LazyFrame,
+        label_col: str,
+        normalization_suffix: str,
+    ) -> pl.DataFrame | pl.LazyFrame: ...
 
 
 def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
@@ -93,7 +97,9 @@ class Scorer:
         ref = self._comparison._ref
         cmp = self._comparison._cmp
 
-        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+        def plan(
+            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             if requires_normed_freqs:
                 ref_col = f"{ref}{normalization_suffix}"
                 cmp_col = f"{cmp}{normalization_suffix}"
@@ -135,7 +141,9 @@ class Scorer:
 
         SHIFT_TYPES = ShiftTypesConfig()
 
-        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+        def plan(
+            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             if requires_normed_freqs:
                 freqs_ref = f"{ref}{normalization_suffix}"
                 freqs_cmp = f"{cmp}{normalization_suffix}"
@@ -234,9 +242,17 @@ class Scorer:
 
     def lexicon(
         self,
-        lexicon: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
-        lexicon_reference: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
-        lexicon_comparison: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+        lexicon: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
+        lexicon_reference: Lexicon
+        | Mapping[str, float]
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
+        lexicon_comparison: Lexicon
+        | Mapping[str, float]
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         lexicon_label_col: str | None = None,
         lexicon_score_col: str | None = None,
         reference_score: float | Literal["mean", "center"] | pl.Expr | None = None,
@@ -278,7 +294,9 @@ class Scorer:
             requires_normed_freqs=True,
         )
 
-        def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+        def plan(
+            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             df = lexicon_join_plan(
                 df,
                 df_label_col=label_col,

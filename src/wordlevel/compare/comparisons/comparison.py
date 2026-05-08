@@ -4,7 +4,6 @@ from typing_extensions import Self
 
 import polars as pl
 
-from wordlevel.types import PolarsFrame
 from wordlevel.compare.comparisons.score import Scorer, ScorePlan
 
 
@@ -81,7 +80,7 @@ class ComparisonResult:
     def from_comparison(
         cls,
         comparison: Comparison,
-        df: PolarsFrame,
+        df: pl.DataFrame | pl.LazyFrame,
         label_col: str,
         normalization_suffix: str,
     ) -> Self:
@@ -90,12 +89,12 @@ class ComparisonResult:
             raise ValueError("Cannot construct a comparison result without a plan")
         if comparison._alias is None:
             raise ValueError("Cannot construct a comparison result without an alias")
-
-        no_weighted_avg = comparison._is_weighted_avg is None
-        no_nonnegative = comparison._is_nonnegative is None
-        no_parameters = comparison._parameters is None
-        no_method = comparison._method is None
-        if no_weighted_avg or no_nonnegative or no_parameters or no_method:
+        if (
+            comparison._method is None
+            or comparison._is_weighted_avg is None
+            or comparison._is_nonnegative is None
+            or comparison._parameters is None
+        ):
             raise ValueError(
                 "Missing comparison metadata: `method`, `parameters`, `is_weighted_avg`, or "
                 "`is_nonnegative` is None"
