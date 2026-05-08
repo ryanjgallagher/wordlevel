@@ -5,7 +5,6 @@ import altair as alt
 import polars as pl
 
 from polars import col
-from altair.vegalite.v5.schema._typing import FontWeight_T as FontWeight
 
 from wordlevel.plots.utils import to_altair_optional
 
@@ -20,7 +19,7 @@ class LabelConfig:
     pad: float = 5
     color: str = "black"
     size: float | None = DEFAULT_LABEL_SIZE
-    weight: FontWeight = "normal"
+    weight: str | int = "normal"
     rotation: float | None = None
     mirror_rotation: bool = True
     on_bar_ends: bool = True
@@ -100,7 +99,7 @@ def shift_labels(
         .mark_text(
             color=config.color,
             fontSize=to_altair_optional(config.size),
-            fontWeight=config.weight,
+            fontWeight=config.weight,  # type: ignore[arg-type]
             align=to_conditional_expr(score_col, "align", pos_position_params, neg_position_params),
             baseline=to_conditional_expr(
                 score_col, "baseline", pos_position_params, neg_position_params

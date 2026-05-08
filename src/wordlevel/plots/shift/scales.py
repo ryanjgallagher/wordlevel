@@ -1,3 +1,5 @@
+from typing import cast
+
 import altair as alt
 import polars as pl
 
@@ -77,7 +79,7 @@ def shift_scales(
             x=alt.value(0), y="negative_limit:Q", tooltip=alt.value(None)
         )
 
-    return alt.layer(positive_limit, negative_limit)
+    return cast(alt.LayerChart, alt.layer(positive_limit, negative_limit))
 
 
 def get_bar_lengths(

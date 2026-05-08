@@ -1,3 +1,5 @@
+from typing import cast
+
 import altair as alt
 import polars as pl
 
@@ -97,4 +99,4 @@ def shift(
 
         chart_layers.append(scales)
 
-    return alt.layer(*chart_layers)
+    return cast(alt.LayerChart, alt.layer(*chart_layers))
