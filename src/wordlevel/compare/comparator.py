@@ -7,7 +7,6 @@ from typing_extensions import Self
 
 import polars as pl
 
-from wordlevel.types import PolarsFrame
 from wordlevel.compare.constructors import (
     from_comparator,
     from_polars,
@@ -27,7 +26,12 @@ class CorpusComparator:
 
     def __init__(
         self,
-        data: PolarsFrame | CorpusComparator | ComparatorData | DictOfFreqs | ListOfFreqs,
+        data: pl.DataFrame
+        | pl.LazyFrame
+        | CorpusComparator
+        | ComparatorData
+        | DictOfFreqs
+        | ListOfFreqs,
         label_col: str | None = None,
         freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
@@ -42,6 +46,10 @@ class CorpusComparator:
         elif isinstance(data, CorpusComparator):
             init_data = from_comparator(data)
         elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
+            if label_col is None:
+                raise ValueError("`label_col` must be specified if providing a DataFrame")
+            if freq_cols is None:
+                raise ValueError("`freq_cols` must be specified if providing a DataFrame")
             init_data = from_polars(
                 df=data,
                 label_col=label_col,
