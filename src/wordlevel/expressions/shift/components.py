@@ -3,7 +3,6 @@ from typing import Literal, Optional
 import polars as pl
 from polars import col
 
-from wordlevel.types import PolarsFrame
 from wordlevel.expressions.utils import are_same_sign, normalize_freqs
 
 
@@ -13,12 +12,12 @@ from wordlevel.expressions.utils import are_same_sign, normalize_freqs
 
 
 def get_shift_components(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     freqs1: pl.Expr,
     freqs2: pl.Expr,
     scores1: pl.Expr,
     scores2: pl.Expr,
-    reference_score: float,
+    reference_score: float | Literal["mean"] | pl.Expr,
     normalize: bool = True,
     include_total_difference: bool = True,
     include_rank: bool = False,
@@ -27,7 +26,7 @@ def get_shift_components(
     reference_score_diff_alias: str = "ref_score_diff",
     total_difference_alias: str = "total_difference",
     rank_alias: str = "rank",
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
     if normalize:
         freqs1 = normalize_freqs(freqs1)
@@ -108,7 +107,7 @@ def reference_score_diff(
 
 
 def get_shift_plot_components(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     frequency_diff: pl.Expr,
     weighted_score_diff: pl.Expr,
     reference_score_diff: pl.Expr,
@@ -119,7 +118,7 @@ def get_shift_plot_components(
     higher_score_alias: str = "higher_score",
     lower_score_alias: str = "lower_score",
     counteracted_suffix: str = "_counteracted",
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
     components = {
         "frequency_diff": frequency_diff,

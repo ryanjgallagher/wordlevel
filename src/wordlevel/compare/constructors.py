@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 import polars as pl
 from polars import col
 
-from wordlevel.types import PolarsFrame
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.constants import NORMALIZATION_SUFFIX, LABEL
 from wordlevel.expressions.utils import normalize_freqs
@@ -32,7 +31,7 @@ def from_comparator(comparator: CorpusComparator) -> ComparatorData:
 
 
 def from_polars(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     label_col: str,
     freq_cols: Collection[str],
     fill_nulls: bool = True,
@@ -40,18 +39,12 @@ def from_polars(
     normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> ComparatorData:
     """ """
-    # Check all parameters specified
-    if label_col is None:
-        raise ValueError("`label_col` must be specified if providing a DataFrame")
-    if freq_cols is None:
-        raise ValueError("`freq_cols` must be specified if providing a DataFrame")
-
     # Check all columns exist
     deduped_freq_cols = set(freq_cols)
 
     if isinstance(df, pl.DataFrame):
         cols = set(df.columns)
-    elif isinstance(df, pl.LazyFrame):
+    else:
         cols = set(df.collect_schema().names())
 
     if label_col not in cols:
@@ -166,8 +159,10 @@ def _from_freqs(
 
 
 def _normalize_frequency_columns(
-    df: PolarsFrame, freq_cols: Collection[str], normalization_suffix: str = NORMALIZATION_SUFFIX
-) -> PolarsFrame:
+    df: pl.LazyFrame,
+    freq_cols: Collection[str],
+    normalization_suffix: str = NORMALIZATION_SUFFIX,
+) -> pl.LazyFrame:
     """ """
     normed_cols = [
         normalize_freqs(col(freq_col)).alias(f"{freq_col}{normalization_suffix}")

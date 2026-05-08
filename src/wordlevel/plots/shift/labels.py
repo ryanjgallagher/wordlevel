@@ -9,13 +9,16 @@ from polars import col
 from wordlevel.plots.utils import to_altair_optional
 
 
+DEFAULT_LABEL_SIZE: float = 11
+
+
 @dataclass
 class LabelConfig:
     """ """
 
     pad: float = 5
     color: str = "black"
-    size: float | None = 11
+    size: float | None = DEFAULT_LABEL_SIZE
     weight: str | int = "normal"
     rotation: float | None = None
     mirror_rotation: bool = True
@@ -96,7 +99,7 @@ def shift_labels(
         .mark_text(
             color=config.color,
             fontSize=to_altair_optional(config.size),
-            fontWeight=config.weight,
+            fontWeight=config.weight,  # type: ignore[arg-type]
             align=to_conditional_expr(score_col, "align", pos_position_params, neg_position_params),
             baseline=to_conditional_expr(
                 score_col, "baseline", pos_position_params, neg_position_params
@@ -155,7 +158,7 @@ def to_readable_angle(angle: float) -> float:
         return angle
 
 
-def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict[str, float]:
+def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict[str, str | float]:
     """
     Calculates the static alignment and padding for a single bar direction
     and text rotation.
@@ -210,7 +213,10 @@ def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict
 
 
 def to_conditional_expr(
-    score_col: str, key: str, positive_params: dict[str, float], negative_params: dict[str, float]
+    score_col: str,
+    key: str,
+    positive_params: dict[str, str | float],
+    negative_params: dict[str, str | float],
 ) -> alt.ExprRef:
     """ """
     pos_val = positive_params[key]

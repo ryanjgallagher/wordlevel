@@ -24,6 +24,7 @@ dev = [
     "ruff>=0.12.8",
     "pre-commit>=4.3.0",
     "huggingface-hub>=1.10.1",
+    "pyright>=1.1.409",
 ]
 
 [tool.setuptools.packages.find]
@@ -37,3 +38,6 @@ testpaths = [
 [tool.ruff]
 line-length = 100
 show-fixes = true
+
+[tool.pyright]
+include = ["src", "lexicons"]

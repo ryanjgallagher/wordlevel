@@ -1,9 +1,11 @@
+from typing import cast
+
 import altair as alt
 import polars as pl
 
 from polars import col
 
-from wordlevel.plots.shift.labels import LabelConfig, get_label_positions
+from wordlevel.plots.shift.labels import DEFAULT_LABEL_SIZE, LabelConfig, get_label_positions
 
 
 def shift_scales(
@@ -29,18 +31,18 @@ def shift_scales(
         config = LabelConfig()
 
     if config.size is None:
-        fontsize = LabelConfig().size
+        fontsize = DEFAULT_LABEL_SIZE
     else:
         fontsize = config.size
 
     if vertical:
-        size = width
         if width is None:
             raise ValueError("To scale axis to labels, must specify the chart's width")
+        size = width
     else:
-        size = height
         if height is None:
             raise ValueError("To scale axis to labels, must specify the chart's height")
+        size = height
 
     if filter_max_rank:
         df = df.filter(col(rank_col) <= max_rank)
@@ -77,7 +79,7 @@ def shift_scales(
             x=alt.value(0), y="negative_limit:Q", tooltip=alt.value(None)
         )
 
-    return alt.layer(positive_limit, negative_limit)
+    return cast(alt.LayerChart, alt.layer(positive_limit, negative_limit))
 
 
 def get_bar_lengths(

@@ -1,7 +1,8 @@
+from typing import cast
+
 import altair as alt
 import polars as pl
 
-from wordlevel.types import PolarsFrame
 from wordlevel.plots.shift.bars import (
     shift_bars,
     RankAxisConfig,
@@ -17,7 +18,7 @@ DEFAULT_SCORE_AXIS_PIXEL_SIZE = 400
 
 
 def shift(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     score_col: str,
     rank_col: str,
     score_type_col: str,
@@ -79,7 +80,7 @@ def shift(
         config=label_config,
     )
 
-    chart_layers = [bars, labels]
+    chart_layers: list[alt.Chart | alt.LayerChart] = [bars, labels]
 
     if autoscale_axes:
         scales = shift_scales(
@@ -98,4 +99,4 @@ def shift(
 
         chart_layers.append(scales)
 
-    return alt.layer(*chart_layers)
+    return cast(alt.LayerChart, alt.layer(*chart_layers))
