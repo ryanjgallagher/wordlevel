@@ -2,7 +2,6 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.types import PolarsFrame
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
 
 
@@ -29,7 +28,9 @@ def df_mock() -> pl.DataFrame:
 def simple_plan():
     """Basic scoring plan that adds a comparison_score column."""
 
-    def plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+    def plan(
+        df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+    ) -> pl.DataFrame | pl.LazyFrame:
         return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("difference"))
 
     return plan
@@ -175,8 +176,8 @@ class TestLazyEvaluation:
         execution_count = {"count": 0}
 
         def counting_plan(
-            df: PolarsFrame, label_col: str, normalization_suffix: str
-        ) -> PolarsFrame:
+            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             execution_count["count"] += 1
             return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("score"))
 
@@ -301,7 +302,9 @@ class TestDataFrameExecution:
     def test_complex_plan_execution(self, df_mock) -> None:
         """Test that a complex plan with multiple columns works correctly."""
 
-        def complex_plan(df: PolarsFrame, label_col: str, normalization_suffix: str) -> PolarsFrame:
+        def complex_plan(
+            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             diff_col = pl.col("ref") - pl.col("cmp")
             return df.with_columns(
                 [
@@ -349,7 +352,9 @@ class TestLabelAndSuffixWiring:
         """Test that label_col is forwarded to the plan at execution time."""
         received = {}
 
-        def capturing_plan(df: PolarsFrame, lc: str, ns: str) -> PolarsFrame:
+        def capturing_plan(
+            df: pl.DataFrame | pl.LazyFrame, lc: str, ns: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             received["label_col"] = lc
             return df
 
@@ -375,7 +380,9 @@ class TestLabelAndSuffixWiring:
         """Test that normalization_suffix is forwarded to the plan at execution time."""
         received = {}
 
-        def capturing_plan(df: PolarsFrame, lc: str, ns: str) -> PolarsFrame:
+        def capturing_plan(
+            df: pl.DataFrame | pl.LazyFrame, lc: str, ns: str
+        ) -> pl.DataFrame | pl.LazyFrame:
             received["normalization_suffix"] = ns
             return df
 
