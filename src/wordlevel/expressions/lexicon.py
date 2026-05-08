@@ -3,7 +3,6 @@ from typing import Literal, Mapping
 import polars as pl
 from polars import col
 
-from wordlevel.types import PolarsFrame
 from wordlevel.lexicons.lexicon import Lexicon
 
 
@@ -11,13 +10,13 @@ DEFAULT_LEXICON_SCORE_COL = "lexicon_score"
 
 
 def join_lexicon(
-    df: PolarsFrame,
-    lexicon: Lexicon | Mapping[str, float] | PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
+    lexicon: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame,
     df_label_col: str,
     lexicon_label_col: str | None = None,
     lexicon_score_col: str | None = None,
     impute: float | Literal["mean"] | pl.Expr | None = None,
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
     if isinstance(lexicon, Lexicon):
         df_scores = _join_lexicon_from_dataframe(

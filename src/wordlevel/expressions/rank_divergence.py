@@ -66,8 +66,8 @@ def rank_divergence_norm_summands(
 
 def rank_divergence_norm_summand_component(
     freqs: pl.Expr,
-    n_types1: int,
-    n_types2: int,
+    n_types1: pl.Expr,
+    n_types2: pl.Expr,
     alpha: float = 1.0,
 ) -> pl.Expr:
     """ """

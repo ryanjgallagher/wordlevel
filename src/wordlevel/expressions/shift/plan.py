@@ -4,7 +4,6 @@ import polars as pl
 
 from polars import col
 
-from wordlevel.types import PolarsFrame
 from wordlevel.expressions.types import ScoreFunc, DualScoreFunc, DualCleanScoreFunc
 from wordlevel.expressions.attribution import attribute_scores, ATTRIBUTION_TYPE
 from wordlevel.expressions.shift.components import get_shift_components, get_shift_plot_components
@@ -13,7 +12,7 @@ from wordlevel.lexicons.lexicon import Lexicon
 
 
 def basic_score_plan(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     freqs_ref: pl.Expr,
     freqs_cmp: pl.Expr,
     label: pl.Expr,
@@ -24,7 +23,7 @@ def basic_score_plan(
     attribution_alias: str = "attribution",
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
     attribution_cols = dict()
     if attribute_by == "score_sign":
@@ -58,7 +57,7 @@ def basic_score_plan(
 
 
 def weighted_average_score_plan(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     score_freqs_ref: pl.Expr,
     score_freqs_cmp: pl.Expr,
     component_freqs_ref: pl.Expr,
@@ -80,7 +79,7 @@ def weighted_average_score_plan(
     counteracted_suffix: str = "_counteracted",
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
     attribution_cols = dict()
     if attribute_by == "score_sign":
@@ -162,18 +161,18 @@ def weighted_average_score_plan(
 
 
 def lexicon_join_plan(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     df_label_col: str,
-    lexicon: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
-    lexicon_ref: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
-    lexicon_cmp: Lexicon | Mapping[str, float] | PolarsFrame | None = None,
+    lexicon: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
+    lexicon_ref: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
+    lexicon_cmp: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
     lexicon_label_col: str | None = None,
     lexicon_score_col: str | None = None,
     score_alias_ref: str | None = None,
     score_alias_cmp: str | None = None,
     impute: float | Literal["borrow", "mean"] | pl.Expr | None = None,
     drop_null_scores: bool = True,
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
     if lexicon is None and lexicon_ref is None and lexicon_cmp is None:
         raise ValueError("Must specify at least one of the lexicon parameters")
@@ -203,13 +202,15 @@ def lexicon_join_plan(
     if score_alias_cmp is None:
         score_alias_cmp = f"{score_col_to_rename}_cmp"
 
-    impute_strategy = impute
+    impute_strategy: float | Literal["mean"] | pl.Expr | None
     if isinstance(impute, str) and (impute == "borrow"):
         impute_strategy = None
+    else:
+        impute_strategy = impute
 
     df = join_lexicon(
         df,
-        lexicon_ref,
+        lexicon_ref,  # type: ignore[arg-type]
         df_label_col=df_label_col,
         lexicon_label_col=lexicon_label_col,
         lexicon_score_col=lexicon_score_col,
@@ -217,7 +218,7 @@ def lexicon_join_plan(
     ).rename({score_col_to_rename: score_alias_ref})
     df = join_lexicon(
         df,
-        lexicon_cmp,
+        lexicon_cmp,  # type: ignore[arg-type]
         df_label_col=df_label_col,
         lexicon_label_col=lexicon_label_col,
         lexicon_score_col=lexicon_score_col,

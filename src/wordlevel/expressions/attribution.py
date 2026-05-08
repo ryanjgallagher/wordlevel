@@ -2,7 +2,6 @@ from typing import Literal, Optional
 
 import polars as pl
 
-from wordlevel.types import PolarsFrame
 from wordlevel.expressions.utils import normalize_freqs
 
 
@@ -70,7 +69,7 @@ def score_sign_attribution(
 
 
 def attribute_scores(
-    df: PolarsFrame,
+    df: pl.DataFrame | pl.LazyFrame,
     by: ATTRIBUTION_TYPE,
     reference: Optional[pl.Expr] = None,
     comparison: Optional[pl.Expr] = None,
@@ -79,14 +78,11 @@ def attribute_scores(
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
     attribution_alias: str = "attribution",
-) -> PolarsFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """ """
-    if by in {"frequency", "rank"} and (reference is None or comparison is None):
-        raise ValueError(f"Need reference and comparison to attribute by {by}")
-    elif by == "score_sign" and score is None:
-        raise ValueError("Need score to attribute by score_sign")
-
     if by == "frequency":
+        if reference is None or comparison is None:
+            raise ValueError(f"Need reference and comparison to attribute by {by}")
         expr = frequency_attribution(
             reference=reference,
             comparison=comparison,
@@ -95,19 +91,21 @@ def attribute_scores(
             comparison_attribution=comparison_attribution,
         )
     elif by == "rank":
+        if reference is None or comparison is None:
+            raise ValueError(f"Need reference and comparison to attribute by {by}")
         expr = rank_attribution(
             reference=reference,
             comparison=comparison,
             reference_attribution=reference_attribution,
             comparison_attribution=comparison_attribution,
         )
-    elif by == "score_sign":
+    else:
+        if score is None:
+            raise ValueError("Need score to attribute by score_sign")
         expr = score_sign_attribution(
             score=score,
             reference_attribution=reference_attribution,
             comparison_attribution=comparison_attribution,
         )
-    else:
-        raise ValueError("Invalid specification of how to attribute scores")
 
     return df.with_columns(expr.alias(attribution_alias))
