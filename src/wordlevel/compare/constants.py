@@ -1,4 +1,4 @@
 """Constants used across the compare module."""
 
-LABEL = "word"
+TOKEN = "token"
 NORMALIZATION_SUFFIX = "__wl_normed"

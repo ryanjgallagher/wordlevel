@@ -31,7 +31,7 @@ negative_score_types = {
 
 
 @pytest.fixture
-def label_col() -> str:
+def token_col() -> str:
     return "word"
 
 
@@ -62,7 +62,7 @@ def words() -> Callable:
 
 
 @pytest.fixture()
-def make_mock_df(words, label_col, rank_col, score_col, score_type_col) -> Callable:
+def make_mock_df(words, token_col, rank_col, score_col, score_type_col) -> Callable:
     """ """
 
     def _df_factory(n: int = 52, long: bool = True, seed: int = 111) -> pl.DataFrame:
@@ -79,7 +79,7 @@ def make_mock_df(words, label_col, rank_col, score_col, score_type_col) -> Calla
         df = (
             pl.DataFrame(
                 {
-                    label_col: ws,
+                    token_col: ws,
                     "freqs1": freqs1,
                     "freqs2": freqs2,
                     "scores1": scores1,
@@ -130,7 +130,7 @@ def make_mock_df(words, label_col, rank_col, score_col, score_type_col) -> Calla
         if long:
             df = df.unpivot(
                 on=list(ShiftTypesConfig().colors().keys()),
-                index=[label_col, rank_col],
+                index=[token_col, rank_col],
                 variable_name=score_type_col,
                 value_name=score_col,
             )

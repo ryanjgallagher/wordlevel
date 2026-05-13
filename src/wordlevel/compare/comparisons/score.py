@@ -49,7 +49,7 @@ class ScorePlan(Protocol):
     def __call__(
         self,
         df: pl.DataFrame | pl.LazyFrame,
-        label_col: str,
+        token_col: str,
         normalization_suffix: str,
     ) -> pl.DataFrame | pl.LazyFrame: ...
 
@@ -73,7 +73,9 @@ def _passthrough_clean_score_func(
 
 
 class Scorer:
-    """ """
+    """
+    Class documentation
+    """
 
     def __init__(self, comparison: Comparison):
         """ """
@@ -98,7 +100,7 @@ class Scorer:
         cmp = self._comparison._cmp
 
         def plan(
-            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
             if requires_normed_freqs:
                 ref_col = f"{ref}{normalization_suffix}"
@@ -111,7 +113,7 @@ class Scorer:
                 df,
                 freqs_ref=col(ref_col),
                 freqs_cmp=col(cmp_col),
-                label=col(label_col),
+                token=col(token_col),
                 score_func=score_func,
                 attribute_by=attribute_by,
                 score_alias=SCORE_COL,
@@ -142,7 +144,7 @@ class Scorer:
         SHIFT_TYPES = ShiftTypesConfig()
 
         def plan(
-            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
             if requires_normed_freqs:
                 freqs_ref = f"{ref}{normalization_suffix}"
@@ -164,7 +166,7 @@ class Scorer:
                 score_freqs_cmp=col(freqs_cmp),
                 component_freqs_ref=col(component_freqs_ref),
                 component_freqs_cmp=col(component_freqs_cmp),
-                label=col(label_col),
+                token=col(token_col),
                 score_func=score_func,
                 clean_score_func=clean_score_func,
                 attribute_by=attribute_by,
@@ -253,7 +255,7 @@ class Scorer:
         | pl.DataFrame
         | pl.LazyFrame
         | None = None,
-        lexicon_label_col: str | None = None,
+        lexicon_token_col: str | None = None,
         lexicon_score_col: str | None = None,
         reference_score: float | Literal["mean", "center"] | pl.Expr | None = None,
         impute: float | Literal["borrow", "mean"] | pl.Expr = "borrow",
@@ -295,15 +297,15 @@ class Scorer:
         )
 
         def plan(
-            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
             df = lexicon_join_plan(
                 df,
-                df_label_col=label_col,
+                df_token_col=token_col,
                 lexicon=lexicon,
                 lexicon_ref=lexicon_reference,
                 lexicon_cmp=lexicon_comparison,
-                lexicon_label_col=lexicon_label_col,
+                lexicon_token_col=lexicon_token_col,
                 lexicon_score_col=lexicon_score_col,
                 score_alias_ref=score_alias_ref,
                 score_alias_cmp=score_alias_cmp,
@@ -311,7 +313,7 @@ class Scorer:
                 drop_null_scores=True,
             )
 
-            return score_plan(df, label_col=label_col, normalization_suffix=normalization_suffix)
+            return score_plan(df, token_col=token_col, normalization_suffix=normalization_suffix)
 
         return self._return_comparison(
             plan,
@@ -437,7 +439,19 @@ class Scorer:
         )
 
     def rank_divergence(self, alpha: float = 1.0) -> Comparison:
-        """ """
+        r"""
+        Computes rank divergence
+
+        $$
+        \alpha = \frac{1}{n}
+        $$
+
+        Args:
+            alpha: Description $\alpha$
+
+        Returns:
+            Comparison
+        """
         score_func = partial(rank_divergence, alpha=alpha)
         plan = self._make_basic_score_plan(
             score_func,

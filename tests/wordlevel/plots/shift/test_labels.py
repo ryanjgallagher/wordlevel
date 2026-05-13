@@ -15,11 +15,11 @@ from wordlevel.plots.shift.labels import (
 )
 
 
-def test_get_label_positions(label_col, rank_col, score_col):
+def test_get_label_positions(token_col, rank_col, score_col):
     """ """
     df_input = pl.DataFrame(
         {
-            label_col: ["a", "a", "b", "b", "c", "c", "d", "d", "e"],
+            token_col: ["a", "a", "b", "b", "c", "c", "d", "d", "e"],
             rank_col: [1, 1, 2, 2, 3, 3, 4, 4, 5],
             score_col: [3, 6, -10, 5, -2, -1, 5, -5, None],
         }
@@ -27,14 +27,14 @@ def test_get_label_positions(label_col, rank_col, score_col):
 
     df_expected = pl.DataFrame(
         {
-            label_col: ["a", "b", "c", "d", "e"],
+            token_col: ["a", "b", "c", "d", "e"],
             rank_col: [1, 2, 3, 4, 5],
             score_col: [9.0, -10.0, -3.0, -5.0, 0.0],
         }
     )
 
     df_actual = get_label_positions(
-        df_input, score_col=score_col, rank_col=rank_col, label_col=label_col
+        df_input, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
 
     assert_frame_equal(df_actual, df_expected, check_row_order=False, check_column_order=False)
@@ -110,18 +110,18 @@ def test_to_conditional_expr(score_col, key, positive_value, negative_value, exp
     assert expr.to_dict()["expr"] == expected_expr_str
 
 
-def test_returns_chart(make_mock_df, score_col, rank_col, label_col):
+def test_returns_chart(make_mock_df, score_col, rank_col, token_col):
     """
     Sanity check that the function returns an Altair chart
     """
     chart = shift_labels(
-        make_mock_df(), score_col=score_col, rank_col=rank_col, label_col=label_col
+        make_mock_df(), score_col=score_col, rank_col=rank_col, token_col=token_col
     )
 
     assert isinstance(chart, alt.Chart)
 
 
-def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, label_col):
+def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, token_col):
     """
     Tests that the chart contains the correct data and the correct encondings are used
     """
@@ -131,7 +131,7 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, label_col):
         df,
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         max_rank=50,
         vertical=True,
     )
@@ -139,7 +139,7 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, label_col):
 
     # Check the data is encoded as expected
     df_expected = get_label_positions(
-        df, score_col=score_col, rank_col=rank_col, label_col=label_col
+        df, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
     assert_frame_equal(df_chart, df_expected, check_column_order=False, check_row_order=False)
 
@@ -147,7 +147,7 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, label_col):
     chart_json = chart.to_dict()
     encoding = chart_json["encoding"]
 
-    assert encoding["text"]["field"] == label_col
+    assert encoding["text"]["field"] == token_col
 
     assert encoding["x"]["field"] == score_col
 
@@ -170,7 +170,7 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, label_col):
 
 
 @pytest.mark.parametrize("vertical", [True, False])
-def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertical):
+def test_chart_orientation(make_mock_df, score_col, rank_col, token_col, vertical):
     """
     Test that the vertical parameter correctly swaps the X and Y axes.
     """
@@ -178,7 +178,7 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertica
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         vertical=vertical,
     )
 
@@ -194,7 +194,7 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertica
 
 
 @pytest.mark.parametrize("filter_max_rank", [True, False])
-def test_max_rank_filter(make_mock_df, score_col, rank_col, label_col, filter_max_rank):
+def test_max_rank_filter(make_mock_df, score_col, rank_col, token_col, filter_max_rank):
     """
     Test that max_rank correctly filters the data used for the chart
     """
@@ -205,7 +205,7 @@ def test_max_rank_filter(make_mock_df, score_col, rank_col, label_col, filter_ma
         make_mock_df(n=n),
         rank_col=rank_col,
         score_col=score_col,
-        label_col=label_col,
+        token_col=token_col,
         max_rank=max_rank,
         filter_max_rank=filter_max_rank,
     )
@@ -227,7 +227,7 @@ def test_max_rank_filter(make_mock_df, score_col, rank_col, label_col, filter_ma
         ("blue", 100, 100),
     ],
 )
-def test_label_config(make_mock_df, score_col, rank_col, label_col, color, size, weight):
+def test_label_config(make_mock_df, score_col, rank_col, token_col, color, size, weight):
     """ """
     # Test that the config works whether given a formal config or a dictionary
     for constructor in [LabelConfig, dict]:
@@ -238,7 +238,7 @@ def test_label_config(make_mock_df, score_col, rank_col, label_col, color, size,
         df = make_mock_df()
 
         chart = shift_labels(
-            df, score_col=score_col, rank_col=rank_col, label_col=label_col, config=config
+            df, score_col=score_col, rank_col=rank_col, token_col=token_col, config=config
         )
         chart_json = chart.to_dict()
 
@@ -247,12 +247,12 @@ def test_label_config(make_mock_df, score_col, rank_col, label_col, color, size,
         assert chart_json["mark"]["fontWeight"] == weight
 
 
-def test_default_label_config(make_mock_df, score_col, rank_col, label_col):
+def test_default_label_config(make_mock_df, score_col, rank_col, token_col):
     """ """
     default_config = LabelConfig()
     df = make_mock_df()
 
-    chart = shift_labels(df, score_col=score_col, rank_col=rank_col, label_col=label_col)
+    chart = shift_labels(df, score_col=score_col, rank_col=rank_col, token_col=token_col)
     chart_json = chart.to_dict()
 
     assert chart_json["mark"]["color"] == default_config.color
@@ -270,14 +270,14 @@ def test_default_label_config(make_mock_df, score_col, rank_col, label_col):
     ],
 )
 def test_label_config_on_bar_ends(
-    make_mock_df, score_col, rank_col, label_col, on_bar_ends, vertical
+    make_mock_df, score_col, rank_col, token_col, on_bar_ends, vertical
 ):
     """ """
     chart = shift_labels(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         vertical=vertical,
         config=LabelConfig(on_bar_ends=on_bar_ends),
     )
@@ -303,14 +303,14 @@ def test_label_config_on_bar_ends(
     "mirror_rotation, rotation", [(True, 20), (True, -50), (False, 72), (False, -33)]
 )
 def test_label_config_mirror_rotation(
-    make_mock_df, score_col, rank_col, label_col, mirror_rotation, rotation
+    make_mock_df, score_col, rank_col, token_col, mirror_rotation, rotation
 ):
     """ """
     chart = shift_labels(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         config=LabelConfig(rotation=rotation, mirror_rotation=mirror_rotation),
     )
 

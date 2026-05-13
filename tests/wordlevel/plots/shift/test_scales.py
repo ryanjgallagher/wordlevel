@@ -8,22 +8,22 @@ from wordlevel.plots.shift.labels import LabelConfig
 from wordlevel.plots.shift.scales import shift_scales, get_scale_limits, get_bar_lengths
 
 
-def test_get_bar_lengths(score_col, rank_col, label_col):
+def test_get_bar_lengths(score_col, rank_col, token_col):
     """ """
     df_input = pl.DataFrame(
         {
-            label_col: ["w1", "w1", "w1", "w2", "w2", "w2", "w3", "w3", "w3", "w4"],
+            token_col: ["w1", "w1", "w1", "w2", "w2", "w2", "w3", "w3", "w3", "w4"],
             rank_col: [1, 1, 1, 2, 2, 2, 3, 3, 3, 4],
             score_col: [5, -3, 4, -6, -2, 7, 1, 0, -1, 7],
         }
     )
 
     df_expected = pl.DataFrame(
-        {label_col: ["w1", "w2", "w3", "w4"], rank_col: [1, 2, 3, 4], "bar_length": [9, 8, 1, 7]}
+        {token_col: ["w1", "w2", "w3", "w4"], rank_col: [1, 2, 3, 4], "bar_length": [9, 8, 1, 7]}
     )
 
     df_actual = get_bar_lengths(
-        df_input, score_col=score_col, rank_col=rank_col, label_col=label_col
+        df_input, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
 
     assert_frame_equal(
@@ -57,7 +57,7 @@ def test_get_bar_lengths(score_col, rank_col, label_col):
 def test_get_scale_limits(
     score_col,
     rank_col,
-    label_col,
+    token_col,
     score,
     size,
     fontsize,
@@ -70,7 +70,7 @@ def test_get_scale_limits(
     """ """
     df_input = pl.DataFrame(
         {
-            label_col: ["w1", "w2", "w3"],
+            token_col: ["w1", "w2", "w3"],
             rank_col: [1, 2, 3],
             score_col: [score, score - 1, score - 10],
         }
@@ -84,7 +84,7 @@ def test_get_scale_limits(
         df_input,
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         size=size,
         fontsize=fontsize,
         font_width_to_height_ratio=font_width_height_ratio,
@@ -99,11 +99,11 @@ def test_get_scale_limits(
 def test_get_scale_limits_all_positive(
     score_col,
     rank_col,
-    label_col,
+    token_col,
 ):
     df_input = pl.DataFrame(
         {
-            label_col: ["w1", "w2", "w3"],
+            token_col: ["w1", "w2", "w3"],
             rank_col: [1, 2, 3],
             score_col: [5, 4, 3],
         }
@@ -115,7 +115,7 @@ def test_get_scale_limits_all_positive(
         df_input,
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         size=1,
         fontsize=1,
         font_width_to_height_ratio=1,
@@ -127,12 +127,12 @@ def test_get_scale_limits_all_positive(
     assert_frame_equal(df_actual, df_expected, check_dtypes=False)
 
 
-def test_returns_chart(make_mock_df, score_col, rank_col, label_col):
+def test_returns_chart(make_mock_df, score_col, rank_col, token_col):
     """
     Sanity check that the function returns an Altair chart
     """
     chart = shift_scales(
-        make_mock_df(), score_col=score_col, rank_col=rank_col, label_col=label_col, width=10
+        make_mock_df(), score_col=score_col, rank_col=rank_col, token_col=token_col, width=10
     )
 
     assert isinstance(chart, alt.LayerChart)
@@ -140,7 +140,7 @@ def test_returns_chart(make_mock_df, score_col, rank_col, label_col):
 
 @pytest.mark.parametrize("vertical, wrong_size_col", [(True, "height"), (False, "width")])
 def test_error_if_size_not_specified(
-    make_mock_df, score_col, rank_col, label_col, vertical, wrong_size_col
+    make_mock_df, score_col, rank_col, token_col, vertical, wrong_size_col
 ):
     """ """
     with pytest.raises(ValueError):
@@ -148,14 +148,14 @@ def test_error_if_size_not_specified(
             make_mock_df(),
             score_col=score_col,
             rank_col=rank_col,
-            label_col=label_col,
+            token_col=token_col,
             vertical=vertical,
             **{wrong_size_col: 10},
         )
 
 
 @pytest.mark.parametrize("vertical", [True, False])
-def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertical):
+def test_chart_orientation(make_mock_df, score_col, rank_col, token_col, vertical):
     """
     Test that the vertical parameter correctly swaps the X and Y axes
     for the scale layers.
@@ -164,7 +164,7 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertica
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         vertical=vertical,
         width=100,
         height=100,
@@ -183,11 +183,11 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, label_col, vertica
 
 
 @pytest.mark.parametrize("filter_max_rank", [True, False])
-def test_max_rank_filter(score_col, rank_col, label_col, filter_max_rank):
+def test_max_rank_filter(score_col, rank_col, token_col, filter_max_rank):
     """
     Test that max_rank correctly filters the data used for the chart
     """
-    df_mock = pl.DataFrame({label_col: ["w1", "w2"], rank_col: [100, 1], score_col: [100, 5]})
+    df_mock = pl.DataFrame({token_col: ["w1", "w2"], rank_col: [100, 1], score_col: [100, 5]})
 
     if filter_max_rank:
         expected_limit = 25
@@ -198,7 +198,7 @@ def test_max_rank_filter(score_col, rank_col, label_col, filter_max_rank):
         df_mock,
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         max_rank=2,
         filter_max_rank=filter_max_rank,
         width=1,
@@ -214,13 +214,13 @@ def test_max_rank_filter(score_col, rank_col, label_col, filter_max_rank):
     assert chart_data[0]["positive_limit"] == expected_limit
 
 
-def test_default_fontsize(make_mock_df, score_col, rank_col, label_col):
+def test_default_fontsize(make_mock_df, score_col, rank_col, token_col):
     """ """
     chart_config = shift_scales(
-        make_mock_df(), score_col, rank_col, label_col, width=10, config=LabelConfig()
+        make_mock_df(), score_col, rank_col, token_col, width=10, config=LabelConfig()
     )
     chart_none = shift_scales(
-        make_mock_df(), score_col, rank_col, label_col, width=10, config=LabelConfig(size=None)
+        make_mock_df(), score_col, rank_col, token_col, width=10, config=LabelConfig(size=None)
     )
 
     data_config = list(chart_config.to_dict()["datasets"].values())[0]
@@ -232,11 +232,11 @@ def test_default_fontsize(make_mock_df, score_col, rank_col, label_col):
     assert limit_config == limit_none
 
 
-def test_layers_are_invisible(make_mock_df, score_col, rank_col, label_col):
+def test_layers_are_invisible(make_mock_df, score_col, rank_col, token_col):
     """
     Tests that the scale layers are invisible (opacity 0) and have tooltips disabled.
     """
-    chart = shift_scales(make_mock_df(), score_col, rank_col, label_col, width=10)
+    chart = shift_scales(make_mock_df(), score_col, rank_col, token_col, width=10)
 
     layers = chart.to_dict()["layer"]
 

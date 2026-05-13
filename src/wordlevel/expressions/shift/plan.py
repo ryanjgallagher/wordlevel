@@ -15,7 +15,7 @@ def basic_score_plan(
     df: pl.DataFrame | pl.LazyFrame,
     freqs_ref: pl.Expr,
     freqs_cmp: pl.Expr,
-    label: pl.Expr,
+    token: pl.Expr,
     score_func: ScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
     score_alias: str = "comparison_score",
@@ -34,7 +34,7 @@ def basic_score_plan(
 
     df_plan = (
         df.select(
-            label,
+            token,
             freqs_ref,
             freqs_cmp,
             score_func(freqs1=freqs_ref, freqs2=freqs_cmp).alias(score_alias),
@@ -62,7 +62,7 @@ def weighted_average_score_plan(
     score_freqs_cmp: pl.Expr,
     component_freqs_ref: pl.Expr,
     component_freqs_cmp: pl.Expr,
-    label: pl.Expr,
+    token: pl.Expr,
     score_func: DualScoreFunc,
     clean_score_func: DualCleanScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
@@ -96,7 +96,7 @@ def weighted_average_score_plan(
 
     df_plan = (
         df.select(
-            label,
+            token,
             *score_cols_to_select,
             *score_func(
                 freqs1=score_freqs_ref,
@@ -162,11 +162,11 @@ def weighted_average_score_plan(
 
 def lexicon_join_plan(
     df: pl.DataFrame | pl.LazyFrame,
-    df_label_col: str,
+    df_token_col: str,
     lexicon: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
     lexicon_ref: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
     lexicon_cmp: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
-    lexicon_label_col: str | None = None,
+    lexicon_token_col: str | None = None,
     lexicon_score_col: str | None = None,
     score_alias_ref: str | None = None,
     score_alias_cmp: str | None = None,
@@ -211,16 +211,16 @@ def lexicon_join_plan(
     df = join_lexicon(
         df,
         lexicon_ref,  # type: ignore[arg-type]
-        df_label_col=df_label_col,
-        lexicon_label_col=lexicon_label_col,
+        df_token_col=df_token_col,
+        lexicon_token_col=lexicon_token_col,
         lexicon_score_col=lexicon_score_col,
         impute=impute_strategy,
     ).rename({score_col_to_rename: score_alias_ref})
     df = join_lexicon(
         df,
         lexicon_cmp,  # type: ignore[arg-type]
-        df_label_col=df_label_col,
-        lexicon_label_col=lexicon_label_col,
+        df_token_col=df_token_col,
+        lexicon_token_col=lexicon_token_col,
         lexicon_score_col=lexicon_score_col,
         impute=impute_strategy,
     ).rename({score_col_to_rename: score_alias_cmp})

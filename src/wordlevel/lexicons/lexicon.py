@@ -15,7 +15,7 @@ from wordlevel.lexicons.types.socialsent import SocialSentYear
 class Lexicon:
     lf: pl.LazyFrame
     center: float
-    label_col: str = "token"
+    token_col: str = "token"
     score_col: str = "score"
 
     @cached_property

@@ -370,7 +370,7 @@ class TestEdgeCases:
         ],
     )
     def test_plan_uses_provided_label_and_suffix(self, df_mock, score_func):
-        """Plans use the label_col and normalization_suffix passed at execution time, not hardcoded values."""
+        """Plans use the token_col and normalization_suffix passed at execution time, not hardcoded values."""
         comparison = Comparison("ref", "cmp")
         result = score_func(comparison.score)
 
@@ -381,7 +381,7 @@ class TestEdgeCases:
         df_result_default = result._plan(df_mock, "word", "__wl_normed")
         df_result_renamed = result._plan(df_renamed, "token", "_norm")
 
-        # The renamed result should use "token" as the label column, not "word"
+        # The renamed result should use "token" as the token column, not "word"
         assert "token" in df_result_renamed.columns
         assert "word" not in df_result_renamed.columns
 

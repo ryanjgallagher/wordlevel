@@ -36,7 +36,9 @@ class Comparison:
 
     @cached_property
     def score(self) -> Scorer:
-        """ """
+        """
+        The scorer
+        """
         return Scorer(self)
 
     def alias(self, name: str) -> Self:
@@ -81,7 +83,7 @@ class ComparisonResult:
         cls,
         comparison: Comparison,
         df: pl.DataFrame | pl.LazyFrame,
-        label_col: str,
+        token_col: str,
         normalization_suffix: str,
     ) -> Self:
         """ """
@@ -101,7 +103,7 @@ class ComparisonResult:
             )
 
         return cls(
-            _lf=comparison._plan(df, label_col, normalization_suffix).lazy(),
+            _lf=comparison._plan(df, token_col, normalization_suffix).lazy(),
             reference=comparison._ref,
             comparison=comparison._cmp,
             alias=comparison._alias,

@@ -30,7 +30,7 @@ def shift_labels(
     df: pl.DataFrame,
     score_col: str,
     rank_col: str,
-    label_col: str,
+    token_col: str,
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
@@ -43,7 +43,7 @@ def shift_labels(
     if filter_max_rank:
         df = df.filter(col(rank_col) <= max_rank)
 
-    df = get_label_positions(df, label_col=label_col, rank_col=rank_col, score_col=score_col)
+    df = get_label_positions(df, token_col=token_col, rank_col=rank_col, score_col=score_col)
 
     # Set default label configurations
     if isinstance(config, dict):
@@ -110,7 +110,7 @@ def shift_labels(
         .encode(
             x=x_axis,
             y=y_axis,
-            text=label_col,
+            text=token_col,
             angle=alt.condition(
                 f"datum['{score_col}'] >= 0", alt.value(pos_text_angle), alt.value(neg_text_angle)
             ),
@@ -121,13 +121,13 @@ def shift_labels(
 
 
 def get_label_positions(
-    df: pl.DataFrame, score_col: str, rank_col: str, label_col: str
+    df: pl.DataFrame, score_col: str, rank_col: str, token_col: str
 ) -> pl.DataFrame:
     """
     Get positions for labels, assuming long dataframe. Positions are still in score col
     """
     df = (
-        df.group_by([label_col, rank_col])
+        df.group_by([token_col, rank_col])
         .agg(
             col(score_col).filter(pl.col(score_col) >= 0).sum().fill_null(0.0).alias("positives"),
             col(score_col).filter(pl.col(score_col) < 0).sum().fill_null(0.0).alias("negatives"),

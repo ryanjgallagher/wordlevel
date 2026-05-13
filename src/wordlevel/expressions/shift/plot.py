@@ -7,7 +7,7 @@ from wordlevel.constants import SHIFT_SCORE_TYPES
 
 def bar_plot_df(
     lf: pl.LazyFrame,
-    label_col: str,
+    token_col: str,
     score_col: str,
     rank_col: str,
     attribution_col: str,
@@ -39,7 +39,7 @@ def bar_plot_df(
         )
         .unpivot(
             on=[reference_attribution, comparison_attribution],
-            index=[label_col, rank_col],
+            index=[token_col, rank_col],
             value_name=contribution_alias,
             variable_name=contribution_type_alias,
         )
@@ -50,7 +50,7 @@ def bar_plot_df(
 
 def shift_plot_df(
     df: pl.LazyFrame,
-    label_col: str,
+    token_col: str,
     rank_col: str,
     attribution_col: str,
     contribution_alias: str,
@@ -72,7 +72,7 @@ def shift_plot_df(
 
     lf_plot = lf_plot.unpivot(
         on=SHIFT_SCORE_TYPES,
-        index=[label_col, rank_col],
+        index=[token_col, rank_col],
         value_name=contribution_alias,
         variable_name=contribution_type_alias,
     )
