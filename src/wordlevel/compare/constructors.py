@@ -7,7 +7,7 @@ import polars as pl
 from polars import col
 
 from wordlevel.compare.types import ComparatorData, ListOfFreqs, DictOfFreqs
-from wordlevel.compare.constants import NORMALIZATION_SUFFIX, LABEL
+from wordlevel.compare.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.expressions.utils import normalize_freqs
 
 
@@ -19,7 +19,7 @@ def from_comparator(comparator: CorpusComparator) -> ComparatorData:
     """ """
     return ComparatorData(
         df=comparator._df.clone().lazy(),
-        label_col=comparator._label_col,
+        token_col=comparator._token_col,
         freq_cols=comparator._freq_cols,
         normalization_suffix=comparator._normalization_suffix,
         comparisons=comparator._comparisons.copy(),
@@ -28,7 +28,7 @@ def from_comparator(comparator: CorpusComparator) -> ComparatorData:
 
 def from_polars(
     df: pl.DataFrame | pl.LazyFrame,
-    label_col: str,
+    token_col: str,
     freq_cols: Collection[str],
     normalize: bool = True,
 ) -> ComparatorData:
@@ -41,8 +41,8 @@ def from_polars(
     else:
         cols = set(df.collect_schema().names())
 
-    if label_col not in cols:
-        raise KeyError(f"Label column not in provided dataframe: {label_col}")
+    if token_col not in cols:
+        raise KeyError(f"Token column not in provided dataframe: {token_col}")
 
     if len(deduped_freq_cols) < 2:
         raise ValueError("At least two frequency columns must be provided via `freq_cols`")
@@ -67,7 +67,7 @@ def from_polars(
 
     return ComparatorData(
         df=lf,
-        label_col=label_col,
+        token_col=token_col,
         freq_cols=deduped_freq_cols,
         normalization_suffix=normalization_suffix,
         comparisons=dict(),
@@ -94,7 +94,7 @@ def from_list_of_freqs(
 
     return _from_freqs(
         freqs=zip(corpora, freqs),
-        label=LABEL,
+        token=TOKEN,
     )
 
 
@@ -107,17 +107,17 @@ def from_dict_of_freqs(
 
     return _from_freqs(
         freqs=freqs.items(),
-        label=LABEL,
+        token=TOKEN,
     )
 
 
 def _from_freqs(
     freqs: Iterable[tuple[str, Mapping[str, float]]],
-    label: str = LABEL,
+    token: str = TOKEN,
 ) -> ComparatorData:
     """ """
     freq_cols: list[str] = []
-    lf = pl.LazyFrame(schema={label: pl.String})
+    lf = pl.LazyFrame(schema={token: pl.String})
 
     for corpus, word2freq in freqs:
         if not word2freq:
@@ -126,12 +126,12 @@ def _from_freqs(
         freq_cols.append(corpus)
 
         words, word_freqs = zip(*word2freq.items())
-        lf_corpus = pl.LazyFrame([words, word_freqs], schema=[label, corpus])
-        lf = lf.join(lf_corpus, on=label, how="full", coalesce=True)
+        lf_corpus = pl.LazyFrame([words, word_freqs], schema=[token, corpus])
+        lf = lf.join(lf_corpus, on=token, how="full", coalesce=True)
 
     return from_polars(
         lf,
-        label_col=label,
+        token_col=token,
         freq_cols=freq_cols,
     )
 

@@ -19,7 +19,7 @@ def test_initialization_defaults() -> None:
 def test_initialization_with_all_parameters() -> None:
     """Test that all explicitly provided parameters are stored correctly."""
 
-    def mock_function(df, label_col, normalization_suffix):
+    def mock_function(df, token_col, normalization_suffix):
         return df
 
     mock_plan = mock_function

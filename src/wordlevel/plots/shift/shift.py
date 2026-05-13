@@ -22,7 +22,7 @@ def shift(
     score_col: str,
     rank_col: str,
     score_type_col: str,
-    label_col: str,
+    token_col: str,
     max_rank: int = 50,
     vertical: bool = True,
     height: float | None = None,
@@ -39,7 +39,7 @@ def shift(
     """ """
     df = df.filter(pl.col(rank_col) <= max_rank)
     if isinstance(df, pl.LazyFrame):
-        df = df.select(label_col, rank_col, score_type_col, score_col).collect()
+        df = df.select(token_col, rank_col, score_type_col, score_col).collect()
 
     if vertical:
         if width is None:
@@ -73,7 +73,7 @@ def shift(
         df,
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         max_rank=max_rank,
         filter_max_rank=False,
         vertical=vertical,
@@ -87,7 +87,7 @@ def shift(
             df,
             score_col=score_col,
             rank_col=rank_col,
-            label_col=label_col,
+            token_col=token_col,
             max_rank=max_rank,
             filter_max_rank=False,
             vertical=vertical,

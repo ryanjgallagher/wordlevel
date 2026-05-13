@@ -12,8 +12,8 @@ DEFAULT_LEXICON_SCORE_COL = "lexicon_score"
 def join_lexicon(
     df: pl.DataFrame | pl.LazyFrame,
     lexicon: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame,
-    df_label_col: str,
-    lexicon_label_col: str | None = None,
+    df_token_col: str,
+    lexicon_token_col: str | None = None,
     lexicon_score_col: str | None = None,
     impute: float | Literal["mean"] | pl.Expr | None = None,
 ) -> pl.DataFrame | pl.LazyFrame:
@@ -22,22 +22,22 @@ def join_lexicon(
         df_scores = _join_lexicon_from_dataframe(
             df=df.lazy(),
             df_lexicon=lexicon.lf,
-            df_label_col=df_label_col,
-            lexicon_label_col=lexicon.label_col,
+            df_token_col=df_token_col,
+            lexicon_token_col=lexicon.token_col,
             lexicon_score_col=lexicon.score_col,
             impute=impute,
         )
     elif isinstance(lexicon, (pl.DataFrame, pl.LazyFrame)):
-        if lexicon_label_col is None:
-            raise ValueError("Must specify `lexicon_label_col` if the lexicon is a dataframe")
+        if lexicon_token_col is None:
+            raise ValueError("Must specify `lexicon_token_col` if the lexicon is a dataframe")
         elif lexicon_score_col is None:
             raise ValueError("Must specify `lexicon_score_col` if the lexicon is a dataframe")
 
         df_scores = _join_lexicon_from_dataframe(
             df=df.lazy(),
             df_lexicon=lexicon.lazy(),
-            df_label_col=df_label_col,
-            lexicon_label_col=lexicon_label_col,
+            df_token_col=df_token_col,
+            lexicon_token_col=lexicon_token_col,
             lexicon_score_col=lexicon_score_col,
             impute=impute,
         )
@@ -48,7 +48,7 @@ def join_lexicon(
         df_scores = _join_lexicon_from_mapping(
             df=df.lazy(),
             lexicon=lexicon,
-            df_label_col=df_label_col,
+            df_token_col=df_token_col,
             lexicon_score_alias=lexicon_score_col,
             impute=impute,
         )
@@ -66,8 +66,8 @@ def join_lexicon(
 def _join_lexicon_from_dataframe(
     df: pl.LazyFrame,
     df_lexicon: pl.LazyFrame,
-    df_label_col: str,
-    lexicon_label_col: str,
+    df_token_col: str,
+    lexicon_token_col: str,
     lexicon_score_col: str,
     impute: float | Literal["mean"] | pl.Expr | None = None,
 ) -> pl.LazyFrame:
@@ -75,7 +75,7 @@ def _join_lexicon_from_dataframe(
     if lexicon_score_col in df.collect_schema().names():
         raise ValueError(f"Column '{lexicon_score_col}' already exists in the dataframe.")
 
-    df_scores = df.join(df_lexicon, left_on=df_label_col, right_on=lexicon_label_col, how="left")
+    df_scores = df.join(df_lexicon, left_on=df_token_col, right_on=lexicon_token_col, how="left")
 
     if impute is not None:
         impute_expr = _get_imputation_expression(
@@ -93,20 +93,20 @@ def _join_lexicon_from_dataframe(
 def _join_lexicon_from_mapping(
     df: pl.LazyFrame,
     lexicon: Mapping[str, float],
-    df_label_col: str,
+    df_token_col: str,
     lexicon_score_alias: str,
     impute: float | Literal["mean"] | pl.Expr | None = None,
 ) -> pl.LazyFrame:
     """ """
     df_lexicon = pl.LazyFrame(
-        list(lexicon.items()), schema=[df_label_col, lexicon_score_alias], orient="row"
+        list(lexicon.items()), schema=[df_token_col, lexicon_score_alias], orient="row"
     )
 
     return _join_lexicon_from_dataframe(
         df=df,
         df_lexicon=df_lexicon,
-        df_label_col=df_label_col,
-        lexicon_label_col=df_label_col,
+        df_token_col=df_token_col,
+        lexicon_token_col=df_token_col,
         lexicon_score_col=lexicon_score_alias,
         impute=impute,
     )

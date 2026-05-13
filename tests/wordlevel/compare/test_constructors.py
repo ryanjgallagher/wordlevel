@@ -5,14 +5,14 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 from wordlevel.compare.comparator import CorpusComparator
-from wordlevel.compare.constants import LABEL, NORMALIZATION_SUFFIX
+from wordlevel.compare.constants import TOKEN, NORMALIZATION_SUFFIX
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.constructors import _normalize_frequency_columns
 from wordlevel.compare.comparisons.comparison import ComparisonResult
 
 
 @pytest.fixture
-def label_col() -> str:
+def token_col() -> str:
     return "word"
 
 
@@ -32,11 +32,11 @@ def words(freq_cols) -> list[str]:
 
 
 @pytest.fixture
-def df_mock(label_col, words, freq_cols) -> pl.LazyFrame:
+def df_mock(token_col, words, freq_cols) -> pl.LazyFrame:
     """ """
     freqs = [[randint(1, 50) for _ in range(len(words))] for _ in freq_cols]
 
-    return pl.DataFrame({label_col: words, **dict(zip(freq_cols, freqs))}).lazy()
+    return pl.DataFrame({token_col: words, **dict(zip(freq_cols, freqs))}).lazy()
 
 
 @pytest.fixture
@@ -82,11 +82,11 @@ def mock_comparison_result(df_mock, freq_cols) -> ComparisonResult:
 
 @pytest.fixture
 def mock_comparator_data(
-    df_mock, mock_comparison_result, label_col, freq_cols, norm_suffix
+    df_mock, mock_comparison_result, token_col, freq_cols, norm_suffix
 ) -> ComparatorData:
     return ComparatorData(
         df=df_mock,
-        label_col=label_col,
+        token_col=token_col,
         freq_cols=freq_cols,
         normalization_suffix=norm_suffix,
         comparisons=dict({"comparison": mock_comparison_result}),
@@ -99,7 +99,7 @@ class TestConstructors:
         df_mock,
         mock_comparison_result,
         mock_comparator_data,
-        label_col,
+        token_col,
         norm_suffix,
         freq_cols,
     ):
@@ -110,7 +110,7 @@ class TestConstructors:
         """
         comparator = CorpusComparator(mock_comparator_data)
 
-        assert comparator._label_col == label_col
+        assert comparator._token_col == token_col
         assert comparator._normalization_suffix == norm_suffix
 
         assert sorted(list(comparator._freq_cols)) == sorted(freq_cols)
@@ -128,7 +128,7 @@ class TestConstructors:
         assert comp_original is not comp_new
 
         # Check the classes hold the same data
-        assert comp_original._label_col == comp_new._label_col
+        assert comp_original._token_col == comp_new._token_col
         assert comp_original._normalization_suffix == comp_new._normalization_suffix
         assert sorted(comp_original._freq_cols) == sorted(comp_new._freq_cols)
 
@@ -142,24 +142,24 @@ class TestConstructors:
         assert comp_original._df is not comp_new._df
 
     @pytest.mark.parametrize("normalize", [False, True])
-    def test_from_polars(self, df_mock, label_col, freq_cols, normalize):
+    def test_from_polars(self, df_mock, token_col, freq_cols, normalize):
         """Test initialization from a dataframe via the from_polars classmethod."""
         comparator = CorpusComparator.from_polars(
             df_mock,
-            label_col=label_col,
+            token_col=token_col,
             freq_cols=freq_cols,
             normalize=normalize,
         )
 
         assert isinstance(comparator, CorpusComparator)
 
-        assert comparator._label_col == label_col
+        assert comparator._token_col == token_col
         assert sorted(comparator._freq_cols) == sorted(freq_cols)
         assert isinstance(comparator._comparisons, dict)
         assert len(comparator._comparisons) == 0
 
         assert_frame_equal(
-            comparator._df.select(label_col, *freq_cols).collect(),
+            comparator._df.select(token_col, *freq_cols).collect(),
             df_mock.collect(),
             check_row_order=False,
             check_column_order=False,
@@ -175,12 +175,12 @@ class TestConstructors:
 
     @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_polars])
     def test_from_polars_always_fills_nulls(
-        self, df_mock_with_nulls, label_col, freq_cols, constructor
+        self, df_mock_with_nulls, token_col, freq_cols, constructor
     ):
         """Frequencies with nulls are always filled to 0; the API offers no opt-out."""
         comparator = constructor(
             df_mock_with_nulls,
-            label_col=label_col,
+            token_col=token_col,
             freq_cols=freq_cols,
         )
 
@@ -203,15 +203,15 @@ class TestConstructors:
         assert isinstance(comparator._comparisons, dict)
         assert len(comparator._comparisons) == 0
 
-        # Check label column
-        assert comparator._label_col == LABEL
+        # Check token column
+        assert comparator._token_col == TOKEN
 
         # Check freq cols are named correctly using the custom prefix
         assert comparator._freq_cols == set(expected_corpora)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs])
-        assert set(comparator.df[LABEL].to_list()) == all_words
+        assert set(comparator.df[TOKEN].to_list()) == all_words
 
         # Normalization is always applied for the freq constructors
         assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
@@ -236,15 +236,15 @@ class TestConstructors:
         assert isinstance(comparator._comparisons, dict)
         assert len(comparator._comparisons) == 0
 
-        # Check label column
-        assert comparator._label_col == LABEL
+        # Check token column
+        assert comparator._token_col == TOKEN
 
         # Check freq cols are named correctly using the custom prefix
         assert comparator._freq_cols == set(corpora_names)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs.values()])
-        assert set(comparator.df[LABEL].to_list()) == all_words
+        assert set(comparator.df[TOKEN].to_list()) == all_words
 
         # Normalization is always applied for the freq constructors
         assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
@@ -259,36 +259,36 @@ class TestConstructors:
 
 
 class TestConstructorValidation:
-    def test_from_polars_duplicate_freq_cols(self, df_mock, freq_cols, label_col):
+    def test_from_polars_duplicate_freq_cols(self, df_mock, freq_cols, token_col):
         comparator = CorpusComparator(
-            data=df_mock, label_col=label_col, freq_cols=freq_cols + freq_cols
+            data=df_mock, token_col=token_col, freq_cols=freq_cols + freq_cols
         )
 
         assert sorted(list(comparator._freq_cols)) == sorted(freq_cols)
 
-    def test_from_polars_invalid_freq_cols(self, df_mock, freq_cols, label_col):
+    def test_from_polars_invalid_freq_cols(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""
         with pytest.raises(
             ValueError, match="`freq_cols` must be specified if providing a DataFrame"
         ):
-            CorpusComparator(data=df_mock, label_col=label_col, freq_cols=None)
+            CorpusComparator(data=df_mock, token_col=token_col, freq_cols=None)
 
         with pytest.raises(KeyError, match="Frequency column not in provided dataframe"):
-            CorpusComparator(data=df_mock, label_col=label_col, freq_cols=freq_cols + ["1000freq"])
+            CorpusComparator(data=df_mock, token_col=token_col, freq_cols=freq_cols + ["1000freq"])
 
         for not_enough_cols in [[], [freq_cols[0]]]:
             with pytest.raises(ValueError, match="At least two frequency columns"):
-                CorpusComparator(data=df_mock, label_col=label_col, freq_cols=not_enough_cols)
+                CorpusComparator(data=df_mock, token_col=token_col, freq_cols=not_enough_cols)
 
-    def test_from_polars_invalid_label_col(self, df_mock, freq_cols, label_col):
+    def test_from_polars_invalid_token_col(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""
         with pytest.raises(
-            ValueError, match="`label_col` must be specified if providing a DataFrame"
+            ValueError, match="`token_col` must be specified if providing a DataFrame"
         ):
-            CorpusComparator(data=df_mock, label_col=None, freq_cols=freq_cols)
+            CorpusComparator(data=df_mock, token_col=None, freq_cols=freq_cols)
 
-        with pytest.raises(KeyError, match="Label column not in provided dataframe"):
-            CorpusComparator(data=df_mock, label_col="wordcol", freq_cols=freq_cols)
+        with pytest.raises(KeyError, match="Token column not in provided dataframe"):
+            CorpusComparator(data=df_mock, token_col="wordcol", freq_cols=freq_cols)
 
     def test_from_list_of_freqs_invalid(self, get_mock_freqs):
         """Test that from_list_of_freqs raises errors for invalid inputs"""
@@ -361,7 +361,7 @@ class TestConstructorMutation:
 def test_normalize_frequency_columns(normalization_suffix):
     df_input = pl.DataFrame(
         {
-            "label": ["a", "b", "c", "d"],
+            "token": ["a", "b", "c", "d"],
             "freqs1": [1, 1, 1, 1],
             "freqs2": [2, 3, 1, 4],
         }

@@ -10,13 +10,13 @@ from wordlevel.plots.shift.labels import LabelConfig
 from wordlevel.plots.shift.bars import RankAxisConfig, InternalScoreAxisConfig, InternalBarConfig
 
 
-def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, label_col, score_type_col):
+def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, token_col, score_type_col):
     """ """
     chart = shift(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         score_type_col=score_type_col,
         width=100,  # Required for autoscale default
     )
@@ -27,7 +27,7 @@ def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, label_col,
 
 @pytest.mark.parametrize("autoscale, n_layers_expected", [(True, 3), (False, 2)])
 def test_shift_autoscale_toggle(
-    make_mock_df, score_col, rank_col, label_col, score_type_col, autoscale, n_layers_expected
+    make_mock_df, score_col, rank_col, token_col, score_type_col, autoscale, n_layers_expected
 ):
     """
     Check that autoscale_axes=False removes the scaling layer
@@ -36,7 +36,7 @@ def test_shift_autoscale_toggle(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         score_type_col=score_type_col,
         width=100,
         autoscale_axes=autoscale,
@@ -52,7 +52,7 @@ def test_shift_autoscale_toggle(
 @pytest.mark.parametrize("max_rank", [10, 50])
 @pytest.mark.parametrize("vertical", [True, False])
 def test_shift_default_dimensions(
-    make_mock_df, score_col, rank_col, label_col, score_type_col, vertical, max_rank
+    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical, max_rank
 ):
     """
     Check that default width and height are computed from max_rank and vertical orientation
@@ -62,7 +62,7 @@ def test_shift_default_dimensions(
         make_mock_df(n=max_rank),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         score_type_col=score_type_col,
         max_rank=max_rank,
         vertical=vertical,
@@ -81,7 +81,7 @@ def test_shift_default_dimensions(
 
 @pytest.mark.parametrize("max_rank", [11, 40])
 def test_shift_max_rank_filter(
-    make_mock_df, score_col, rank_col, label_col, score_type_col, max_rank
+    make_mock_df, score_col, rank_col, token_col, score_type_col, max_rank
 ):
     """
     Check that the wrapper filters data by max_rank before creating layers
@@ -90,7 +90,7 @@ def test_shift_max_rank_filter(
         make_mock_df(n=50),
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         score_type_col=score_type_col,
         max_rank=max_rank,
         width=100,
@@ -105,7 +105,7 @@ def test_shift_max_rank_filter(
     assert len(labels_data) == max_rank
 
 
-def test_config_propagation(make_mock_df, score_col, rank_col, label_col, score_type_col):
+def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_type_col):
     """
     Check configs passed to the wrapper affect the final chart
     """
@@ -130,7 +130,7 @@ def test_config_propagation(make_mock_df, score_col, rank_col, label_col, score_
             make_mock_df(),
             score_col=score_col,
             rank_col=rank_col,
-            label_col=label_col,
+            token_col=token_col,
             score_type_col=score_type_col,
             width=100,
             vertical=True,

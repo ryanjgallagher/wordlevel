@@ -86,7 +86,7 @@ class Plotter:
 
         return shift(
             df=df_plot,
-            label_col=self._comparator._label_col,
+            token_col=self._comparator._token_col,
             rank_col=RANK_COL,
             score_col=PLOT_CONTRIBUTION_COL,
             score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
@@ -145,7 +145,7 @@ class Plotter:
 
         return shift(
             df=df_plot,
-            label_col=self._comparator._label_col,
+            token_col=self._comparator._token_col,
             rank_col=RANK_COL,
             score_col=PLOT_CONTRIBUTION_COL,
             score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
@@ -190,7 +190,7 @@ class Plotter:
         if plot_type == "bar":
             df_plot = bar_plot_df(
                 lf=comparison._lf,
-                label_col=self._comparator._label_col,
+                token_col=self._comparator._token_col,
                 score_col=SCORE_COL,
                 rank_col=RANK_COL,
                 attribution_col=ATTRIBUTION_COL,
@@ -205,7 +205,7 @@ class Plotter:
         elif plot_type == "shift":
             df_plot = shift_plot_df(
                 df=comparison._lf,
-                label_col=self._comparator._label_col,
+                token_col=self._comparator._token_col,
                 rank_col=RANK_COL,
                 attribution_col=ATTRIBUTION_COL,
                 contribution_alias=PLOT_CONTRIBUTION_COL,

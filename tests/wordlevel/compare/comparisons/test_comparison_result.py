@@ -29,7 +29,7 @@ def simple_plan():
     """Basic scoring plan that adds a comparison_score column."""
 
     def plan(
-        df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+        df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
     ) -> pl.DataFrame | pl.LazyFrame:
         return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("difference"))
 
@@ -104,7 +104,7 @@ class TestFromComparison:
             df_mock = df_mock.lazy()
 
         result = ComparisonResult.from_comparison(
-            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
 
         assert result.reference == valid_comparison._ref
@@ -135,7 +135,7 @@ class TestFromComparison:
 
         with pytest.raises(ValueError, match=error_msg):
             ComparisonResult.from_comparison(
-                comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+                comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
             )
 
 
@@ -150,7 +150,7 @@ class TestLazyEvaluation:
     def test_df_returns_dataframe(self, valid_comparison, df_mock) -> None:
         """Test that .df property returns a DataFrame, not LazyFrame."""
         result = ComparisonResult.from_comparison(
-            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
         df = result.df
 
@@ -160,7 +160,7 @@ class TestLazyEvaluation:
     def test_df_multiple_accesses_return_equivalent_data(self, valid_comparison, df_mock) -> None:
         """Test that multiple .df accesses return equivalent DataFrames."""
         result = ComparisonResult.from_comparison(
-            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
 
         df1 = result.df
@@ -176,7 +176,7 @@ class TestLazyEvaluation:
         execution_count = {"count": 0}
 
         def counting_plan(
-            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
             execution_count["count"] += 1
             return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("score"))
@@ -194,7 +194,7 @@ class TestLazyEvaluation:
 
         # Creating the result should execute the plan once upon initialization
         result = ComparisonResult.from_comparison(
-            comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
         assert execution_count["count"] == 1
 
@@ -224,7 +224,7 @@ class TestLazyEvaluation:
 def test_fields_cannot_be_reassigned(valid_comparison, df_mock, field_name, new_value) -> None:
     """Test that frozen dataclass prevents field reassignment."""
     result = ComparisonResult.from_comparison(
-        valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+        valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
     )
 
     with pytest.raises(AttributeError):
@@ -241,7 +241,7 @@ class TestParameterIndependence:
         """Test that parameters dict is copied, not shared."""
         original_params = valid_comparison._parameters
         result = ComparisonResult.from_comparison(
-            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
 
         # Modify the original parameters
@@ -256,10 +256,10 @@ class TestParameterIndependence:
     def test_parameters_are_not_shared_between_results(self, df_mock, valid_comparison) -> None:
         """Test that multiple ComparisonResults don't share parameters dict."""
         result1 = ComparisonResult.from_comparison(
-            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
         result2 = ComparisonResult.from_comparison(
-            valid_comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
 
         # Modify one result's parameters
@@ -292,7 +292,7 @@ class TestDataFrameExecution:
         )
 
         result = ComparisonResult.from_comparison(
-            comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
         result_df = result.df
 
@@ -303,7 +303,7 @@ class TestDataFrameExecution:
         """Test that a complex plan with multiple columns works correctly."""
 
         def complex_plan(
-            df: pl.DataFrame | pl.LazyFrame, label_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
             diff_col = pl.col("ref") - pl.col("cmp")
             return df.with_columns(
@@ -326,7 +326,7 @@ class TestDataFrameExecution:
         )
 
         result = ComparisonResult.from_comparison(
-            comparison, df_mock, label_col="word", normalization_suffix="__wl_normed"
+            comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
         result_df = result.df
 
@@ -339,23 +339,23 @@ class TestDataFrameExecution:
 
 
 # ============================================================================
-# TestLabelAndSuffixWiring - Test that label_col and normalization_suffix are
+# TestLabelAndSuffixWiring - Test that token_col and normalization_suffix are
 # passed through correctly to the plan
 # ============================================================================
 
 
 class TestLabelAndSuffixWiring:
-    """Test that label_col and normalization_suffix are correctly forwarded to the plan."""
+    """Test that token_col and normalization_suffix are correctly forwarded to the plan."""
 
-    @pytest.mark.parametrize("label_col", ["word", "token", "term"])
-    def test_label_col_is_forwarded_to_plan(self, df_mock, label_col) -> None:
-        """Test that label_col is forwarded to the plan at execution time."""
+    @pytest.mark.parametrize("token_col", ["word", "token", "term"])
+    def test_label_col_is_forwarded_to_plan(self, df_mock, token_col) -> None:
+        """Test that token_col is forwarded to the plan at execution time."""
         received = {}
 
         def capturing_plan(
             df: pl.DataFrame | pl.LazyFrame, lc: str, ns: str
         ) -> pl.DataFrame | pl.LazyFrame:
-            received["label_col"] = lc
+            received["token_col"] = lc
             return df
 
         comparison = Comparison(
@@ -370,10 +370,10 @@ class TestLabelAndSuffixWiring:
         )
 
         ComparisonResult.from_comparison(
-            comparison, df_mock, label_col=label_col, normalization_suffix="__wl_normed"
+            comparison, df_mock, token_col=token_col, normalization_suffix="__wl_normed"
         )
 
-        assert received["label_col"] == label_col
+        assert received["token_col"] == token_col
 
     @pytest.mark.parametrize("normalization_suffix", ["__wl_normed", "_normed", "_norm"])
     def test_normalization_suffix_is_forwarded_to_plan(self, df_mock, normalization_suffix) -> None:
@@ -398,7 +398,7 @@ class TestLabelAndSuffixWiring:
         )
 
         ComparisonResult.from_comparison(
-            comparison, df_mock, label_col="word", normalization_suffix=normalization_suffix
+            comparison, df_mock, token_col="word", normalization_suffix=normalization_suffix
         )
 
         assert received["normalization_suffix"] == normalization_suffix

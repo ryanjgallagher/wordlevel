@@ -12,7 +12,7 @@ def shift_scales(
     df: pl.DataFrame,
     score_col: str,
     rank_col: str,
-    label_col: str,
+    token_col: str,
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
@@ -52,7 +52,7 @@ def shift_scales(
         df=df,
         score_col=score_col,
         rank_col=rank_col,
-        label_col=label_col,
+        token_col=token_col,
         size=size,
         fontsize=fontsize,
         on_bar_ends=config.on_bar_ends,
@@ -83,11 +83,11 @@ def shift_scales(
 
 
 def get_bar_lengths(
-    df: pl.DataFrame, score_col: str, rank_col: str, label_col: str
+    df: pl.DataFrame, score_col: str, rank_col: str, token_col: str
 ) -> pl.DataFrame:
     """ """
     df_positions = get_label_positions(
-        df, score_col=score_col, rank_col=rank_col, label_col=label_col
+        df, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
 
     return df_positions.with_columns(col(score_col).abs().alias("bar_length"))
@@ -97,7 +97,7 @@ def get_scale_limits(
     df: pl.DataFrame,
     score_col: str,
     rank_col: str,
-    label_col: str,
+    token_col: str,
     size: float,
     fontsize: float,
     on_bar_ends: bool = True,
@@ -107,7 +107,7 @@ def get_scale_limits(
 ):
     """ """
     df_bar_lengths = get_bar_lengths(
-        df, score_col=score_col, rank_col=rank_col, label_col=label_col
+        df, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
 
     # Get how long the entire score axis is
@@ -121,7 +121,7 @@ def get_scale_limits(
 
     # With the scaling information, make the limits symmetric and long enough to account for labels
     df_lims = df_bar_lengths.with_columns(
-        (col(label_col).str.len_chars() * label_scaling_factor).alias("label_width")
+        (col(token_col).str.len_chars() * label_scaling_factor).alias("label_width")
     )
 
     if on_bar_ends:

@@ -237,7 +237,7 @@ def test_score_axis_all_positive_labels(
     """
     Test that all_positive_labels correctly adds a labelExpr to show absolute values on the
     score axis. Since Vega evaluates labelExpr at render time, we verify the expression in the
-    JSON spec rather than the rendered label strings.
+    JSON spec rather than the rendered token strings.
     """
     chart = shift_bars(
         make_mock_df(),

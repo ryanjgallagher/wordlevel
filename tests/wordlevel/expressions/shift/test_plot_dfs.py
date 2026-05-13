@@ -20,7 +20,7 @@ class TestBarPlotDf:
 
         df_result = bar_plot_df(
             lf,
-            label_col="word",
+            token_col="word",
             score_col="score",
             rank_col="rank",
             attribution_col="attribution",
@@ -64,7 +64,7 @@ class TestBarPlotDf:
 
         df_result = bar_plot_df(
             lf,
-            label_col="word",
+            token_col="word",
             score_col="score",
             rank_col="rank",
             attribution_col="attribution",
@@ -101,7 +101,7 @@ class TestShiftPlotDf:
 
         df_result = shift_plot_df(
             lf,
-            label_col="word",
+            token_col="word",
             rank_col="rank",
             attribution_col="attribution",
             contribution_alias="my_contribution",
@@ -145,7 +145,7 @@ class TestShiftPlotDf:
 
         df_result = shift_plot_df(
             lf,
-            label_col="word",
+            token_col="word",
             rank_col="rank",
             attribution_col="attribution",
             contribution_alias="contribution",

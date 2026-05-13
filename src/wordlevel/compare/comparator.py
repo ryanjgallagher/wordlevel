@@ -34,7 +34,7 @@ class CorpusComparator:
         | ComparatorData
         | DictOfFreqs
         | ListOfFreqs,
-        label_col: str | None = None,
+        token_col: str | None = None,
         freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
     ) -> None:
@@ -44,13 +44,13 @@ class CorpusComparator:
         elif isinstance(data, CorpusComparator):
             init_data = from_comparator(data)
         elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
-            if label_col is None:
-                raise ValueError("`label_col` must be specified if providing a DataFrame")
+            if token_col is None:
+                raise ValueError("`token_col` must be specified if providing a DataFrame")
             if freq_cols is None:
                 raise ValueError("`freq_cols` must be specified if providing a DataFrame")
             init_data = from_polars(
                 df=data,
-                label_col=label_col,
+                token_col=token_col,
                 freq_cols=freq_cols,
             )
         elif isinstance(data, Mapping):
@@ -65,7 +65,7 @@ class CorpusComparator:
     def _init_from_comparator_data(self, data: ComparatorData) -> None:
         """ """
         self._df = data.df
-        self._label_col = data.label_col
+        self._token_col = data.token_col
         self._freq_cols = set(data.freq_cols)
         self._normalization_suffix = data.normalization_suffix
         self._comparisons = data.comparisons
@@ -91,7 +91,7 @@ class CorpusComparator:
     def from_polars(
         cls,
         df: pl.DataFrame | pl.LazyFrame,
-        label_col: str,
+        token_col: str,
         freq_cols: Collection[str],
         normalize: bool = True,
     ) -> CorpusComparator:
@@ -100,10 +100,10 @@ class CorpusComparator:
 
         Args:
             df:
-                A Polars data/lazyframe containing corpus information. Rows are words and columns
+                A Polars data/lazyframe containing corpus information. Rows are tokens and columns
                 are their frequencies in different corpora
-            label_col:
-                The column that includes the "labels" or "words"
+            token_col:
+                The column that contains the tokens (words, subwords, n-grams, etc.)
             freq_cols:
                 The column or columns that include the frequencies for each corpus
             normalize:
@@ -112,7 +112,7 @@ class CorpusComparator:
         """
         init_data = from_polars(
             df=df,
-            label_col=label_col,
+            token_col=token_col,
             freq_cols=freq_cols,
             normalize=normalize,
         )
@@ -179,7 +179,7 @@ class CorpusComparator:
             result = ComparisonResult.from_comparison(
                 comparison,
                 self._df,
-                label_col=self._label_col,
+                token_col=self._token_col,
                 normalization_suffix=self._normalization_suffix,
             )
             comparator._comparisons[result.alias] = result

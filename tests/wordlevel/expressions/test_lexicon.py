@@ -6,8 +6,8 @@ from wordlevel.expressions.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_CO
 from wordlevel.lexicons.lexicon import Lexicon
 
 
-LABEL_COL = "word"
-LEXICON_LABEL_COL = "token"
+TOKEN_COL = "word"
+LEXICON_TOKEN_COL = "token"
 LEXICON_SCORE_COL = "sentiment"
 
 
@@ -15,7 +15,7 @@ LEXICON_SCORE_COL = "sentiment"
 def df_words() -> pl.DataFrame:
     return pl.DataFrame(
         {
-            LABEL_COL: ["the", "cat", "dog", "fish"],
+            TOKEN_COL: ["the", "cat", "dog", "fish"],
             "freq": [100, 50, 25, 10],
         }
     )
@@ -31,7 +31,7 @@ def lexicon_dict() -> dict[str, float]:
 def lexicon_df(lexicon_dict) -> pl.DataFrame:
     return pl.DataFrame(
         list(lexicon_dict.items()),
-        schema=[LEXICON_LABEL_COL, LEXICON_SCORE_COL],
+        schema=[LEXICON_TOKEN_COL, LEXICON_SCORE_COL],
         orient="row",
     )
 
@@ -43,18 +43,18 @@ class TestJoinLexicon:
     )
     def test_dict_input(self, df_words, lexicon_dict, score_col, expected_score_col):
         result = join_lexicon(
-            df_words, lexicon_dict, df_label_col=LABEL_COL, lexicon_score_col=score_col, impute=0
+            df_words, lexicon_dict, df_token_col=TOKEN_COL, lexicon_score_col=score_col, impute=0
         )
 
         expected = pl.DataFrame(
             {
-                LABEL_COL: ["the", "cat", "dog", "fish"],
+                TOKEN_COL: ["the", "cat", "dog", "fish"],
                 expected_score_col: [1.0, 3.0, 7.0, 0.0],
             }
         )
 
         assert_frame_equal(
-            result.select(LABEL_COL, expected_score_col), expected, check_row_order=False
+            result.select(TOKEN_COL, expected_score_col), expected, check_row_order=False
         )
         assert "freq" in result.columns
 
@@ -63,37 +63,37 @@ class TestJoinLexicon:
             lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 3.0, 7.0]}),
             center=5.0,
         )
-        result = join_lexicon(df_words, lexicon, df_label_col=LABEL_COL, impute=0)
+        result = join_lexicon(df_words, lexicon, df_token_col=TOKEN_COL, impute=0)
 
         expected = pl.DataFrame(
             {
-                LABEL_COL: ["the", "cat", "dog", "fish"],
+                TOKEN_COL: ["the", "cat", "dog", "fish"],
                 "score": [1.0, 3.0, 7.0, 0.0],
             }
         )
 
-        assert_frame_equal(result.select(LABEL_COL, "score"), expected, check_row_order=False)
+        assert_frame_equal(result.select(TOKEN_COL, "score"), expected, check_row_order=False)
         assert "freq" in result.columns
 
     def test_dataframe_input(self, df_words, lexicon_df):
         result = join_lexicon(
             df_words,
             lexicon_df,
-            df_label_col=LABEL_COL,
-            lexicon_label_col=LEXICON_LABEL_COL,
+            df_token_col=TOKEN_COL,
+            lexicon_token_col=LEXICON_TOKEN_COL,
             lexicon_score_col=LEXICON_SCORE_COL,
             impute=0,
         )
 
         expected = pl.DataFrame(
             {
-                LABEL_COL: ["the", "cat", "dog", "fish"],
+                TOKEN_COL: ["the", "cat", "dog", "fish"],
                 LEXICON_SCORE_COL: [1.0, 3.0, 7.0, 0.0],
             }
         )
 
         assert_frame_equal(
-            result.select(LABEL_COL, LEXICON_SCORE_COL), expected, check_row_order=False
+            result.select(TOKEN_COL, LEXICON_SCORE_COL), expected, check_row_order=False
         )
         assert "freq" in result.columns
 
@@ -104,16 +104,16 @@ class TestImputation:
         [(0.0, 0.0), (5.0, 5.0), ("mean", (1.0 + 3.0 + 7.0) / 3), (pl.lit(2.5), 2.5), (None, None)],
     )
     def test_missing_words_are_imputed(self, df_words, lexicon_dict, impute, expected_fish_score):
-        result = join_lexicon(df_words, lexicon_dict, df_label_col=LABEL_COL, impute=impute)
+        result = join_lexicon(df_words, lexicon_dict, df_token_col=TOKEN_COL, impute=impute)
 
         expected = pl.DataFrame(
             {
-                LABEL_COL: ["the", "cat", "dog", "fish"],
+                TOKEN_COL: ["the", "cat", "dog", "fish"],
                 DEFAULT_LEXICON_SCORE_COL: [1.0, 3.0, 7.0, expected_fish_score],
             }
         )
         assert_frame_equal(
-            result.select(LABEL_COL, DEFAULT_LEXICON_SCORE_COL),
+            result.select(TOKEN_COL, DEFAULT_LEXICON_SCORE_COL),
             expected,
             check_row_order=False,
         )
@@ -121,13 +121,13 @@ class TestImputation:
 
 class TestValidation:
     def test_dataframe_lexicon_requires_lexicon_label_col(self, df_words, lexicon_df):
-        with pytest.raises(ValueError, match="lexicon_label_col"):
-            join_lexicon(df_words, lexicon_df, df_label_col=LABEL_COL)
+        with pytest.raises(ValueError, match="lexicon_token_col"):
+            join_lexicon(df_words, lexicon_df, df_token_col=TOKEN_COL)
 
     def test_dataframe_lexicon_requires_lexicon_score_col(self, df_words, lexicon_df):
         with pytest.raises(ValueError, match="lexicon_score_col"):
             join_lexicon(
-                df_words, lexicon_df, df_label_col=LABEL_COL, lexicon_label_col=LEXICON_LABEL_COL
+                df_words, lexicon_df, df_token_col=TOKEN_COL, lexicon_token_col=LEXICON_TOKEN_COL
             )
 
 
@@ -141,5 +141,5 @@ class TestReturnType:
     )
     def test_return_type_matches_input(self, df_words, lexicon_dict, as_lazy, expected_type):
         df_input = df_words.lazy() if as_lazy else df_words
-        result = join_lexicon(df_input, lexicon_dict, df_label_col=LABEL_COL)
+        result = join_lexicon(df_input, lexicon_dict, df_token_col=TOKEN_COL)
         assert isinstance(result, expected_type)
