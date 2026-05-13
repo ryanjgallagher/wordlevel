@@ -5,6 +5,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 from wordlevel.compare.comparator import CorpusComparator
+from wordlevel.compare.constants import LABEL, NORMALIZATION_SUFFIX
 from wordlevel.compare.types import ComparatorData
 from wordlevel.compare.constructors import _normalize_frequency_columns
 from wordlevel.compare.comparisons.comparison import ComparisonResult
@@ -140,19 +141,14 @@ class TestConstructors:
         )
         assert comp_original._df is not comp_new._df
 
-    @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_polars])
     @pytest.mark.parametrize("normalize", [False, True])
-    @pytest.mark.parametrize("normalization_suffix", ["norm_suffix1", "norm_suffix2"])
-    def test_from_polars(
-        self, df_mock, label_col, freq_cols, normalize, normalization_suffix, constructor
-    ):
-        """Test initialization from a dataframe"""
-        comparator = constructor(
+    def test_from_polars(self, df_mock, label_col, freq_cols, normalize):
+        """Test initialization from a dataframe via the from_polars classmethod."""
+        comparator = CorpusComparator.from_polars(
             df_mock,
             label_col=label_col,
             freq_cols=freq_cols,
             normalize=normalize,
-            normalization_suffix=normalization_suffix,
         )
 
         assert isinstance(comparator, CorpusComparator)
@@ -171,35 +167,29 @@ class TestConstructors:
         assert comparator._df is not df_mock
 
         if normalize:
-            assert comparator._normalization_suffix == normalization_suffix
-            for norm_freq_col in [f"{freq_col}{normalization_suffix}" for freq_col in freq_cols]:
+            assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
+            for norm_freq_col in [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in freq_cols]:
                 assert norm_freq_col in comparator._df.collect_schema()
         else:
             assert comparator._normalization_suffix == ""
 
     @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_polars])
-    @pytest.mark.parametrize("fill_nulls", [True, False])
-    def test_from_polars_fill_nulls(
-        self, df_mock_with_nulls, label_col, freq_cols, fill_nulls, constructor
+    def test_from_polars_always_fills_nulls(
+        self, df_mock_with_nulls, label_col, freq_cols, constructor
     ):
+        """Frequencies with nulls are always filled to 0; the API offers no opt-out."""
         comparator = constructor(
             df_mock_with_nulls,
             label_col=label_col,
             freq_cols=freq_cols,
-            fill_nulls=fill_nulls,
         )
 
         null_counts = comparator._df.select(pl.col(*freq_cols).is_null().any()).collect().row(0)
-
-        if fill_nulls:
-            assert not any(null_counts)
-        else:
-            assert any(null_counts)
+        assert not any(null_counts)
 
     @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_list_of_freqs])
     @pytest.mark.parametrize("corpora", [None, ["ref", "comp1", "comp2"]])
-    @pytest.mark.parametrize("normalize", [True, False])
-    def test_from_list_of_freqs(self, get_mock_freqs, corpora, normalize, constructor):
+    def test_from_list_of_freqs(self, get_mock_freqs, corpora, constructor):
         """Test initialization from a list of frequency dicts"""
         n_corpora = 3
         freqs = [get_mock_freqs() for _ in range(n_corpora)]
@@ -207,37 +197,27 @@ class TestConstructors:
             corpora if corpora is not None else [f"corpus{n}" for n in range(1, n_corpora + 1)]
         )
 
-        comparator = constructor(
-            freqs,
-            corpora=corpora,
-            label="token",
-            normalize=normalize,
-            normalization_suffix="_norm",
-        )
+        comparator = constructor(freqs, corpora=corpora)
 
         assert isinstance(comparator, CorpusComparator)
         assert isinstance(comparator._comparisons, dict)
         assert len(comparator._comparisons) == 0
 
         # Check label column
-        assert comparator._label_col == "token"
+        assert comparator._label_col == LABEL
 
         # Check freq cols are named correctly using the custom prefix
         assert comparator._freq_cols == set(expected_corpora)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs])
-        assert set(comparator.df["token"].to_list()) == all_words
+        assert set(comparator.df[LABEL].to_list()) == all_words
 
-        # Check normalization
-        if normalize:
-            assert comparator._normalization_suffix == "_norm"
-            normed_freq_cols = [f"{freq_col}_norm" for freq_col in expected_corpora]
-            for normed_freq_col in normed_freq_cols:
-                assert normed_freq_col in comparator._df.collect_schema()
-        else:
-            assert comparator._normalization_suffix == ""
-            normed_freq_cols = []
+        # Normalization is always applied for the freq constructors
+        assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
+        normed_freq_cols = [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in expected_corpora]
+        for normed_freq_col in normed_freq_cols:
+            assert normed_freq_col in comparator._df.collect_schema()
 
         # Check no nulls in any frequency or normed frequency columns
         cols_to_check = list(expected_corpora) + normed_freq_cols
@@ -245,42 +225,32 @@ class TestConstructors:
         assert not any(null_counts)
 
     @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_dict_of_freqs])
-    @pytest.mark.parametrize("normalize", [True, False])
-    def test_from_dict_of_freqs(self, get_mock_freqs, normalize, constructor):
+    def test_from_dict_of_freqs(self, get_mock_freqs, constructor):
         """Test initialization from a dict of frequency dicts"""
         corpora_names = ["ref", "comp1", "comp2"]
         freqs = {name: get_mock_freqs() for name in corpora_names}
 
-        comparator = constructor(
-            freqs,
-            label="token",
-            normalize=normalize,
-            normalization_suffix="_norm",
-        )
+        comparator = constructor(freqs)
 
         assert isinstance(comparator, CorpusComparator)
         assert isinstance(comparator._comparisons, dict)
         assert len(comparator._comparisons) == 0
 
         # Check label column
-        assert comparator._label_col == "token"
+        assert comparator._label_col == LABEL
 
         # Check freq cols are named correctly using the custom prefix
         assert comparator._freq_cols == set(corpora_names)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs.values()])
-        assert set(comparator.df["token"].to_list()) == all_words
+        assert set(comparator.df[LABEL].to_list()) == all_words
 
-        # Check normalization
-        if normalize:
-            assert comparator._normalization_suffix == "_norm"
-            normed_freq_cols = [f"{freq_col}_norm" for freq_col in corpora_names]
-            for normed_freq_col in normed_freq_cols:
-                assert normed_freq_col in comparator._df.collect_schema()
-        else:
-            assert comparator._normalization_suffix == ""
-            normed_freq_cols = []
+        # Normalization is always applied for the freq constructors
+        assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
+        normed_freq_cols = [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in corpora_names]
+        for normed_freq_col in normed_freq_cols:
+            assert normed_freq_col in comparator._df.collect_schema()
 
         # Check no nulls in any frequency or normed frequency columns
         cols_to_check = list(corpora_names) + normed_freq_cols

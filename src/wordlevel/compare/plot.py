@@ -125,6 +125,10 @@ class Plotter:
     ) -> alt.LayerChart:
         """
         Detailed word shift bar plot
+
+        Args:
+            rank_axis:
+                See [RankAxisConfig][wordlevel.plots.shift.bars.RankAxisConfig]
         """
         comp = self._comparator.comparisons[comparison]
         if not comp.is_weighted_avg:

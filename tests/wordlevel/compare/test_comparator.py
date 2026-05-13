@@ -26,9 +26,7 @@ def df_mock() -> pl.DataFrame:
 @pytest.fixture
 def comparator(df_mock) -> CorpusComparator:
     """Pre-initialized CorpusComparator for testing."""
-    return CorpusComparator(
-        df_mock, label_col="word", freq_cols=["freq1", "freq2", "freq3"], normalize=True
-    )
+    return CorpusComparator(df_mock, label_col="word", freq_cols=["freq1", "freq2", "freq3"])
 
 
 # ============================================================================
@@ -122,28 +120,23 @@ class TestComparatorProperties:
             df_renamed,
             label_col="token",
             freq_cols=["freq1", "freq2"],
-            normalize=True,
-            normalization_suffix="__custom",
         )
 
         comparator_new = comparator.with_comparisons(
             comp("freq1", "freq2").score.proportion().alias("test_injection")
         )
 
-        # Verify the comparator's DataFrame has both raw and custom-normalized columns
+        # Verify the comparator's DataFrame has both raw and normalized columns
         df = comparator_new.df
         assert "token" in df.columns
-        assert "freq1__custom" in df.columns
-        assert "freq2__custom" in df.columns
-        assert "freq1__wl_normed" not in df.columns
-        assert "freq2__wl_normed" not in df.columns
+        assert "freq1__wl_normed" in df.columns
+        assert "freq2__wl_normed" in df.columns
 
-        # Verify the comparison result uses the custom label and normalization suffix
+        # Verify the comparison result uses the comparator's label and normalization suffix
         result_df = comparator_new.comparisons["test_injection"].df
         assert "token" in result_df.columns
-        assert "freq1__custom" in result_df.columns
-        assert "freq2__custom" in result_df.columns
-        assert "freq1__wl_normed" not in result_df.columns
+        assert "freq1__wl_normed" in result_df.columns
+        assert "freq2__wl_normed" in result_df.columns
 
 
 # ============================================================================
@@ -158,7 +151,7 @@ class TestIntegration:
         """Test complete workflow: create comparator -> add comparisons -> access results."""
         # 1. Create comparator
         comparator = CorpusComparator(
-            df_mock, label_col="word", freq_cols=["freq1", "freq2", "freq3"], normalize=True
+            df_mock, label_col="word", freq_cols=["freq1", "freq2", "freq3"]
         )
 
         # 2. Add comparisons
@@ -190,9 +183,7 @@ class TestIntegration:
 
     def test_workflow_with_jsd(self, df_mock) -> None:
         """Test workflow with Jensen-Shannon divergence scoring."""
-        comparator = CorpusComparator(
-            df_mock, label_col="word", freq_cols=["freq1", "freq2"], normalize=True
-        )
+        comparator = CorpusComparator(df_mock, label_col="word", freq_cols=["freq1", "freq2"])
 
         comparator_new = comparator.with_comparisons(
             comp("freq1", "freq2").score.jensen_shannon_divergence().alias("jsd")
@@ -212,9 +203,7 @@ class TestIntegration:
 
     def test_workflow_chained(self, df_mock) -> None:
         """Test workflow with chained comparison additions."""
-        cc = CorpusComparator(
-            df_mock, label_col="word", freq_cols=["freq1", "freq2", "freq3"], normalize=True
-        )
+        cc = CorpusComparator(df_mock, label_col="word", freq_cols=["freq1", "freq2", "freq3"])
 
         comparator_new = (
             cc.with_comparisons(comp("freq1", "freq2").score.proportion().alias("1vs2"))

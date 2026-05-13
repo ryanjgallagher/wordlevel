@@ -12,3 +12,9 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      - id: gen-api-docs
+        name: gen-api-docs
+        entry: uv run python docs/scripts/gen_api_docs.py
+        language: system
+        pass_filenames: false
+        files: ^(src/wordlevel/.*\.py|docs/scripts/gen_api_docs\.py)$

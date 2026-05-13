@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Collection, Mapping, Sequence
 from functools import cached_property
 from types import MappingProxyType
-from typing_extensions import Self
 
 import polars as pl
 
@@ -12,17 +11,20 @@ from wordlevel.compare.constructors import (
     from_polars,
     from_dict_of_freqs,
     from_list_of_freqs,
-    DictOfFreqs,
-    ListOfFreqs,
 )
-from wordlevel.compare.constants import LABEL, NORMALIZATION_SUFFIX
 from wordlevel.compare.plot import Plotter
-from wordlevel.compare.types import ComparatorData
+from wordlevel.compare.types import ComparatorData, DictOfFreqs, ListOfFreqs
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
 
 
 class CorpusComparator:
-    """ """
+    """
+    This is the docstring of the comparator
+
+    Args:
+        data:
+            description
+    """
 
     def __init__(
         self,
@@ -35,10 +37,6 @@ class CorpusComparator:
         label_col: str | None = None,
         freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
-        label: str = LABEL,
-        fill_nulls: bool = True,
-        normalize: bool = True,
-        normalization_suffix: str = NORMALIZATION_SUFFIX,
     ) -> None:
         """ """
         if isinstance(data, ComparatorData):
@@ -54,25 +52,11 @@ class CorpusComparator:
                 df=data,
                 label_col=label_col,
                 freq_cols=freq_cols,
-                fill_nulls=fill_nulls,
-                normalize=normalize,
-                normalization_suffix=normalization_suffix,
             )
         elif isinstance(data, Mapping):
-            init_data = from_dict_of_freqs(
-                freqs=data,
-                label=label,
-                normalize=normalize,
-                normalization_suffix=normalization_suffix,
-            )
+            init_data = from_dict_of_freqs(freqs=data)
         elif isinstance(data, Sequence):
-            init_data = from_list_of_freqs(
-                freqs=data,
-                corpora=corpora,
-                label=label,
-                normalize=normalize,
-                normalization_suffix=normalization_suffix,
-            )
+            init_data = from_list_of_freqs(freqs=data, corpora=corpora)
         else:
             raise TypeError(f"Input type not supported: {type(data)}")
 
@@ -88,7 +72,17 @@ class CorpusComparator:
 
     @classmethod
     def from_comparator(cls, comparator: CorpusComparator) -> CorpusComparator:
-        """ """
+        """
+        Creates a `CorpusComparator` from an existing `CorpusComparator`. It is relatively cheap to
+        copy the data from one comparator to the other.
+
+        Args:
+            comparator:
+                An existing, initialized `CorpusComparator`
+
+        Returns:
+            A new `CorpusComparator` with the same internal data as the input
+        """
         init_data = from_comparator(comparator)
 
         return cls(data=init_data)
@@ -96,21 +90,31 @@ class CorpusComparator:
     @classmethod
     def from_polars(
         cls,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
         label_col: str,
         freq_cols: Collection[str],
-        fill_nulls: bool = True,
         normalize: bool = True,
-        normalization_suffix: str = NORMALIZATION_SUFFIX,
-    ) -> Self:
-        """ """
+    ) -> CorpusComparator:
+        """
+        Creates a `CorpusComparator` from a Polars dataframe.
+
+        Args:
+            df:
+                A Polars data/lazyframe containing corpus information. Rows are words and columns
+                are their frequencies in different corpora
+            label_col:
+                The column that includes the "labels" or "words"
+            freq_cols:
+                The column or columns that include the frequencies for each corpus
+            normalize:
+                Whether to normalize the corpus frequencies for each corpus. The original corpus
+                frequencies will be preserved
+        """
         init_data = from_polars(
             df=df,
             label_col=label_col,
             freq_cols=freq_cols,
-            fill_nulls=fill_nulls,
             normalize=normalize,
-            normalization_suffix=normalization_suffix,
         )
 
         return cls(data=init_data)
@@ -120,42 +124,36 @@ class CorpusComparator:
         cls,
         freqs: ListOfFreqs,
         corpora: Sequence[str] | None = None,
-        label: str = LABEL,
-        normalize: bool = True,
-        normalization_suffix: str = NORMALIZATION_SUFFIX,
-    ) -> Self:
-        """ """
-        init_data = from_list_of_freqs(
-            freqs=freqs,
-            corpora=corpora,
-            label=label,
-            normalize=normalize,
-            normalization_suffix=normalization_suffix,
-        )
+    ) -> CorpusComparator:
+        """
+        Creates a `CorpusComparator` from a list of frequencies, a sequence of word-to-frequency
+        mappings.
+
+        Args:
+            freqs:
+                A sequence of word-to-frequencey mappings, one per corpus. Each mapping is `{word: frequency}` for a single corpus
+            corpora:
+                The names of the corpora, listed in the same order as `freqs`. If not provided, will default to `corpus1`, `corpus2`, etc.
+
+        Returns:
+            A CorpusComparator instance
+        """
+        init_data = from_list_of_freqs(freqs=freqs, corpora=corpora)
 
         return cls(data=init_data)
 
     @classmethod
-    def from_dict_of_freqs(
-        cls,
-        freqs: DictOfFreqs,
-        label: str = LABEL,
-        normalize: bool = True,
-        normalization_suffix: str = NORMALIZATION_SUFFIX,
-    ) -> Self:
+    def from_dict_of_freqs(cls, freqs: DictOfFreqs) -> CorpusComparator:
         """ """
-        init_data = from_dict_of_freqs(
-            freqs=freqs,
-            label=label,
-            normalize=normalize,
-            normalization_suffix=normalization_suffix,
-        )
+        init_data = from_dict_of_freqs(freqs=freqs)
 
         return cls(data=init_data)
 
     @property
     def comparisons(self) -> Mapping[str, ComparisonResult]:
-        """"""
+        """
+        This is a description
+        """
         return MappingProxyType(self._comparisons)
 
     @property

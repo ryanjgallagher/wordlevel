@@ -36,7 +36,9 @@ class Comparison:
 
     @cached_property
     def score(self) -> Scorer:
-        """ """
+        """
+        The scorer
+        """
         return Scorer(self)
 
     def alias(self, name: str) -> Self:

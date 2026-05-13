@@ -6,17 +6,13 @@ from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 import polars as pl
 from polars import col
 
-from wordlevel.compare.types import ComparatorData
+from wordlevel.compare.types import ComparatorData, ListOfFreqs, DictOfFreqs
 from wordlevel.compare.constants import NORMALIZATION_SUFFIX, LABEL
 from wordlevel.expressions.utils import normalize_freqs
 
 
 if TYPE_CHECKING:
     from wordlevel.compare.comparator import CorpusComparator
-
-
-ListOfFreqs = Sequence[Mapping[str, float]]
-DictOfFreqs = Mapping[str, Mapping[str, float]]
 
 
 def from_comparator(comparator: CorpusComparator) -> ComparatorData:
@@ -34,9 +30,7 @@ def from_polars(
     df: pl.DataFrame | pl.LazyFrame,
     label_col: str,
     freq_cols: Collection[str],
-    fill_nulls: bool = True,
     normalize: bool = True,
-    normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> ComparatorData:
     """ """
     # Check all columns exist
@@ -59,16 +53,15 @@ def from_polars(
 
     # Do necessary transformations
     lf = df.clone().lazy()
-
-    if fill_nulls:
-        lf = lf.with_columns(*[col(freq_col).fill_null(0) for freq_col in freq_cols])
+    lf = lf.with_columns(*[col(freq_col).fill_null(0) for freq_col in deduped_freq_cols])
 
     if normalize:
         lf = _normalize_frequency_columns(
             lf,
             freq_cols=deduped_freq_cols,
-            normalization_suffix=normalization_suffix,
+            normalization_suffix=NORMALIZATION_SUFFIX,
         )
+        normalization_suffix = NORMALIZATION_SUFFIX
     else:
         normalization_suffix = ""
 
@@ -84,9 +77,6 @@ def from_polars(
 def from_list_of_freqs(
     freqs: ListOfFreqs,
     corpora: Sequence[str] | None = None,
-    label: str = LABEL,
-    normalize: bool = True,
-    normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> ComparatorData:
     """ """
     if corpora is None:
@@ -104,17 +94,12 @@ def from_list_of_freqs(
 
     return _from_freqs(
         freqs=zip(corpora, freqs),
-        label=label,
-        normalize=normalize,
-        normalization_suffix=normalization_suffix,
+        label=LABEL,
     )
 
 
 def from_dict_of_freqs(
     freqs: DictOfFreqs,
-    label: str = LABEL,
-    normalize: bool = True,
-    normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> ComparatorData:
     """ """
     if len(freqs) < 2:
@@ -122,17 +107,13 @@ def from_dict_of_freqs(
 
     return _from_freqs(
         freqs=freqs.items(),
-        label=label,
-        normalize=normalize,
-        normalization_suffix=normalization_suffix,
+        label=LABEL,
     )
 
 
 def _from_freqs(
     freqs: Iterable[tuple[str, Mapping[str, float]]],
     label: str = LABEL,
-    normalize: bool = True,
-    normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> ComparatorData:
     """ """
     freq_cols: list[str] = []
@@ -152,9 +133,6 @@ def _from_freqs(
         lf,
         label_col=label,
         freq_cols=freq_cols,
-        fill_nulls=True,
-        normalize=normalize,
-        normalization_suffix=normalization_suffix,
     )
 
 

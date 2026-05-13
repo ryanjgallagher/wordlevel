@@ -73,7 +73,9 @@ def _passthrough_clean_score_func(
 
 
 class Scorer:
-    """ """
+    """
+    Class documentation
+    """
 
     def __init__(self, comparison: Comparison):
         """ """
@@ -437,7 +439,19 @@ class Scorer:
         )
 
     def rank_divergence(self, alpha: float = 1.0) -> Comparison:
-        """ """
+        r"""
+        Computes rank divergence
+
+        $$
+        \alpha = \frac{1}{n}
+        $$
+
+        Args:
+            alpha: Description $\alpha$
+
+        Returns:
+            Comparison
+        """
         score_func = partial(rank_divergence, alpha=alpha)
         plan = self._make_basic_score_plan(
             score_func,
