@@ -119,14 +119,14 @@ def _from_freqs(
     freq_cols: list[str] = []
     lf = pl.LazyFrame(schema={token: pl.String})
 
-    for corpus, word2freq in freqs:
-        if not word2freq:
-            raise ValueError(f"There are no word frequencies for `{corpus}`")
+    for corpus, token2freq in freqs:
+        if not token2freq:
+            raise ValueError(f"There are no token frequencies for `{corpus}`")
 
         freq_cols.append(corpus)
 
-        words, word_freqs = zip(*word2freq.items())
-        lf_corpus = pl.LazyFrame([words, word_freqs], schema=[token, corpus])
+        tokens, token_freqs = zip(*token2freq.items())
+        lf_corpus = pl.LazyFrame([tokens, token_freqs], schema=[token, corpus])
         lf = lf.join(lf_corpus, on=token, how="full", coalesce=True)
 
     return from_polars(

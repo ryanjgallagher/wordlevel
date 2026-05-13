@@ -300,7 +300,7 @@ class TestConstructorValidation:
         with pytest.raises(ValueError, match="`freqs` and `corpora` must be the same length"):
             CorpusComparator([mock, mock], corpora=["only_one"])
 
-        with pytest.raises(ValueError, match="There are no word frequencies"):
+        with pytest.raises(ValueError, match="There are no token frequencies"):
             CorpusComparator([mock, {}])
 
     def test_from_dict_of_freqs_invalid(self, get_mock_freqs):
@@ -310,7 +310,7 @@ class TestConstructorValidation:
         with pytest.raises(ValueError, match="At least two frequency sets"):
             CorpusComparator({"corpus1": mock})
 
-        with pytest.raises(ValueError, match="There are no word frequencies"):
+        with pytest.raises(ValueError, match="There are no token frequencies"):
             CorpusComparator({"corpus1": mock, "corpus2": {}})
 
 
