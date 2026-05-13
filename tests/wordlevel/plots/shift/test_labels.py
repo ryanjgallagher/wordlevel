@@ -290,7 +290,7 @@ def test_label_config_on_bar_ends(
         axis = chart_json["encoding"]["y"]
 
     if on_bar_ends:
-        # If True, the labels should be based on the token positions (specified by score_col)
+        # If True, the labels should be based on the label positions (specified by score_col)
         assert "field" in axis
         assert axis["field"] == score_col
     else:

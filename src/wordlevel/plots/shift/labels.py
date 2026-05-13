@@ -45,7 +45,7 @@ def shift_labels(
 
     df = get_label_positions(df, token_col=token_col, rank_col=rank_col, score_col=score_col)
 
-    # Set default token configurations
+    # Set default label configurations
     if isinstance(config, dict):
         config = LabelConfig(**config)
     elif config is None:
@@ -71,7 +71,7 @@ def shift_labels(
     else:
         neg_text_angle = pos_text_angle
 
-    # Configure the token positions given the bar and text angles
+    # Configure the label positions given the bar and text angles
     pos_position_params = get_position_params(
         bar_angle=pos_bar_angle, text_angle=pos_text_angle, pad=config.pad
     )
