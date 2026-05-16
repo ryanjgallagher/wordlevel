@@ -42,7 +42,7 @@ from wordlevel.expressions.shift.plan import (
 from wordlevel.lexicons.lexicon import Lexicon
 
 if TYPE_CHECKING:
-    from wordlevel.compare.comparisons.comparison import Comparison
+    from wordlevel.comparison.comparison import Comparison
 
 
 class ScorePlan(Protocol):

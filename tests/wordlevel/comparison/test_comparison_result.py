@@ -2,7 +2,7 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
+from wordlevel.comparison.comparison import Comparison, ComparisonResult
 
 
 # ============================================================================

@@ -6,7 +6,7 @@ from typing import TypeAlias, Sequence, Mapping
 
 import polars as pl
 
-from wordlevel.compare.comparisons.comparison import ComparisonResult
+from wordlevel.comparison.comparison import ComparisonResult
 
 
 @dataclass

@@ -6,15 +6,15 @@ from types import MappingProxyType
 
 import polars as pl
 
-from wordlevel.compare.constructors import (
+from wordlevel.catalog.constructors import (
     from_catalog,
     from_polars,
     from_dict_of_freqs,
     from_list_of_freqs,
 )
-from wordlevel.compare.plot import Plotter
-from wordlevel.compare.types import CatalogData, DictOfFreqs, ListOfFreqs
-from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
+from wordlevel.catalog.plot import Plotter
+from wordlevel.catalog.types import CatalogData, DictOfFreqs, ListOfFreqs
+from wordlevel.comparison.comparison import Comparison, ComparisonResult
 
 
 class Catalog:

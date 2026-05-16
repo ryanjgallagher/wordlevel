@@ -4,11 +4,11 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.compare.catalog import Catalog
-from wordlevel.compare.constants import TOKEN, NORMALIZATION_SUFFIX
-from wordlevel.compare.types import CatalogData
-from wordlevel.compare.constructors import _normalize_frequency_columns
-from wordlevel.compare.comparisons.comparison import ComparisonResult
+from wordlevel.catalog.catalog import Catalog
+from wordlevel.catalog.constants import TOKEN, NORMALIZATION_SUFFIX
+from wordlevel.catalog.types import CatalogData
+from wordlevel.catalog.constructors import _normalize_frequency_columns
+from wordlevel.comparison.comparison import ComparisonResult
 
 
 @pytest.fixture

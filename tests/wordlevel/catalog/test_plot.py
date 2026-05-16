@@ -2,9 +2,9 @@ import pytest
 import altair as alt
 import polars as pl
 
-from wordlevel.compare.catalog import Catalog
-from wordlevel.compare.comparisons.comparison import comp
-from wordlevel.compare.plot import Plotter
+from wordlevel.catalog.catalog import Catalog
+from wordlevel.comparison.comparison import comp
+from wordlevel.catalog.plot import Plotter
 from wordlevel.constants import (
     RANK_COL,
     PLOT_CONTRIBUTION_COL,

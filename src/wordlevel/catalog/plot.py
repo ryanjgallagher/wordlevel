@@ -7,7 +7,7 @@ import altair as alt
 import polars as pl
 from polars import col
 
-from wordlevel.compare.comparisons.comparison import ComparisonResult
+from wordlevel.comparison.comparison import ComparisonResult
 from wordlevel.constants import (
     ATTRIBUTION_COL,
     PLOT_CONTRIBUTION_COL,
@@ -29,7 +29,7 @@ from wordlevel.plots.shift.labels import LabelConfig
 from wordlevel.plots.shift.shift import shift
 
 if TYPE_CHECKING:
-    from wordlevel.compare.catalog import Catalog
+    from wordlevel.catalog.catalog import Catalog
 
 
 PlotType = Literal["bar", "shift"]

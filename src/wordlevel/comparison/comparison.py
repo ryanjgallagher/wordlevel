@@ -4,7 +4,7 @@ from typing_extensions import Self
 
 import polars as pl
 
-from wordlevel.compare.comparisons.score import Scorer, ScorePlan
+from wordlevel.comparison.score import Scorer, ScorePlan
 
 
 class Comparison:

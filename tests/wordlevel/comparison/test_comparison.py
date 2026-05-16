@@ -1,7 +1,7 @@
 import pytest
 
-from wordlevel.compare.comparisons.comparison import Comparison, comp
-from wordlevel.compare.comparisons.score import Scorer
+from wordlevel.comparison.comparison import Comparison, comp
+from wordlevel.comparison.score import Scorer
 
 
 def test_initialization_defaults() -> None:

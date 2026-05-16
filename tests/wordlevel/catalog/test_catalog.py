@@ -5,9 +5,9 @@ from polars.testing import assert_frame_equal
 from types import MappingProxyType
 
 from wordlevel.constants import SCORE_COL, RANK_COL
-from wordlevel.compare.catalog import Catalog
-from wordlevel.compare.comparisons.comparison import comp
-from wordlevel.compare.plot import Plotter
+from wordlevel.catalog.catalog import Catalog
+from wordlevel.comparison.comparison import comp
+from wordlevel.catalog.plot import Plotter
 
 
 @pytest.fixture

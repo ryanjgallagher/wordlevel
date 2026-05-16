@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 import polars as pl
 from polars import col
 
-from wordlevel.compare.types import CatalogData, ListOfFreqs, DictOfFreqs
-from wordlevel.compare.constants import NORMALIZATION_SUFFIX, TOKEN
+from wordlevel.catalog.types import CatalogData, ListOfFreqs, DictOfFreqs
+from wordlevel.catalog.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.expressions.utils import normalize_freqs
 
 
 if TYPE_CHECKING:
-    from wordlevel.compare.catalog import Catalog
+    from wordlevel.catalog.catalog import Catalog
 
 
 def from_catalog(catalog: Catalog) -> CatalogData:

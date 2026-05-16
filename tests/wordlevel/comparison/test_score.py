@@ -4,8 +4,8 @@ from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
 from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION, SCORE_COL
-from wordlevel.compare.comparisons.comparison import Comparison
-from wordlevel.compare.comparisons.score import Scorer
+from wordlevel.comparison.comparison import Comparison
+from wordlevel.comparison.score import Scorer
 from wordlevel.expressions.utils import normalize_freqs
 from wordlevel.lexicons.lexicon import Lexicon
 
