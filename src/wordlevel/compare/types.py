@@ -10,7 +10,7 @@ from wordlevel.compare.comparisons.comparison import ComparisonResult
 
 
 @dataclass
-class ComparatorData:
+class CatalogData:
     df: pl.LazyFrame
     token_col: str
     freq_cols: Collection[str]

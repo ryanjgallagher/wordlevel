@@ -4,9 +4,9 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.compare.comparator import CorpusComparator
+from wordlevel.compare.catalog import Catalog
 from wordlevel.compare.constants import TOKEN, NORMALIZATION_SUFFIX
-from wordlevel.compare.types import ComparatorData
+from wordlevel.compare.types import CatalogData
 from wordlevel.compare.constructors import _normalize_frequency_columns
 from wordlevel.compare.comparisons.comparison import ComparisonResult
 
@@ -81,10 +81,10 @@ def mock_comparison_result(df_mock, freq_cols) -> ComparisonResult:
 
 
 @pytest.fixture
-def mock_comparator_data(
+def mock_catalog_data(
     df_mock, mock_comparison_result, token_col, freq_cols, norm_suffix
-) -> ComparatorData:
-    return ComparatorData(
+) -> CatalogData:
+    return CatalogData(
         df=df_mock,
         token_col=token_col,
         freq_cols=freq_cols,
@@ -94,100 +94,100 @@ def mock_comparator_data(
 
 
 class TestConstructors:
-    def test_init_from_comparator_data(
+    def test_init_from_catalog_data(
         self,
         df_mock,
         mock_comparison_result,
-        mock_comparator_data,
+        mock_catalog_data,
         token_col,
         norm_suffix,
         freq_cols,
     ):
         """
-        Checks a comparator is initialized correctly from comparator data. Does not check that the
+        Checks a catalog is initialized correctly from catalog data. Does not check that the
         comparisons and dataframe are different objects because we assume ownership of copying is done
         by constructors
         """
-        comparator = CorpusComparator(mock_comparator_data)
+        catalog = Catalog(mock_catalog_data)
 
-        assert comparator._token_col == token_col
-        assert comparator._normalization_suffix == norm_suffix
+        assert catalog._token_col == token_col
+        assert catalog._normalization_suffix == norm_suffix
 
-        assert sorted(list(comparator._freq_cols)) == sorted(freq_cols)
-        assert comparator._comparisons == {"comparison": mock_comparison_result}
-        assert_frame_equal(comparator._df, df_mock, check_column_order=False, check_row_order=False)
+        assert sorted(list(catalog._freq_cols)) == sorted(freq_cols)
+        assert catalog._comparisons == {"comparison": mock_comparison_result}
+        assert_frame_equal(catalog._df, df_mock, check_column_order=False, check_row_order=False)
 
-    @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_comparator])
-    def test_from_comparator(self, mock_comparator_data, constructor):
-        """Test initialization from an existing Comparator"""
-        comp_original = CorpusComparator(data=mock_comparator_data)
-        comp_new = constructor(comp_original)
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_catalog])
+    def test_from_catalog(self, mock_catalog_data, constructor):
+        """Test initialization from an existing Catalog"""
+        cl_original = Catalog(data=mock_catalog_data)
+        cl_new = constructor(cl_original)
 
         # Check that they are distinct class instances
-        assert isinstance(comp_new, CorpusComparator)
-        assert comp_original is not comp_new
+        assert isinstance(cl_new, Catalog)
+        assert cl_original is not cl_new
 
         # Check the classes hold the same data
-        assert comp_original._token_col == comp_new._token_col
-        assert comp_original._normalization_suffix == comp_new._normalization_suffix
-        assert sorted(comp_original._freq_cols) == sorted(comp_new._freq_cols)
+        assert cl_original._token_col == cl_new._token_col
+        assert cl_original._normalization_suffix == cl_new._normalization_suffix
+        assert sorted(cl_original._freq_cols) == sorted(cl_new._freq_cols)
 
-        assert comp_original._comparisons == comp_new._comparisons
-        assert comp_original._comparisons is not comp_new._comparisons
+        assert cl_original._comparisons == cl_new._comparisons
+        assert cl_original._comparisons is not cl_new._comparisons
 
-        assert isinstance(comp_new._df, pl.LazyFrame)
+        assert isinstance(cl_new._df, pl.LazyFrame)
         assert_frame_equal(
-            comp_original._df, comp_new._df, check_column_order=False, check_row_order=False
+            cl_original._df, cl_new._df, check_column_order=False, check_row_order=False
         )
-        assert comp_original._df is not comp_new._df
+        assert cl_original._df is not cl_new._df
 
     @pytest.mark.parametrize("normalize", [False, True])
     def test_from_polars(self, df_mock, token_col, freq_cols, normalize):
         """Test initialization from a dataframe via the from_polars classmethod."""
-        comparator = CorpusComparator.from_polars(
+        catalog = Catalog.from_polars(
             df_mock,
             token_col=token_col,
             freq_cols=freq_cols,
             normalize=normalize,
         )
 
-        assert isinstance(comparator, CorpusComparator)
+        assert isinstance(catalog, Catalog)
 
-        assert comparator._token_col == token_col
-        assert sorted(comparator._freq_cols) == sorted(freq_cols)
-        assert isinstance(comparator._comparisons, dict)
-        assert len(comparator._comparisons) == 0
+        assert catalog._token_col == token_col
+        assert sorted(catalog._freq_cols) == sorted(freq_cols)
+        assert isinstance(catalog._comparisons, dict)
+        assert len(catalog._comparisons) == 0
 
         assert_frame_equal(
-            comparator._df.select(token_col, *freq_cols).collect(),
+            catalog._df.select(token_col, *freq_cols).collect(),
             df_mock.collect(),
             check_row_order=False,
             check_column_order=False,
         )
-        assert comparator._df is not df_mock
+        assert catalog._df is not df_mock
 
         if normalize:
-            assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
+            assert catalog._normalization_suffix == NORMALIZATION_SUFFIX
             for norm_freq_col in [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in freq_cols]:
-                assert norm_freq_col in comparator._df.collect_schema()
+                assert norm_freq_col in catalog._df.collect_schema()
         else:
-            assert comparator._normalization_suffix == ""
+            assert catalog._normalization_suffix == ""
 
-    @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_polars])
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_polars])
     def test_from_polars_always_fills_nulls(
         self, df_mock_with_nulls, token_col, freq_cols, constructor
     ):
         """Frequencies with nulls are always filled to 0; the API offers no opt-out."""
-        comparator = constructor(
+        catalog = constructor(
             df_mock_with_nulls,
             token_col=token_col,
             freq_cols=freq_cols,
         )
 
-        null_counts = comparator._df.select(pl.col(*freq_cols).is_null().any()).collect().row(0)
+        null_counts = catalog._df.select(pl.col(*freq_cols).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
-    @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_list_of_freqs])
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_list_of_freqs])
     @pytest.mark.parametrize("corpora", [None, ["ref", "comp1", "comp2"]])
     def test_from_list_of_freqs(self, get_mock_freqs, corpora, constructor):
         """Test initialization from a list of frequency dicts"""
@@ -197,146 +197,144 @@ class TestConstructors:
             corpora if corpora is not None else [f"corpus{n}" for n in range(1, n_corpora + 1)]
         )
 
-        comparator = constructor(freqs, corpora=corpora)
+        catalog = constructor(freqs, corpora=corpora)
 
-        assert isinstance(comparator, CorpusComparator)
-        assert isinstance(comparator._comparisons, dict)
-        assert len(comparator._comparisons) == 0
+        assert isinstance(catalog, Catalog)
+        assert isinstance(catalog._comparisons, dict)
+        assert len(catalog._comparisons) == 0
 
         # Check token column
-        assert comparator._token_col == TOKEN
+        assert catalog._token_col == TOKEN
 
         # Check freq cols are named correctly using the custom prefix
-        assert comparator._freq_cols == set(expected_corpora)
+        assert catalog._freq_cols == set(expected_corpora)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs])
-        assert set(comparator.df[TOKEN].to_list()) == all_words
+        assert set(catalog.df[TOKEN].to_list()) == all_words
 
         # Normalization is always applied for the freq constructors
-        assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
+        assert catalog._normalization_suffix == NORMALIZATION_SUFFIX
         normed_freq_cols = [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in expected_corpora]
         for normed_freq_col in normed_freq_cols:
-            assert normed_freq_col in comparator._df.collect_schema()
+            assert normed_freq_col in catalog._df.collect_schema()
 
         # Check no nulls in any frequency or normed frequency columns
         cols_to_check = list(expected_corpora) + normed_freq_cols
-        null_counts = comparator._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
+        null_counts = catalog._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
-    @pytest.mark.parametrize("constructor", [CorpusComparator, CorpusComparator.from_dict_of_freqs])
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dict_of_freqs])
     def test_from_dict_of_freqs(self, get_mock_freqs, constructor):
         """Test initialization from a dict of frequency dicts"""
         corpora_names = ["ref", "comp1", "comp2"]
         freqs = {name: get_mock_freqs() for name in corpora_names}
 
-        comparator = constructor(freqs)
+        catalog = constructor(freqs)
 
-        assert isinstance(comparator, CorpusComparator)
-        assert isinstance(comparator._comparisons, dict)
-        assert len(comparator._comparisons) == 0
+        assert isinstance(catalog, Catalog)
+        assert isinstance(catalog._comparisons, dict)
+        assert len(catalog._comparisons) == 0
 
         # Check token column
-        assert comparator._token_col == TOKEN
+        assert catalog._token_col == TOKEN
 
         # Check freq cols are named correctly using the custom prefix
-        assert comparator._freq_cols == set(corpora_names)
+        assert catalog._freq_cols == set(corpora_names)
 
         # Check all words from all corpora are present (outer join)
         all_words = set().union(*[f.keys() for f in freqs.values()])
-        assert set(comparator.df[TOKEN].to_list()) == all_words
+        assert set(catalog.df[TOKEN].to_list()) == all_words
 
         # Normalization is always applied for the freq constructors
-        assert comparator._normalization_suffix == NORMALIZATION_SUFFIX
+        assert catalog._normalization_suffix == NORMALIZATION_SUFFIX
         normed_freq_cols = [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in corpora_names]
         for normed_freq_col in normed_freq_cols:
-            assert normed_freq_col in comparator._df.collect_schema()
+            assert normed_freq_col in catalog._df.collect_schema()
 
         # Check no nulls in any frequency or normed frequency columns
         cols_to_check = list(corpora_names) + normed_freq_cols
-        null_counts = comparator._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
+        null_counts = catalog._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
 
 class TestConstructorValidation:
     def test_from_polars_duplicate_freq_cols(self, df_mock, freq_cols, token_col):
-        comparator = CorpusComparator(
-            data=df_mock, token_col=token_col, freq_cols=freq_cols + freq_cols
-        )
+        catalog = Catalog(data=df_mock, token_col=token_col, freq_cols=freq_cols + freq_cols)
 
-        assert sorted(list(comparator._freq_cols)) == sorted(freq_cols)
+        assert sorted(list(catalog._freq_cols)) == sorted(freq_cols)
 
     def test_from_polars_invalid_freq_cols(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""
         with pytest.raises(
             ValueError, match="`freq_cols` must be specified if providing a DataFrame"
         ):
-            CorpusComparator(data=df_mock, token_col=token_col, freq_cols=None)
+            Catalog(data=df_mock, token_col=token_col, freq_cols=None)
 
         with pytest.raises(KeyError, match="Frequency column not in provided dataframe"):
-            CorpusComparator(data=df_mock, token_col=token_col, freq_cols=freq_cols + ["1000freq"])
+            Catalog(data=df_mock, token_col=token_col, freq_cols=freq_cols + ["1000freq"])
 
         for not_enough_cols in [[], [freq_cols[0]]]:
             with pytest.raises(ValueError, match="At least two frequency columns"):
-                CorpusComparator(data=df_mock, token_col=token_col, freq_cols=not_enough_cols)
+                Catalog(data=df_mock, token_col=token_col, freq_cols=not_enough_cols)
 
     def test_from_polars_invalid_token_col(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""
         with pytest.raises(
             ValueError, match="`token_col` must be specified if providing a DataFrame"
         ):
-            CorpusComparator(data=df_mock, token_col=None, freq_cols=freq_cols)
+            Catalog(data=df_mock, token_col=None, freq_cols=freq_cols)
 
         with pytest.raises(KeyError, match="Token column not in provided dataframe"):
-            CorpusComparator(data=df_mock, token_col="wordcol", freq_cols=freq_cols)
+            Catalog(data=df_mock, token_col="wordcol", freq_cols=freq_cols)
 
     def test_from_list_of_freqs_invalid(self, get_mock_freqs):
         """Test that from_list_of_freqs raises errors for invalid inputs"""
         mock = get_mock_freqs()
 
         with pytest.raises(ValueError, match="At least two frequency sets"):
-            CorpusComparator([mock])
+            Catalog([mock])
 
         with pytest.raises(ValueError, match="`freqs` and `corpora` must be the same length"):
-            CorpusComparator([mock, mock], corpora=["only_one"])
+            Catalog([mock, mock], corpora=["only_one"])
 
         with pytest.raises(ValueError, match="There are no token frequencies"):
-            CorpusComparator([mock, {}])
+            Catalog([mock, {}])
 
     def test_from_dict_of_freqs_invalid(self, get_mock_freqs):
         """Test that from_dict_of_freqs raises errors for invalid inputs"""
         mock = get_mock_freqs()
 
         with pytest.raises(ValueError, match="At least two frequency sets"):
-            CorpusComparator({"corpus1": mock})
+            Catalog({"corpus1": mock})
 
         with pytest.raises(ValueError, match="There are no token frequencies"):
-            CorpusComparator({"corpus1": mock, "corpus2": {}})
+            Catalog({"corpus1": mock, "corpus2": {}})
 
 
 class TestConstructorMutation:
-    def test_from_comparator_df_mutation(self, mock_comparator_data):
-        """Test that mutating the original comparator's dataframe doesn't affect the copy."""
-        comp_original = CorpusComparator(data=mock_comparator_data)
-        comp_new = CorpusComparator(data=comp_original)
+    def test_from_catalog_df_mutation(self, mock_catalog_data):
+        """Test that mutating the original catalog's dataframe doesn't affect the copy."""
+        cl_original = Catalog(data=mock_catalog_data)
+        cl_new = Catalog(data=cl_original)
 
         # Get original row count
-        n_rows_original = comp_new._df.collect().height
+        n_rows_original = cl_new._df.collect().height
 
         # Mutate the original's dataframe by filtering
-        comp_original._df = comp_original._df.filter(pl.col("word") != "a")
+        cl_original._df = cl_original._df.filter(pl.col("word") != "a")
 
-        # Verify the new comparator's dataframe is unchanged
-        assert comp_new._df.collect().height == n_rows_original
-        assert comp_original._df.collect().height != comp_new._df.collect().height
+        # Verify the new catalog's dataframe is unchanged
+        assert cl_new._df.collect().height == n_rows_original
+        assert cl_original._df.collect().height != cl_new._df.collect().height
 
-    def test_from_comparator_comparisons_mutation_independence(self, mock_comparator_data, df_mock):
-        """Test that mutating the original comparator's comparisons dict doesn't affect the copy."""
-        comp_original = CorpusComparator(data=mock_comparator_data)
-        comp_new = CorpusComparator(data=comp_original)
+    def test_from_catalog_comparisons_mutation_independence(self, mock_catalog_data, df_mock):
+        """Test that mutating the original catalog's comparisons dict doesn't affect the copy."""
+        cl_original = Catalog(data=mock_catalog_data)
+        cl_new = Catalog(data=cl_original)
 
         # Get original comparisons
-        original_comparisons = comp_new._comparisons.copy()
+        original_comparisons = cl_new._comparisons.copy()
 
         # Mutate the original's comparisons dict
         new_result = ComparisonResult(
@@ -349,12 +347,12 @@ class TestConstructorMutation:
             is_nonnegative=False,
             parameters={},
         )
-        comp_original._comparisons["new_comparison"] = new_result
+        cl_original._comparisons["new_comparison"] = new_result
 
-        # Verify the new comparator's comparisons dict is unchanged
-        assert comp_new._comparisons == original_comparisons
-        assert "new_comparison" not in comp_new._comparisons
-        assert "new_comparison" in comp_original._comparisons
+        # Verify the new catalog's comparisons dict is unchanged
+        assert cl_new._comparisons == original_comparisons
+        assert "new_comparison" not in cl_new._comparisons
+        assert "new_comparison" in cl_original._comparisons
 
 
 @pytest.mark.parametrize("normalization_suffix", ["suffix1", "suffix2"])

@@ -2,7 +2,7 @@ import pytest
 import altair as alt
 import polars as pl
 
-from wordlevel.compare.comparator import CorpusComparator
+from wordlevel.compare.catalog import Catalog
 from wordlevel.compare.comparisons.comparison import comp
 from wordlevel.compare.plot import Plotter
 from wordlevel.constants import (
@@ -24,9 +24,9 @@ def df_mock() -> pl.DataFrame:
 
 
 @pytest.fixture
-def comparator(df_mock) -> CorpusComparator:
-    """Comparator pre-loaded with both a non-weighted-avg ('freq_comp') and weighted-avg ('entropy_comp') comparison."""
-    base = CorpusComparator(df_mock, token_col="word", freq_cols=["freq1", "freq2"])
+def catalog(df_mock) -> Catalog:
+    """Catalog pre-loaded with both a non-weighted-avg ('freq_comp') and weighted-avg ('entropy_comp') comparison."""
+    base = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2"])
 
     freq = comp("freq1", "freq2").score.frequency().alias("freq_comp")
     entropy = comp("freq1", "freq2").score.tsallis_entropy().alias("entropy_comp")
@@ -36,12 +36,12 @@ def comparator(df_mock) -> CorpusComparator:
 
 class TestGetPlotDf:
     @pytest.mark.parametrize("plot_type", ["bar", "shift"])
-    def test_output_columns(self, comparator: CorpusComparator, plot_type: str) -> None:
+    def test_output_columns(self, catalog: Catalog, plot_type: str) -> None:
         """Output DataFrame has exactly the four expected columns regardless of plot type."""
-        plotter = Plotter(comparator)
+        plotter = Plotter(catalog)
 
         df_result = plotter._get_plot_df(
-            comparison=comparator.comparisons["entropy_comp"],
+            comparison=catalog.comparisons["entropy_comp"],
             plot_type=plot_type,
             max_rank=50,
         )
@@ -53,10 +53,10 @@ class TestGetPlotDf:
             PLOT_CONTRIBUTION_TYPE_COL,
         }
 
-    def test_caching_same_max_rank(self, comparator: CorpusComparator) -> None:
+    def test_caching_same_max_rank(self, catalog: Catalog) -> None:
         """The same DataFrame object is returned on repeated calls with the same max_rank."""
-        plotter = Plotter(comparator)
-        comp_result = comparator.comparisons["entropy_comp"]
+        plotter = Plotter(catalog)
+        comp_result = catalog.comparisons["entropy_comp"]
 
         df1 = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=50)
         df2 = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=50)
@@ -67,10 +67,10 @@ class TestGetPlotDf:
         cached = list(plotter._plot_dfs.values())[0]
         assert cached.max_rank == 50
 
-    def test_caching_smaller_max_rank(self, comparator: CorpusComparator) -> None:
+    def test_caching_smaller_max_rank(self, catalog: Catalog) -> None:
         """A smaller max_rank returns a filtered view from the cache without recomputing."""
-        plotter = Plotter(comparator)
-        comp_result = comparator.comparisons["entropy_comp"]
+        plotter = Plotter(catalog)
+        comp_result = catalog.comparisons["entropy_comp"]
 
         df_large = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=50)
         df_small = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=2)
@@ -82,10 +82,10 @@ class TestGetPlotDf:
         cached = list(plotter._plot_dfs.values())[0]
         assert cached.max_rank == 50
 
-    def test_caching_larger_max_rank_recomputes(self, comparator: CorpusComparator) -> None:
+    def test_caching_larger_max_rank_recomputes(self, catalog: Catalog) -> None:
         """A larger max_rank triggers recomputation and overwrites the cache entry."""
-        plotter = Plotter(comparator)
-        comp_result = comparator.comparisons["entropy_comp"]
+        plotter = Plotter(catalog)
+        comp_result = catalog.comparisons["entropy_comp"]
 
         df_small = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=2)
         df_large = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=50)
@@ -97,10 +97,10 @@ class TestGetPlotDf:
         cached = list(plotter._plot_dfs.values())[0]
         assert cached.max_rank == 50
 
-    def test_caching_isolates_by_split_flag(self, comparator: CorpusComparator) -> None:
+    def test_caching_isolates_by_split_flag(self, catalog: Catalog) -> None:
         """Different split_nonnegative_by_corpus values produce independent cache entries."""
-        plotter = Plotter(comparator)
-        comp_result = comparator.comparisons["entropy_comp"]
+        plotter = Plotter(catalog)
+        comp_result = catalog.comparisons["entropy_comp"]
 
         df_split = plotter._get_plot_df(
             comparison=comp_result, plot_type="bar", max_rank=50, split_nonnegative_by_corpus=True
@@ -114,9 +114,9 @@ class TestGetPlotDf:
 
 
 class TestBar:
-    def test_wiring(self, df_mock: pl.DataFrame, comparator: CorpusComparator) -> None:
+    def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """bar() returns a LayerChart with 3 layers and the correct number of data rows."""
-        plotter = Plotter(comparator)
+        plotter = Plotter(catalog)
         chart = plotter.bar("freq_comp")
 
         assert isinstance(chart, alt.LayerChart)
@@ -125,16 +125,16 @@ class TestBar:
 
 
 class TestShift:
-    def test_non_weighted_avg_raises(self, comparator: CorpusComparator) -> None:
+    def test_non_weighted_avg_raises(self, catalog: Catalog) -> None:
         """shift() raises ValueError when the comparison is not a weighted average."""
-        plotter = Plotter(comparator)
+        plotter = Plotter(catalog)
 
         with pytest.raises(ValueError):
             plotter.shift("freq_comp")
 
-    def test_wiring(self, df_mock: pl.DataFrame, comparator: CorpusComparator) -> None:
+    def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """shift() returns a LayerChart with 3 layers and the correct number of data rows."""
-        plotter = Plotter(comparator)
+        plotter = Plotter(catalog)
         chart = plotter.shift("entropy_comp")
 
         assert isinstance(chart, alt.LayerChart)

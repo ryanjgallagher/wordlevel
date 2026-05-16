@@ -6,23 +6,23 @@ from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 import polars as pl
 from polars import col
 
-from wordlevel.compare.types import ComparatorData, ListOfFreqs, DictOfFreqs
+from wordlevel.compare.types import CatalogData, ListOfFreqs, DictOfFreqs
 from wordlevel.compare.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.expressions.utils import normalize_freqs
 
 
 if TYPE_CHECKING:
-    from wordlevel.compare.comparator import CorpusComparator
+    from wordlevel.compare.catalog import Catalog
 
 
-def from_comparator(comparator: CorpusComparator) -> ComparatorData:
+def from_catalog(catalog: Catalog) -> CatalogData:
     """ """
-    return ComparatorData(
-        df=comparator._df.clone().lazy(),
-        token_col=comparator._token_col,
-        freq_cols=comparator._freq_cols,
-        normalization_suffix=comparator._normalization_suffix,
-        comparisons=comparator._comparisons.copy(),
+    return CatalogData(
+        df=catalog._df.clone().lazy(),
+        token_col=catalog._token_col,
+        freq_cols=catalog._freq_cols,
+        normalization_suffix=catalog._normalization_suffix,
+        comparisons=catalog._comparisons.copy(),
     )
 
 
@@ -31,7 +31,7 @@ def from_polars(
     token_col: str,
     freq_cols: Collection[str],
     normalize: bool = True,
-) -> ComparatorData:
+) -> CatalogData:
     """ """
     # Check all columns exist
     deduped_freq_cols = set(freq_cols)
@@ -65,7 +65,7 @@ def from_polars(
     else:
         normalization_suffix = ""
 
-    return ComparatorData(
+    return CatalogData(
         df=lf,
         token_col=token_col,
         freq_cols=deduped_freq_cols,
@@ -77,7 +77,7 @@ def from_polars(
 def from_list_of_freqs(
     freqs: ListOfFreqs,
     corpora: Sequence[str] | None = None,
-) -> ComparatorData:
+) -> CatalogData:
     """ """
     if corpora is None:
         corpora = [f"corpus{n}" for n in range(1, len(freqs) + 1)]
@@ -100,7 +100,7 @@ def from_list_of_freqs(
 
 def from_dict_of_freqs(
     freqs: DictOfFreqs,
-) -> ComparatorData:
+) -> CatalogData:
     """ """
     if len(freqs) < 2:
         raise ValueError("At least two frequency sets (corpora) need to be provided")
@@ -114,7 +114,7 @@ def from_dict_of_freqs(
 def _from_freqs(
     freqs: Iterable[tuple[str, Mapping[str, float]]],
     token: str = TOKEN,
-) -> ComparatorData:
+) -> CatalogData:
     """ """
     freq_cols: list[str] = []
     lf = pl.LazyFrame(schema={token: pl.String})

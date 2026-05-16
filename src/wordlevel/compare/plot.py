@@ -29,7 +29,7 @@ from wordlevel.plots.shift.labels import LabelConfig
 from wordlevel.plots.shift.shift import shift
 
 if TYPE_CHECKING:
-    from wordlevel.compare.comparator import CorpusComparator
+    from wordlevel.compare.catalog import Catalog
 
 
 PlotType = Literal["bar", "shift"]
@@ -51,9 +51,9 @@ class PlotCachedDataFrame:
 class Plotter:
     """ """
 
-    def __init__(self, comparator: CorpusComparator):
+    def __init__(self, catalog: Catalog):
         """ """
-        self._comparator = comparator
+        self._catalog = catalog
         self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = dict()
 
     def bar(
@@ -76,7 +76,7 @@ class Plotter:
         """
         Basic bar plot
         """
-        comp = self._comparator.comparisons[comparison]
+        comp = self._catalog.comparisons[comparison]
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="bar",
@@ -86,7 +86,7 @@ class Plotter:
 
         return shift(
             df=df_plot,
-            token_col=self._comparator._token_col,
+            token_col=self._catalog._token_col,
             rank_col=RANK_COL,
             score_col=PLOT_CONTRIBUTION_COL,
             score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
@@ -130,7 +130,7 @@ class Plotter:
             rank_axis:
                 See [RankAxisConfig][wordlevel.plots.shift.bars.RankAxisConfig]
         """
-        comp = self._comparator.comparisons[comparison]
+        comp = self._catalog.comparisons[comparison]
         if not comp.is_weighted_avg:
             raise ValueError(
                 "Cannot make a word shift plot for measures that are not weighted averages"
@@ -145,7 +145,7 @@ class Plotter:
 
         return shift(
             df=df_plot,
-            token_col=self._comparator._token_col,
+            token_col=self._catalog._token_col,
             rank_col=RANK_COL,
             score_col=PLOT_CONTRIBUTION_COL,
             score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
@@ -190,7 +190,7 @@ class Plotter:
         if plot_type == "bar":
             df_plot = bar_plot_df(
                 lf=comparison._lf,
-                token_col=self._comparator._token_col,
+                token_col=self._catalog._token_col,
                 score_col=SCORE_COL,
                 rank_col=RANK_COL,
                 attribution_col=ATTRIBUTION_COL,
@@ -205,7 +205,7 @@ class Plotter:
         elif plot_type == "shift":
             df_plot = shift_plot_df(
                 df=comparison._lf,
-                token_col=self._comparator._token_col,
+                token_col=self._catalog._token_col,
                 rank_col=RANK_COL,
                 attribution_col=ATTRIBUTION_COL,
                 contribution_alias=PLOT_CONTRIBUTION_COL,

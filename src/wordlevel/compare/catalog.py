@@ -7,19 +7,19 @@ from types import MappingProxyType
 import polars as pl
 
 from wordlevel.compare.constructors import (
-    from_comparator,
+    from_catalog,
     from_polars,
     from_dict_of_freqs,
     from_list_of_freqs,
 )
 from wordlevel.compare.plot import Plotter
-from wordlevel.compare.types import ComparatorData, DictOfFreqs, ListOfFreqs
+from wordlevel.compare.types import CatalogData, DictOfFreqs, ListOfFreqs
 from wordlevel.compare.comparisons.comparison import Comparison, ComparisonResult
 
 
-class CorpusComparator:
+class Catalog:
     """
-    This is the docstring of the comparator
+    This is the docstring of the catalog
 
     Args:
         data:
@@ -28,21 +28,16 @@ class CorpusComparator:
 
     def __init__(
         self,
-        data: pl.DataFrame
-        | pl.LazyFrame
-        | CorpusComparator
-        | ComparatorData
-        | DictOfFreqs
-        | ListOfFreqs,
+        data: pl.DataFrame | pl.LazyFrame | Catalog | CatalogData | DictOfFreqs | ListOfFreqs,
         token_col: str | None = None,
         freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
     ) -> None:
         """ """
-        if isinstance(data, ComparatorData):
+        if isinstance(data, CatalogData):
             init_data = data
-        elif isinstance(data, CorpusComparator):
-            init_data = from_comparator(data)
+        elif isinstance(data, Catalog):
+            init_data = from_catalog(data)
         elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
             if token_col is None:
                 raise ValueError("`token_col` must be specified if providing a DataFrame")
@@ -60,9 +55,9 @@ class CorpusComparator:
         else:
             raise TypeError(f"Input type not supported: {type(data)}")
 
-        self._init_from_comparator_data(init_data)
+        self._init_from_catalog_data(init_data)
 
-    def _init_from_comparator_data(self, data: ComparatorData) -> None:
+    def _init_from_catalog_data(self, data: CatalogData) -> None:
         """ """
         self._df = data.df
         self._token_col = data.token_col
@@ -71,19 +66,19 @@ class CorpusComparator:
         self._comparisons = data.comparisons
 
     @classmethod
-    def from_comparator(cls, comparator: CorpusComparator) -> CorpusComparator:
+    def from_catalog(cls, catalog: Catalog) -> Catalog:
         """
-        Creates a `CorpusComparator` from an existing `CorpusComparator`. It is relatively cheap to
-        copy the data from one comparator to the other.
+        Creates a `Catalog` from an existing `Catalog`. It is relatively cheap to
+        copy the data from one catalog to the other.
 
         Args:
-            comparator:
-                An existing, initialized `CorpusComparator`
+            catalog:
+                An existing, initialized `Catalog`
 
         Returns:
-            A new `CorpusComparator` with the same internal data as the input
+            A new `Catalog` with the same internal data as the input
         """
-        init_data = from_comparator(comparator)
+        init_data = from_catalog(catalog)
 
         return cls(data=init_data)
 
@@ -94,9 +89,9 @@ class CorpusComparator:
         token_col: str,
         freq_cols: Collection[str],
         normalize: bool = True,
-    ) -> CorpusComparator:
+    ) -> Catalog:
         """
-        Creates a `CorpusComparator` from a Polars dataframe.
+        Creates a `Catalog` from a Polars dataframe.
 
         Args:
             df:
@@ -124,9 +119,9 @@ class CorpusComparator:
         cls,
         freqs: ListOfFreqs,
         corpora: Sequence[str] | None = None,
-    ) -> CorpusComparator:
+    ) -> Catalog:
         """
-        Creates a `CorpusComparator` from a list of frequencies, a sequence of word-to-frequency
+        Creates a `Catalog` from a list of frequencies, a sequence of word-to-frequency
         mappings.
 
         Args:
@@ -136,14 +131,14 @@ class CorpusComparator:
                 The names of the corpora, listed in the same order as `freqs`. If not provided, will default to `corpus1`, `corpus2`, etc.
 
         Returns:
-            A CorpusComparator instance
+            A Catalog instance
         """
         init_data = from_list_of_freqs(freqs=freqs, corpora=corpora)
 
         return cls(data=init_data)
 
     @classmethod
-    def from_dict_of_freqs(cls, freqs: DictOfFreqs) -> CorpusComparator:
+    def from_dict_of_freqs(cls, freqs: DictOfFreqs) -> Catalog:
         """ """
         init_data = from_dict_of_freqs(freqs=freqs)
 
@@ -169,11 +164,11 @@ class CorpusComparator:
         """ """
         return Plotter(self)
 
-    def with_comparisons(self, *comparisons: Comparison) -> CorpusComparator:
+    def with_comparisons(self, *comparisons: Comparison) -> Catalog:
         """
         TODO: use pl.collect_all
         """
-        comparator = self.__class__(self)
+        catalog = self.__class__(self)
 
         for comparison in comparisons:
             result = ComparisonResult.from_comparison(
@@ -182,6 +177,6 @@ class CorpusComparator:
                 token_col=self._token_col,
                 normalization_suffix=self._normalization_suffix,
             )
-            comparator._comparisons[result.alias] = result
+            catalog._comparisons[result.alias] = result
 
-        return comparator
+        return catalog

@@ -5,7 +5,7 @@ from polars.testing import assert_frame_equal
 from types import MappingProxyType
 
 from wordlevel.constants import SCORE_COL, RANK_COL
-from wordlevel.compare.comparator import CorpusComparator
+from wordlevel.compare.catalog import Catalog
 from wordlevel.compare.comparisons.comparison import comp
 from wordlevel.compare.plot import Plotter
 
@@ -24,81 +24,81 @@ def df_mock() -> pl.DataFrame:
 
 
 @pytest.fixture
-def comparator(df_mock) -> CorpusComparator:
-    """Pre-initialized CorpusComparator for testing."""
-    return CorpusComparator(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
+def catalog(df_mock) -> Catalog:
+    """Pre-initialized Catalog for testing."""
+    return Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
 
 
 # ============================================================================
-# Test adding comparisons to comparator
+# Test adding comparisons to catalog
 # ============================================================================
 
 
 class TestWithComparisons:
     """Test the with_comparisons() method."""
 
-    def test_with_comparisons_adds_single_comparison(self, comparator) -> None:
-        """Test adding a single comparison returns new comparator with result."""
+    def test_with_comparisons_adds_single_comparison(self, catalog) -> None:
+        """Test adding a single comparison returns new catalog with result."""
         comparison = comp("freq1", "freq2").score.proportion().alias("test_comp")
-        comparator_new = comparator.with_comparisons(comparison)
+        catalog_new = catalog.with_comparisons(comparison)
 
-        assert comparator_new is not comparator
+        assert catalog_new is not catalog
 
-        assert "test_comp" in comparator_new.comparisons
-        assert "test_comp" not in comparator.comparisons
+        assert "test_comp" in catalog_new.comparisons
+        assert "test_comp" not in catalog.comparisons
 
-    def test_with_comparisons_adds_multiple_comparisons_immutably(self, comparator) -> None:
+    def test_with_comparisons_adds_multiple_comparisons_immutably(self, catalog) -> None:
         """Test adding multiple comparisons in one call."""
         comp1 = comp("freq1", "freq2").score.proportion().alias("comp1")
         comp2 = comp("freq2", "freq3").score.proportion().alias("comp2")
 
-        comparator_new = comparator.with_comparisons(comp1, comp2)
+        catalog_new = catalog.with_comparisons(comp1, comp2)
 
-        assert "comp1" in comparator_new.comparisons
-        assert "comp2" in comparator_new.comparisons
-        assert len(comparator_new.comparisons) == 2
-        assert len(comparator.comparisons) == 0
+        assert "comp1" in catalog_new.comparisons
+        assert "comp2" in catalog_new.comparisons
+        assert len(catalog_new.comparisons) == 2
+        assert len(catalog.comparisons) == 0
 
-    def test_with_comparisons_chaining(self, comparator) -> None:
+    def test_with_comparisons_chaining(self, catalog) -> None:
         """Test that comparisons can be chained."""
         comp1 = comp("freq1", "freq2").score.proportion().alias("comp1")
         comp2 = comp("freq2", "freq3").score.proportion().alias("comp2")
         comp3 = comp("freq1", "freq3").score.proportion().alias("comp3")
 
-        comparator_new = (
-            comparator.with_comparisons(comp1).with_comparisons(comp2).with_comparisons(comp3)
+        catalog_new = (
+            catalog.with_comparisons(comp1).with_comparisons(comp2).with_comparisons(comp3)
         )
 
         # All three comparisons present
-        assert "comp1" in comparator_new.comparisons
-        assert "comp2" in comparator_new.comparisons
-        assert "comp3" in comparator_new.comparisons
-        assert len(comparator_new.comparisons) == 3
+        assert "comp1" in catalog_new.comparisons
+        assert "comp2" in catalog_new.comparisons
+        assert "comp3" in catalog_new.comparisons
+        assert len(catalog_new.comparisons) == 3
 
 
 # ============================================================================
-# Test accessing properties of the comparator
+# Test accessing properties of the catalog
 # ============================================================================
 
 
-class TestComparatorProperties:
+class TestCatalogProperties:
     """Test the comparisons property."""
 
-    def test_comparisons_readonly(self, comparator) -> None:
+    def test_comparisons_readonly(self, catalog) -> None:
         """Test that comparisons property returns read-only MappingProxyType."""
         comparison = comp("freq1", "freq2").score.proportion().alias("test")
-        comparator_new = comparator.with_comparisons(comparison)
+        catalog_new = catalog.with_comparisons(comparison)
 
-        assert isinstance(comparator_new.comparisons, MappingProxyType)
+        assert isinstance(catalog_new.comparisons, MappingProxyType)
 
         # Check it cannot be modified
         with pytest.raises(TypeError):
-            comparator_new.comparisons["new_key"] = "value"
+            catalog_new.comparisons["new_key"] = "value"
 
-    def test_df_property(self, df_mock, comparator) -> None:
+    def test_df_property(self, df_mock, catalog) -> None:
         """Test that df property returns DataFrame with preserved data."""
         # Returns DataFrame, not LazyFrame
-        df1 = comparator.df
+        df1 = catalog.df
         assert isinstance(df1, pl.DataFrame)
         assert not isinstance(df1, pl.LazyFrame)
 
@@ -110,30 +110,30 @@ class TestComparatorProperties:
         assert_frame_equal(df1.select(df_mock.columns), df_mock)
 
         # Multiple accesses return equivalent data
-        df2 = comparator.df
+        df2 = catalog.df
         assert_frame_equal(df1, df2)
 
     def test_property_injection(self, df_mock) -> None:
-        """Test that comparisons use comparator's token column and normalization suffix."""
+        """Test that comparisons use catalog's token column and normalization suffix."""
         df_renamed = df_mock.rename({"word": "token"})
-        comparator = CorpusComparator(
+        catalog = Catalog(
             df_renamed,
             token_col="token",
             freq_cols=["freq1", "freq2"],
         )
 
-        comparator_new = comparator.with_comparisons(
+        catalog_new = catalog.with_comparisons(
             comp("freq1", "freq2").score.proportion().alias("test_injection")
         )
 
-        # Verify the comparator's DataFrame has both raw and normalized columns
-        df = comparator_new.df
+        # Verify the catalog's DataFrame has both raw and normalized columns
+        df = catalog_new.df
         assert "token" in df.columns
         assert "freq1__wl_normed" in df.columns
         assert "freq2__wl_normed" in df.columns
 
-        # Verify the comparison result uses the comparator's token and normalization suffix
-        result_df = comparator_new.comparisons["test_injection"].df
+        # Verify the comparison result uses the catalog's token and normalization suffix
+        result_df = catalog_new.comparisons["test_injection"].df
         assert "token" in result_df.columns
         assert "freq1__wl_normed" in result_df.columns
         assert "freq2__wl_normed" in result_df.columns
@@ -148,25 +148,23 @@ class TestIntegration:
     """Test complete end-to-end workflows."""
 
     def test_full_workflow(self, df_mock) -> None:
-        """Test complete workflow: create comparator -> add comparisons -> access results."""
-        # 1. Create comparator
-        comparator = CorpusComparator(
-            df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"]
-        )
+        """Test complete workflow: create catalog -> add comparisons -> access results."""
+        # 1. Create catalog
+        catalog = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
 
         # 2. Add comparisons
-        comparator_new = comparator.with_comparisons(
+        catalog_new = catalog.with_comparisons(
             comp("freq1", "freq2").score.proportion().alias("1vs2"),
             comp("freq2", "freq3").score.proportion().alias("2vs3"),
         )
 
         # 3. Access comparison results
-        assert "1vs2" in comparator_new.comparisons
-        assert "2vs3" in comparator_new.comparisons
+        assert "1vs2" in catalog_new.comparisons
+        assert "2vs3" in catalog_new.comparisons
 
         # 4. Get scored DataFrames
-        df1 = comparator_new.comparisons["1vs2"].df
-        df2 = comparator_new.comparisons["2vs3"].df
+        df1 = catalog_new.comparisons["1vs2"].df
+        df2 = catalog_new.comparisons["2vs3"].df
 
         # 5. Verify scores exist and are valid
         assert SCORE_COL in df1.columns
@@ -174,23 +172,23 @@ class TestIntegration:
         assert RANK_COL in df1.columns
         assert RANK_COL in df2.columns
 
-        # 6. Verify original data is preserved in the comparator itself
-        assert_frame_equal(comparator_new.df.select(df_mock.columns), df_mock)
+        # 6. Verify original data is preserved in the catalog itself
+        assert_frame_equal(catalog_new.df.select(df_mock.columns), df_mock)
 
         # 7. Verify plotting works end-to-end
-        chart = comparator_new.plot.bar("1vs2")
+        chart = catalog_new.plot.bar("1vs2")
         assert isinstance(chart, alt.LayerChart)
 
     def test_workflow_with_jsd(self, df_mock) -> None:
         """Test workflow with Jensen-Shannon divergence scoring."""
-        comparator = CorpusComparator(df_mock, token_col="word", freq_cols=["freq1", "freq2"])
+        catalog = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2"])
 
-        comparator_new = comparator.with_comparisons(
+        catalog_new = catalog.with_comparisons(
             comp("freq1", "freq2").score.jensen_shannon_divergence().alias("jsd")
         )
 
         # Access result
-        result = comparator_new.comparisons["jsd"]
+        result = catalog_new.comparisons["jsd"]
         df_result = result.df
 
         # Verify JSD-specific columns exist
@@ -203,19 +201,19 @@ class TestIntegration:
 
     def test_workflow_chained(self, df_mock) -> None:
         """Test workflow with chained comparison additions."""
-        cc = CorpusComparator(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
+        cl = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
 
-        comparator_new = (
-            cc.with_comparisons(comp("freq1", "freq2").score.proportion().alias("1vs2"))
+        catalog_new = (
+            cl.with_comparisons(comp("freq1", "freq2").score.proportion().alias("1vs2"))
             .with_comparisons(comp("freq2", "freq3").score.proportion().alias("2vs3"))
             .with_comparisons(comp("freq1", "freq3").score.proportion().alias("1vs3"))
         )
 
         # All three comparisons present
-        assert len(comparator_new.comparisons) == 3
-        assert "1vs2" in comparator_new.comparisons
-        assert "2vs3" in comparator_new.comparisons
-        assert "1vs3" in comparator_new.comparisons
+        assert len(catalog_new.comparisons) == 3
+        assert "1vs2" in catalog_new.comparisons
+        assert "2vs3" in catalog_new.comparisons
+        assert "1vs3" in catalog_new.comparisons
 
 
 # ============================================================================
@@ -224,12 +222,12 @@ class TestIntegration:
 
 
 class TestPlotWiring:
-    """Test that the comparator.plot cached property is correctly wired to Plotter."""
+    """Test that the catalog.plot cached property is correctly wired to Plotter."""
 
-    def test_plot_property_returns_plotter(self, comparator) -> None:
-        """comparator.plot returns a Plotter instance."""
-        assert isinstance(comparator.plot, Plotter)
+    def test_plot_property_returns_plotter(self, catalog) -> None:
+        """catalog.plot returns a Plotter instance."""
+        assert isinstance(catalog.plot, Plotter)
 
-    def test_plot_property_is_cached(self, comparator) -> None:
-        """comparator.plot returns the same object on repeated access."""
-        assert comparator.plot is comparator.plot
+    def test_plot_property_is_cached(self, catalog) -> None:
+        """catalog.plot returns the same object on repeated access."""
+        assert catalog.plot is catalog.plot
