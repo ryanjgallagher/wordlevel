@@ -1,5 +1,5 @@
-from wordlevel.compare.comparator import CorpusComparator
-from wordlevel.compare.comparisons.comparison import comp
-from wordlevel.lexicons.lexicon import lex
+from wordlevel.api.catalog.catalog import Catalog
+from wordlevel.api.comparison.comparison import comp
+from wordlevel.api.lexicons.lexicon import lex
 
-__all__ = ["CorpusComparator", "comp", "lex"]
+__all__ = ["Catalog", "comp", "lex"]
