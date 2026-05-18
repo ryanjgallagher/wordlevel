@@ -10,7 +10,7 @@ from wordlevel.core.comparison.score.components import (
     get_shift_plot_components,
 )
 from wordlevel.core.comparison.score.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
-from wordlevel.api.lexicons.lexicon import Lexicon
+from wordlevel.core.lexicons.load import Lexicon
 
 
 class ScoreFunc(Protocol):

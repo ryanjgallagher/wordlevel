@@ -6,8 +6,8 @@ from polars.testing import assert_frame_equal
 
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.constants import TOKEN, NORMALIZATION_SUFFIX
-from wordlevel.core.catalog.constructors import CatalogData
-from wordlevel.core.catalog.constructors import _normalize_frequency_columns
+from wordlevel.api.catalog.constructors import CatalogData
+from wordlevel.api.catalog.constructors import _normalize_frequency_columns
 from wordlevel.api.comparison.comparison import ComparisonResult
 
 

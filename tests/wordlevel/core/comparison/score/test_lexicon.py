@@ -3,7 +3,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 from wordlevel.core.comparison.score.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
-from wordlevel.api.lexicons.lexicon import Lexicon
+from wordlevel.core.lexicons.load import Lexicon
 
 
 TOKEN_COL = "word"

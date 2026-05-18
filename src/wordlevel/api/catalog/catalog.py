@@ -6,14 +6,14 @@ from types import MappingProxyType
 
 import polars as pl
 
-from wordlevel.core.catalog.constructors import (
+from wordlevel.api.catalog.constructors import (
     from_catalog,
     from_polars,
     from_dict_of_freqs,
     from_list_of_freqs,
 )
 from wordlevel.api.catalog.plot import Plotter
-from wordlevel.core.catalog.constructors import CatalogData, DictOfFreqs, ListOfFreqs
+from wordlevel.api.catalog.constructors import CatalogData, DictOfFreqs, ListOfFreqs
 from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
 
 

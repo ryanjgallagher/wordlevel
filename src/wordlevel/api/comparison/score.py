@@ -39,7 +39,7 @@ from wordlevel.core.comparison.score.plan import (
     weighted_average_score_plan,
     lexicon_join_plan,
 )
-from wordlevel.api.lexicons.lexicon import Lexicon
+from wordlevel.core.lexicons.load import Lexicon
 
 if TYPE_CHECKING:
     from wordlevel.api.comparison.comparison import Comparison

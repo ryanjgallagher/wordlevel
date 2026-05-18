@@ -3,7 +3,7 @@ from typing import Literal, Mapping
 import polars as pl
 from polars import col
 
-from wordlevel.api.lexicons.lexicon import Lexicon
+from wordlevel.core.lexicons.load import Lexicon
 
 
 DEFAULT_LEXICON_SCORE_COL = "lexicon_score"

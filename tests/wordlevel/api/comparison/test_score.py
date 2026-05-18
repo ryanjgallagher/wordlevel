@@ -7,7 +7,7 @@ from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION, S
 from wordlevel.api.comparison.comparison import Comparison
 from wordlevel.api.comparison.score import Scorer
 from wordlevel.core.utils import normalize_freqs
-from wordlevel.api.lexicons.lexicon import Lexicon
+from wordlevel.core.lexicons.load import Lexicon
 
 
 @pytest.fixture
