@@ -125,13 +125,13 @@ class Catalog:
                 Whether to normalize the corpus frequencies for each corpus so that they are in the
                 range $[0, 1]$ and sum to 1. The original corpus frequencies will be preserved
 
+        Returns:
+            A `Catalog` of corpora representing the provided tokens and frequencies
+
         Raises:
             KeyError: If `token_col` is not a column in `df`.
             KeyError: If any column in `freq_cols` is not a column in `df`.
             ValueError: If fewer than two columns are provided in `freq_cols`.
-
-        Returns:
-            A `Catalog` of corpora representing the provided tokens and frequencies
         """
         init_data = from_polars(
             df=df,
@@ -160,13 +160,13 @@ class Catalog:
                 The names of the corpora, listed in the same order as `freqs`. If not provided, will
                 default to `corpus1`, `corpus2`, etc.
 
+        Returns:
+            A `Catalog` of corpora representing the provided tokens and frequencies
+
         Raises:
             ValueError: If `freqs` and `corpora` have different lengths.
             ValueError: If fewer than two corpora are provided in `freqs`.
             ValueError: If any corpus in `freqs` has no token frequencies.
-
-        Returns:
-            A `Catalog` of corpora representing the provided tokens and frequencies
         """
         init_data = from_list_of_freqs(freqs=freqs, corpora=corpora)
 
@@ -182,12 +182,12 @@ class Catalog:
                 A mapping of corpus names to token-to-frequency mappings, one per corpus. Each
                 mapping is `{corpus: {token: frequency}}`, with one mapping per corpus
 
+        Returns:
+            A `Catalog` of corpora representing the provided tokens and frequencies
+
         Raises:
             ValueError: If fewer than two corpora are provided in `freqs`.
             ValueError: If any corpus in `freqs` has no token frequencies.
-
-        Returns:
-            A `Catalog` of corpora representing the provided tokens and frequencies
         """
         init_data = from_dict_of_freqs(freqs=freqs)
 
