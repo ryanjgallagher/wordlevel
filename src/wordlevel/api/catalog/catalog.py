@@ -19,11 +19,30 @@ from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
 
 class Catalog:
     """
-    This is the docstring of the catalog
+    The workspace for corpora and making comparisons between them.
+
+    For specific construction functions, see the [construction](construct/index.md) documentation.
 
     Args:
         data:
-            description
+            The corpora token-frequency data. Can a Polars DataFrame, Polars LazyFrame,
+            [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs],
+            [`DictOfFreqs`][wordlevel.api.catalog.constructors.DictOfFreqs], or an existing
+            `Catalog`. The class will attempt to infer the structure of the data and use the
+            appropriate constructor.
+        token_col:
+            If the `data` is a Polars dataframe, the column that contains the tokens (words,
+            subwords, n-grams, etc.). Ignored otherwise
+        freq_cols:
+            If the `data` is a Polars dataframe, the columns that include the token frequencies for
+            each corpus
+        corpora:
+            If the `data` is a [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs], the
+            names of the corpora, listed in the same order as `data`. If not provided, will default
+            to `corpus1`, `corpus2`, etc. Ignored otherwise
+
+    Raises:
+        TypeError: If `data` is not one of the supported types.
     """
 
     def __init__(
@@ -33,7 +52,6 @@ class Catalog:
         freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
     ) -> None:
-        """ """
         if isinstance(data, CatalogData):
             init_data = data
         elif isinstance(data, Catalog):
@@ -58,7 +76,9 @@ class Catalog:
         self._init_from_catalog_data(init_data)
 
     def _init_from_catalog_data(self, data: CatalogData) -> None:
-        """ """
+        """
+        Initializes the catalog given the core `CatalogData`.
+        """
         self._df = data.df
         self._token_col = data.token_col
         self._freq_cols = set(data.freq_cols)
@@ -68,12 +88,12 @@ class Catalog:
     @classmethod
     def from_catalog(cls, catalog: Catalog) -> Catalog:
         """
-        Creates a `Catalog` from an existing `Catalog`. It is relatively cheap to
-        copy the data from one catalog to the other.
+        Creates a new catalog from an existing one.
+
+        The new catalog copies the data of the original one without mutating it.
 
         Args:
-            catalog:
-                An existing, initialized `Catalog`
+            catalog: An existing `Catalog`
 
         Returns:
             A new `Catalog` with the same internal data as the input
@@ -91,19 +111,27 @@ class Catalog:
         normalize: bool = True,
     ) -> Catalog:
         """
-        Creates a `Catalog` from a Polars dataframe.
+        Creates a `Catalog` of corpora from a Polars dataframe.
 
         Args:
             df:
-                A Polars data/lazyframe containing corpus information. Rows are tokens and columns
-                are their frequencies in different corpora
+                A Polars DataFrame or LazyFrame containing corpus information. Rows are tokens and
+                columns are their frequencies in different corpora
             token_col:
                 The column that contains the tokens (words, subwords, n-grams, etc.)
             freq_cols:
-                The column or columns that include the frequencies for each corpus
+                The columns that include the token frequencies for each corpus
             normalize:
-                Whether to normalize the corpus frequencies for each corpus. The original corpus
-                frequencies will be preserved
+                Whether to normalize the corpus frequencies for each corpus so that they are in the
+                range $[0, 1]$ and sum to 1. The original corpus frequencies will be preserved
+
+        Raises:
+            KeyError: If `token_col` is not a column in `df`.
+            KeyError: If any column in `freq_cols` is not a column in `df`.
+            ValueError: If fewer than two columns are provided in `freq_cols`.
+
+        Returns:
+            A `Catalog` of corpora representing the provided tokens and frequencies
         """
         init_data = from_polars(
             df=df,
@@ -121,17 +149,24 @@ class Catalog:
         corpora: Sequence[str] | None = None,
     ) -> Catalog:
         """
-        Creates a `Catalog` from a list of frequencies, a sequence of word-to-frequency
-        mappings.
+        Creates a `Catalog` of corpora from a sequence of token-to-frequency mappings, each
+        representing the frequencies of tokens in a particular corpus.
 
         Args:
             freqs:
-                A sequence of word-to-frequencey mappings, one per corpus. Each mapping is `{word: frequency}` for a single corpus
+                A sequence of token-to-frequency mappings, one per corpus. Each mapping is
+                `{token: frequency}` for a single corpus
             corpora:
-                The names of the corpora, listed in the same order as `freqs`. If not provided, will default to `corpus1`, `corpus2`, etc.
+                The names of the corpora, listed in the same order as `freqs`. If not provided, will
+                default to `corpus1`, `corpus2`, etc.
+
+        Raises:
+            ValueError: If `freqs` and `corpora` have different lengths.
+            ValueError: If fewer than two corpora are provided in `freqs`.
+            ValueError: If any corpus in `freqs` has no token frequencies.
 
         Returns:
-            A Catalog instance
+            A `Catalog` of corpora representing the provided tokens and frequencies
         """
         init_data = from_list_of_freqs(freqs=freqs, corpora=corpora)
 
@@ -139,7 +174,21 @@ class Catalog:
 
     @classmethod
     def from_dict_of_freqs(cls, freqs: DictOfFreqs) -> Catalog:
-        """ """
+        """
+        Creates a `Catalog` of corpora from named token-to-frequency mappings.
+
+        Args:
+            freqs:
+                A mapping of corpus names to token-to-frequency mappings, one per corpus. Each
+                mapping is `{corpus: {token: frequency}}`, with one mapping per corpus
+
+        Raises:
+            ValueError: If fewer than two corpora are provided in `freqs`.
+            ValueError: If any corpus in `freqs` has no token frequencies.
+
+        Returns:
+            A `Catalog` of corpora representing the provided tokens and frequencies
+        """
         init_data = from_dict_of_freqs(freqs=freqs)
 
         return cls(data=init_data)
@@ -147,26 +196,35 @@ class Catalog:
     @property
     def comparisons(self) -> Mapping[str, ComparisonResult]:
         """
-        This is a description
+        Comparisons made between corpora in the catalog, keyed by each comparison's alias.
         """
         return MappingProxyType(self._comparisons)
 
     @property
     def df(self) -> pl.DataFrame:
         """
-        TODO: Change variable name of internal variable to `_lf`. Collect and update similar to
-              a ComparisonResult
+        Dataframe representing the frequencies of tokens in the corpora in the catalog.
         """
         return self._df.collect()
 
     @cached_property
     def plot(self) -> Plotter:
-        """ """
+        """
+        Namespace for plotting methods. See [available plots](plot/index.md).
+        """
         return Plotter(self)
 
     def with_comparisons(self, *comparisons: Comparison) -> Catalog:
         """
-        TODO: use pl.collect_all
+        Returns a new catalog with the comparisons added to it.
+
+        Comparisons will overwrite existing comparisons with the same name.
+
+        Args:
+            comparisons: The comparisons to add to the catalog
+
+        Returns:
+            The catalog with the comparisons added to it
         """
         catalog = self.__class__(self)
 
