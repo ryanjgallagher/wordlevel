@@ -1,6 +1,6 @@
 # labMT
 
-labMT is a set of sentiment lexicons produced by gathering human ratings from Mechanical Turk (MT) workers for the 10,000 most frequent words for each language. Words were rated on a scale from 1 to 9, where 1 is the most negative ("saddest") and 9 is the most positive ("happiest"). The words were sourced from several sources, including the Google Boos project, the Google Web Crawl, Twitter, the New York Times, music lyrics, and movie and television otitles.
+labMT is a set of sentiment lexicons produced by gathering human ratings from Mechanical Turk (MT) workers for the 10,000 most frequent words for each language. Words were rated on a scale from 1 to 9, where 1 is the most negative ("saddest") and 9 is the most positive ("happiest"). The words were sourced from several sources, including the Google Books project, the Google Web Crawl, Twitter, the New York Times, music lyrics, and movie and television titles.
 
 This data is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
