@@ -4,7 +4,7 @@ import pytest
 
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.catalog.plot.shift.render.labels import LabelConfig
+from wordlevel.configs import LabelConfig
 from wordlevel.core.catalog.plot.shift.render.scales import (
     shift_scales,
     get_scale_limits,

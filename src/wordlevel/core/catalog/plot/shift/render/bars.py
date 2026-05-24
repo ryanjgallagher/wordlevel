@@ -1,27 +1,40 @@
 import altair as alt
 import polars as pl
 
-from typing import Literal
 from typing_extensions import Self
 from dataclasses import asdict, dataclass
 
-from wordlevel.configs import ShiftTypesConfig
+from wordlevel.configs import BarConfig, RankAxisConfig, ScoreAxisConfig, ShiftBarConfig
 from wordlevel.core.catalog.plot.utils import to_altair_optional
 
 
-@dataclass
-class ScoreAxisConfig:
-    """ """
-
-    title: str | None = "Contribution"
-    title_fontsize: float | None = None
-    label_fontsize: float | None = None
-    grid: bool = False
+_SHIFT_TYPE_ORDERS: dict[str, int] = {
+    "more_of_negative": 1,
+    "more_of_positive": 1,
+    "less_of_positive": 1,
+    "less_of_negative": 1,
+    "lower_score": 2,
+    "higher_score": 2,
+    "lower_score_counteracted": 3,
+    "higher_score_counteracted": 3,
+    "more_of_negative_counteracted": 3,
+    "more_of_positive_counteracted": 3,
+    "less_of_positive_counteracted": 3,
+    "less_of_negative_counteracted": 3,
+}
 
 
 @dataclass
 class InternalScoreAxisConfig(ScoreAxisConfig):
-    """ """
+    """
+    Internal configuration of the ScoreAxisConfig. Inherits from ScoreAxisConfig
+
+    Attributes:
+        all_positive_labels:
+            Whether the axis tick labels should be all positive values. Used for plotting inherently
+            non-negative measures in the positive and negative direction while indicating their
+            positive values
+    """
 
     all_positive_labels: bool = False
 
@@ -36,56 +49,43 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
 
 
 @dataclass
-class RankAxisConfig:
-    """ """
+class InternalBarConfig:
+    """
+    Internal configuration of bar colors and stacking orders.
 
-    title: str | None = "Rank"
-    title_fontsize: float | None = None
-    label_fontsize: float | None = None
-    label_tick_values: list[int] | None = None
-    label_tick_step: int | None = 5
-    label_first_tick: bool = True
-    grid: bool = True
+    Attributes:
+        colors:
+            Mapping from score type name to bar color
+        orders:
+            Mapping from score type name to stacking order. `None` when stacking order is not
+            applicable (e.g., for a bar plot whose bars are not stacked)
+    """
 
-
-@dataclass
-class BarConfig:
-    """ """
-
-    colors: dict[str, str] | Literal["diverging", "category"] | None = None
-    orders: dict[str, int] | None = None
-
-
-@dataclass
-class InternalBarConfig(BarConfig):
-    """ """
-
-    detailed: bool = False
+    colors: dict[str, str]
+    orders: dict[str, int] | None
 
     @classmethod
-    def from_config(cls, config: BarConfig | dict | None, detailed: bool) -> Self:
-        """ """
+    def from_bar_config(cls, config: BarConfig | dict | None) -> Self:
+        """
+        Creates an InternalBarConfig from a BarConfig
+        """
         if config is None:
             config = BarConfig()
         elif isinstance(config, dict):
             config = BarConfig(**config)
-        return cls(**asdict(config), detailed=detailed)
+        return cls(colors=asdict(config), orders=None)
 
-    def __post_init__(self):
-        """ """
-        if self.detailed:
-            config = ShiftTypesConfig()
-            self.orders = config.orders()
-            default_colors = config.colors()
-            if isinstance(self.colors, dict):
-                # Override default colors with those that were specified
-                self.colors = default_colors | self.colors
-            else:
-                # None or Literal — fall back to detailed defaults
-                self.colors = default_colors
-        else:
-            if self.colors is None:
-                self.colors = "diverging"
+    @classmethod
+    def from_shift_bar_config(cls, config: ShiftBarConfig | dict | None) -> Self:
+        """
+        Creats an InternalBarConfig from a ShiftBarConfig. The key different from `from_bar_config`
+        is that it enforces the order of the different bar types
+        """
+        if config is None:
+            config = ShiftBarConfig()
+        elif isinstance(config, dict):
+            config = ShiftBarConfig(**config)
+        return cls(colors=asdict(config), orders=_SHIFT_TYPE_ORDERS)
 
 
 def shift_bars(
@@ -100,7 +100,7 @@ def shift_bars(
     width: float | None = None,
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
-    bars: InternalBarConfig | dict | None = None,
+    bars: InternalBarConfig | None = None,
     show_legend: bool = False,
     show_border: bool = False,
 ) -> alt.Chart:
@@ -123,10 +123,14 @@ def shift_bars(
     elif score_axis is None:
         score_axis = InternalScoreAxisConfig()
 
-    if isinstance(bars, dict):
-        bars = InternalBarConfig(**bars)
-    elif bars is None:
-        bars = InternalBarConfig()
+    if bars is None:
+        # No config supplied — derive a uniform-color colors dict from whatever score types are
+        # present in the data. Callers that want plot-type-specific defaults are expected to
+        # construct an InternalBarConfig via from_bar_config / from_shift_bar_config.
+        bars = InternalBarConfig(
+            colors={st: "steelblue" for st in df[score_type_col].unique().to_list()},
+            orders=None,
+        )
 
     # Configure whether to show all border axes, i.e. whether to hide the top and right axes
     if show_border:
@@ -169,17 +173,10 @@ def shift_bars(
     else:
         rank_label_rotation = 0
 
-    # Configure the score types and colors
-    if bars.detailed and isinstance(bars.colors, dict):
-        score_types = list(bars.colors.keys())
-    else:
-        # Get the score types from the data, in case user missed any colors they passed in a dict
-        score_types = df[score_type_col].unique().to_list()
-
-    if isinstance(bars.colors, dict):
-        score_type_colors = [bars.colors[score_type] for score_type in score_types]
-    else:
-        score_type_colors = bars.colors
+    # Discover score types from the data and look up colors by name. Sorted for a deterministic
+    # alphabetical legend order across runs.
+    score_types = sorted(df[score_type_col].unique().to_list())
+    score_type_colors = [bars.colors[score_type] for score_type in score_types]
 
     # Configure the orders of stacked bars
     if bars.orders is not None:

@@ -5,7 +5,7 @@ from typing import Any, Literal, Mapping, Protocol, TYPE_CHECKING
 import polars as pl
 from polars import col
 
-from wordlevel.configs import ShiftTypesConfig
+from wordlevel.configs import SHIFT_BAR_NAMES
 from wordlevel.constants import (
     SCORE_COL,
     RANK_COL,
@@ -141,8 +141,6 @@ class Scorer:
         ref = self._comparison._ref
         cmp = self._comparison._cmp
 
-        SHIFT_TYPES = ShiftTypesConfig()
-
         def plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
@@ -173,12 +171,12 @@ class Scorer:
                 reference_score=reference_score,
                 score_alias=SCORE_COL,
                 rank_alias=RANK_COL,
-                more_of_positive_alias=SHIFT_TYPES.more_of_positive.name,
-                less_of_negative_alias=SHIFT_TYPES.less_of_negative.name,
-                more_of_negative_alias=SHIFT_TYPES.more_of_negative.name,
-                less_of_positive_alias=SHIFT_TYPES.less_of_positive.name,
-                higher_score_alias=SHIFT_TYPES.higher_score.name,
-                lower_score_alias=SHIFT_TYPES.lower_score.name,
+                more_of_positive_alias=SHIFT_BAR_NAMES.more_of_positive,
+                less_of_negative_alias=SHIFT_BAR_NAMES.less_of_negative,
+                more_of_negative_alias=SHIFT_BAR_NAMES.more_of_negative,
+                less_of_positive_alias=SHIFT_BAR_NAMES.less_of_positive,
+                higher_score_alias=SHIFT_BAR_NAMES.higher_score,
+                lower_score_alias=SHIFT_BAR_NAMES.lower_score,
                 counteracted_suffix=COUNTERACTED_SUFFIX,
                 attribution_alias=ATTRIBUTION_COL,
                 reference_attribution=REFERENCE_ATTRIBUTION,

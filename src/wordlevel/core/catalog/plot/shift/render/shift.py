@@ -3,13 +3,13 @@ from typing import cast
 import altair as alt
 import polars as pl
 
+from wordlevel.configs import LabelConfig, RankAxisConfig
 from wordlevel.core.catalog.plot.shift.render.bars import (
     shift_bars,
-    RankAxisConfig,
     InternalScoreAxisConfig,
     InternalBarConfig,
 )
-from wordlevel.core.catalog.plot.shift.render.labels import shift_labels, LabelConfig
+from wordlevel.core.catalog.plot.shift.render.labels import shift_labels
 from wordlevel.core.catalog.plot.shift.render.scales import shift_scales
 
 
@@ -30,7 +30,7 @@ def shift(
     autoscale_axes: bool = True,
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
-    bar_config: InternalBarConfig | dict | None = None,
+    bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,

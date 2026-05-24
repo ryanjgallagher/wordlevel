@@ -1,16 +1,15 @@
 import pytest
 import altair as alt
 
+from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftBarConfig
 from wordlevel.core.catalog.plot.shift.render.shift import (
     shift,
     DEFAULT_PIXELS_PER_RANK,
     DEFAULT_SCORE_AXIS_PIXEL_SIZE,
 )
-from wordlevel.core.catalog.plot.shift.render.labels import LabelConfig
 from wordlevel.core.catalog.plot.shift.render.bars import (
-    RankAxisConfig,
-    InternalScoreAxisConfig,
     InternalBarConfig,
+    InternalScoreAxisConfig,
 )
 
 
@@ -121,13 +120,13 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
     for config_style in ["config", "dict"]:
         rank_config = {"title": custom_rank_title, "grid": False}
         score_config = {"title": custom_score_title, "grid": True}
-        bar_config = {"colors": custom_bar_colors, "detailed": True}
+        shift_bar_config = custom_bar_colors
         label_config = {"color": custom_label_color}
 
         if config_style == "config":
             rank_config = RankAxisConfig(**rank_config)
             score_config = InternalScoreAxisConfig(**score_config)
-            bar_config = InternalBarConfig(**bar_config)
+            shift_bar_config = ShiftBarConfig(**shift_bar_config)
             label_config = LabelConfig(**label_config)
 
         chart = shift(
@@ -140,7 +139,7 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
             vertical=True,
             rank_axis=rank_config,
             score_axis=score_config,
-            bar_config=bar_config,
+            bar_config=InternalBarConfig.from_shift_bar_config(shift_bar_config),
             label_config=label_config,
         )
 
