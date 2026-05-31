@@ -257,7 +257,7 @@ class TestAliasing:
     )
     def test_default_comparison_aliases(self, alias, method_name):
         """Test _return_comparison uses provided alias or generates default."""
-        comparison = Comparison("freq_1990", "freq_2000", alias=alias)
+        comparison = Comparison._with_state("freq_1990", "freq_2000", alias=alias)
 
         result = comparison.score._return_comparison(
             plan=lambda x: x,

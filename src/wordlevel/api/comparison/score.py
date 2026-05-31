@@ -199,7 +199,7 @@ class Scorer:
         else:
             alias = self._comparison._alias
 
-        return self._comparison.__class__(
+        return type(self._comparison)._with_state(
             reference=self._comparison._ref,
             comparison=self._comparison._cmp,
             alias=alias,
