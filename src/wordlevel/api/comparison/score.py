@@ -489,9 +489,10 @@ class Scorer:
         Calculates the difference in Tsallis entropy between the reference and comparison corpora.
 
         Tsallis entropy is a generalized measure of textual diversity, parameterized by an
-        order $\alpha$ that interpolates between counting the number of non-zero tokens ($\alpha
-        \to 0$) and measuring the most frequent token ($\alpha \to \infty$). At $\alpha = 1$, it
-        reduces to the [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy].
+        order $\alpha$. When $\alpha = 1$, the Tsallis entropy reduces to the [Shannon
+        entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy]; when $\alpha < 1$, more
+        weight is given to rare tokens; and when $\alpha > 1$, more weight is given to common
+        tokens.
 
         When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
 
@@ -546,9 +547,9 @@ class Scorer:
 
         Args:
             alpha:
-                Order of the Tsallis entropy. $\alpha = 1$ recovers Shannon entropy; larger
-                values place more weight on high-probability tokens, smaller values place distribute
-                weight among all tokens more equally
+                Order of the Tsallis entropy. $\alpha = 1$ recovers Shannon entropy. Larger
+                values place more weight on common tokens, and smaller values place more weight
+                on rare tokens
             base:
                 Base of the logarithms used to calculate the entropy when $\alpha = 1$. Ignored
                 otherwise
@@ -673,6 +674,14 @@ class Scorer:
         contributions indicate tokens that appear more in the comparison corpus; negative
         contributions indicate tokens that appear more in the reference corpus.
 
+        Reference:
+            For more details, see the following paper:
+            > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
+            Danforth, C. M., & Dodds, P. S. (2021). [Generalized word shift graphs: a method for
+            visualizing and explaining pairwise comparisons
+            between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
+            EPJ Data Science, 10(1), 4.
+
         Args:
             base:
                 Logarithm base. Defaults to 2 (divergence in bits)
@@ -730,7 +739,7 @@ class Scorer:
 
     def kld(self, base: float = 2) -> Comparison:
         r"""
-        Calculates the Kullback-Leibler divergence between the reference and comparison corpora.
+        Calculates the Kullback-Leibler divergence (KLD) between the reference and comparison corpora.
 
         Alias for
         [`kullback_leibler_divergence`][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence];
@@ -754,32 +763,92 @@ class Scorer:
         reference_score: float | Literal["mean"] | pl.Expr = 0,
     ) -> Comparison:
         r"""
-        Calculates the Jensen-Shannon divergence between the reference and comparison corpora.
+        Calculates the Jensen-Shannon divergence (JSD) between the reference and comparison corpora.
 
-        Jensen-Shannon divergence is a symmetric, bounded measure of how two distributions
-        differ, built by averaging two KL divergences against the mixture distribution. Unlike
-        [`kullback_leibler_divergence`][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence],
-        JSD is symmetric in $R$ and $C$, is always non-negative, and each per-token contribution
-        is also non-negative.
+        The JSD is a symmetric, bounded measure of how two corpora differ. It is computed by
+        averaging the Kullback-Leibler divergence of each corpus against a synthetic mixture corpus
+        representing the combination of both corpora. This implementation generalizes the JSD
+        through an order parameter $\alpha$. When $\alpha < 1$, more weight is given to rare tokens;
+        when $\alpha > 1$, more weight is given to common tokens.
 
-        The Jensen-Shannon divergence between $R$ and $C$ is:
+        When the `reference_score` is 0 and $\alpha = 1$, the contribution $\delta_\tau$ of a
+        token $\tau$ is:
 
         $$
-        D_{\text{JS}}(R, C)
-            = \pi_R \, D_{\text{KL}}(R \,\|\, M) + \pi_C \, D_{\text{KL}}(C \,\|\, M)
+        \delta_\tau =
+            p_\tau^{(M)} \log \frac{1}{p_\tau^{(M)}}
+            -
+            \left(
+                \pi_R \, p_\tau^{(R)} \log \frac{1}{p_\tau^{(R)}}
+                + \pi_C \, p_\tau^{(C)} \log \frac{1}{p_\tau^{(C)}}
+            \right)
         $$
 
-        where $M = \pi_R \, p^{(R)} + \pi_C \, p^{(C)}$ is the mixture distribution and
-        $\pi_R, \pi_C$ are the mixture weights (defaulting to $\pi_R = \pi_C = 1/2$). Each
-        token's contribution is $\geq 0$, so JSD naturally ranks tokens by how much they pull
-        the two corpora apart.
+        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
+        $R$ and $C$ respectively, the reference and comparison corpora, and $p_\tau^{(M)} = \pi_R \,
+        p_\tau^{(R)} + \pi_C \, p_\tau^{(C)}$ with weights $\pi_R$ and $pi_C$ such that $\pi_R + \pi_C
+        = 1$. Each token's contribution is always non-negative.
+
+        When the `reference_score` is 0 and $\alpha \not= 1$, the contribution of the token is:
+
+        $$
+        \delta_\tau =
+        \left(
+            p_\tau^{(C)} - p_\tau^{(R)}
+        \right)
+        \left[
+            \frac{1}{2}
+            \left(
+                \phi_\tau^{(C)} + \phi_\tau^{(R)}
+            \right)
+            - \Phi^{(\text{ref})}
+        \right]
+        +
+        \frac{1}{2}
+        \left(
+            p_\tau^{(C)} + p_\tau^{(R)}
+        \right)
+        \left(
+            \phi_\tau^{(C)} - \phi_\tau^{(R)}
+        \right)
+        $$
+
+        where $\Phi^{(\text{ref})}$ is the reference score, and
+
+        $$
+            \phi_\tau^{(C)} =
+                \pi_C
+                \left(
+                    \frac
+                    {\left[ p_\tau^{(C)} \right]^{\alpha - 1} - \left[ p_\tau^{(M)} \right]^{\alpha - 1}}
+                    {\alpha - 1}
+                \right)
+            \, , \,
+            \phi_\tau^{(R)} =
+                \pi_R
+                \left(
+                    \frac
+                    {\left[ p_\tau^{(M)} \right]^{\alpha - 1} - \left[ p_\tau^{(R)} \right]^{\alpha - 1}}
+                    {\alpha - 1}
+                \right)
+        $$
+
+        Reference:
+            For more details, see the following paper:
+            > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
+            Danforth, C. M., & Dodds, P. S. (2021). [Generalized word shift graphs: a method for
+            visualizing and explaining pairwise comparisons
+            between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
+            EPJ Data Science, 10(1), 4.
 
         Args:
             alpha:
-                Tsallis order generalizing the underlying divergences. $\alpha = 1$ recovers the
-                standard, Shannon-based JSD
+                Order of the generalized entropy. $\alpha = 1$ recovers the standard JSD. Larger
+                values place more weight on common tokens, and smaller values place more weight
+                on rare tokens
             base:
-                Base of the logarithms used to calculate the JSD
+                Base of the logarithms used to calculate the JSD when $\alpha = 1$. Ignored
+                otherwise
             weight_ref:
                 Mixture weight $\pi_R$ for the reference corpus
             weight_cmp:
@@ -828,7 +897,7 @@ class Scorer:
         reference_score: float | Literal["mean"] | pl.Expr = 0,
     ) -> Comparison:
         r"""
-        Calculates the Jensen-Shannon divergence between the reference and comparison corpora.
+        Calculates the Jensen-Shannon divergence (JSD) between the reference and comparison corpora.
 
         Alias for
         [`jensen_shannon_divergence`][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence];
@@ -836,10 +905,12 @@ class Scorer:
 
         Args:
             alpha:
-                Tsallis order generalizing the underlying divergences. $\alpha = 1$ recovers
-                standard JSD
+                Order of the generalized entropy. $\alpha = 1$ recovers the standard JSD. Larger
+                values place more weight on common tokens, and smaller values place more weight
+                on rare tokens
             base:
-                Base of the logarithms used to calculate the JSD
+                Base of the logarithms used to calculate the JSD when $\alpha = 1$. Ignored
+                otherwise
             weight_ref:
                 Mixture weight $\pi_R$ for the reference corpus
             weight_cmp:
@@ -862,42 +933,55 @@ class Scorer:
         r"""
         Calculates the rank-turbulence divergence between the reference and comparison corpora.
 
-        Rank-turbulence divergence compares corpora by token rank instead of frequency. Each
-        token's contribution is the absolute difference of inverse-rank powers, summed over the
-        union of tokens in $R$ and $C$. The measure is symmetric in $R$ and $C$ and robust to
-        differences in overall corpus size.
+        Rank-turbulence divergence compares corpora by comparing the ranks of tokens in each corpus
+        when ordered by relative frequency. The measure is symmetric and bounded between 0 and 1,
+        where 0 indicates that the corpora are identical, and 1 indicates that they are maximally
+        divergent. It is also parameterized by an order parameter $\alpha$. When $\alpha < 1$, more
+        weight is given to rare tokens; when $\alpha > 1$, more weight is given to common tokens.
 
-        The rank divergence between $R$ and $C$ at order $\alpha$ is:
+        When $\alpha = 1$, the contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
-        D^R_\alpha(R, C)
-            = \frac{1}{N_\alpha}
-                \sum_\tau
-                \left|
-                    \frac{1}{\left[r_\tau^{(R)}\right]^\alpha}
-                    - \frac{1}{\left[r_\tau^{(C)}\right]^\alpha}
-                \right|
+        \delta_\tau =
+            \frac{1}{\mathcal{N}_\alpha}
+            \,
+            \left|
+                \frac{1}{\left[ r_\tau^{(R)} \right]^\alpha}
+                - \frac{1}{\left[ r_\tau^{(C)} \right]^\alpha}
+            \right|
+            ^{ 1 / (\alpha + 1)}
         $$
 
-        where $r_\tau^{(X)}$ is the rank of token $\tau$ in corpus $X$ (rank 1 being the most
-        frequent) and $N_\alpha$ is a normalization constant that makes divergences comparable
-        across values of $\alpha$. Each per-token contribution is non-negative.
+        where $r_\tau^{(R)}$ and $r_\tau^{(C)}$ are the ranks of token $\tau$ in $R$ and $C$
+        respectively, the reference and comparison corpora, and $\mathcal{N}_\alpha$ is a
+        normalization constant based on $\alpha$.
 
-        The parameter $\alpha$ controls which ranks dominate:
+        When $\alpha = 0$, the contribution of the token is:
 
-        - $\alpha \to 0$: the per-token contribution approaches
-          $\left|\ln r_\tau^{(R)} - \ln r_\tau^{(C)}\right|$, giving equal weight to changes in
-          rank order across the full distribution and surfacing rare tokens at the long tail
-        - $\alpha = 1$: standard inverse-rank weighting
-        - $\alpha \to \infty$: contributions are dominated by the top-ranked tokens and the
-          divergence reduces to comparing the heads of the two corpora
+        $$
+        \delta_\tau =
+            \frac{1}{N_0}
+            \,
+            \left|
+                \ln \frac{r_\tau^{(R)}}{r_\tau^{(C)}}
+            \right|
+        $$
+
+        Reference:
+            For details, see the following paper:
+            > Dodds, P. S., Minot, J. R., Arnold, M. V., Alshaabi, T., Adams, J. L.,
+            Dewhurst, D. R., Gray, T. J., Frank, M. R., Reagan, A. J., & Danforth, C. M. (2023).
+            [Allotaxonometry and rank-turbulence divergence: A universal instrument for comparing
+            complex systems](https://link.springer.com/article/10.1140/epjds/s13688-023-00400-x).
+            EPJ Data Science, 12(1), 37.
 
         Args:
             alpha:
-                Order of the rank divergence. Defaults to 1.0
+                Order of the rank divergence. Larger values place more weight on common tokens, and
+                smaller values place more weight on rare tokens
 
         Returns:
-            A new `Comparison` scores by the rank divergence
+            A new `Comparison` scored by the rank-turbulence divergence
         """
         score_func = partial(rank_divergence, alpha=alpha)
         plan = self._make_basic_score_plan(
