@@ -51,7 +51,7 @@ class TestScoreFunctionWiring:
             (
                 lambda s: s.kullback_leibler_divergence(),
                 "kullback_leibler_divergence",
-                ["base", "reference_score"],
+                ["base"],
                 True,
             ),
             (
@@ -124,7 +124,7 @@ class TestScoreFunctionWiring:
         df_result = result._plan(df_mock, "word", "__wl_normed")
 
         # Where the (normalized) freqs are larger in the comparison, we should see the same in
-        # the `freq_diff` column (KLD is an exception: it uses only reference freqs, so diff is 0)
+        # the `freq_diff` column (KLD is an exception: it uses only comparison freqs, so diff is 0)
         check_exprs = []
         if result._method != "kullback_leibler_divergence":
             check_exprs.append(
@@ -133,11 +133,18 @@ class TestScoreFunctionWiring:
         else:
             check_exprs.append(col("freq_diff") == 0)
         # When the normalized freqs are larger in the comparison, we should also see certain
-        # patterns in the `weighted_score_diff` depending on the measure
-        if result._method in {"kullback_leibler_divergence", "tsallis_entropy"}:
+        # patterns in the `weighted_score_diff` depending on the measure. KLD weights by the
+        # comparison and gives positive scores for comparison-overrepresented tokens; Tsallis
+        # entropy weights by each corpus independently and gives the opposite sign.
+        if result._method == "tsallis_entropy":
             check_exprs.append(
                 (col("cmp__wl_normed") >= col("ref__wl_normed"))
                 == (col("weighted_score_diff") <= 0)
+            )
+        elif result._method == "kullback_leibler_divergence":
+            check_exprs.append(
+                (col("cmp__wl_normed") >= col("ref__wl_normed"))
+                == (col("weighted_score_diff") >= 0)
             )
         elif result._method == "proportion":
             check_exprs.append(col("weighted_score_diff") == 0)
@@ -188,6 +195,25 @@ class TestScoreFunctionWiring:
         check = (col("comparison_score") >= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
         assert df_result.select(check.all()).item()
 
+    def test_kld_raises_when_comparison_has_token_absent_from_reference(self) -> None:
+        """KLD is infinite when the comparison has a token the reference lacks; surface that
+        up front rather than letting the framework produce silent NaN/inf results."""
+        df = pl.DataFrame(
+            {
+                "word": ["the", "cat", "dog"],
+                "ref": [5, 3, 0],  # reference lacks 'dog'
+                "cmp": [1, 2, 4],  # comparison has 'dog'
+            }
+        ).with_columns(
+            normalize_freqs(col("ref")).alias("ref__wl_normed"),
+            normalize_freqs(col("cmp")).alias("cmp__wl_normed"),
+        )
+        comparison = Comparison("ref", "cmp")
+        plan = comparison.score.kullback_leibler_divergence()._plan
+
+        with pytest.raises(ValueError, match="Kullback-Leibler divergence is infinite"):
+            plan(df, "word", "__wl_normed")
+
     @pytest.mark.parametrize(
         "score_func,parameter,value1,value2",
         [
@@ -221,7 +247,6 @@ class TestScoreFunctionWiring:
         [
             lambda s, ref_score: s.proportion(reference_score=ref_score),
             lambda s, ref_score: s.tsallis_entropy(reference_score=ref_score),
-            lambda s, ref_score: s.kullback_leibler_divergence(reference_score=ref_score),
             lambda s, ref_score: s.jensen_shannon_divergence(reference_score=ref_score),
             lambda s, ref_score: s.lexicon(
                 lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0}, reference_score=ref_score
@@ -277,8 +302,8 @@ class TestAliasing:
         "method,method_alias",
         [
             (
-                lambda s: s.kullback_leibler_divergence(base=10, reference_score=5.0),
-                lambda s: s.kld(base=10, reference_score=5.0),
+                lambda s: s.kullback_leibler_divergence(base=10),
+                lambda s: s.kld(base=10),
             ),
             (
                 lambda s: s.jensen_shannon_divergence(alpha=2, base=10),

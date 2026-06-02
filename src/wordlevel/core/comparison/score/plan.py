@@ -116,11 +116,16 @@ def weighted_average_score_plan(
         attribution_cols["reference"] = score_freqs_ref
         attribution_cols["comparison"] = score_freqs_cmp
 
-    # Select only the score columns for the reference and comparison corpora (and not all others)
-    # Avoid duplicate column selection error if the component freqs are the same as the score freqs
-    score_cols_to_select = [score_freqs_ref, score_freqs_cmp]
-    if score_freqs_ref.meta.output_name() != component_freqs_ref.meta.output_name():
-        score_cols_to_select += [component_freqs_ref, component_freqs_cmp]
+    # Select only the score columns for the reference and comparison corpora (and not all others).
+    # Dedupe by output name so component freqs that already appear (e.g. when one side is shared
+    # with score freqs) aren't selected twice — this triggers a polars DuplicateError.
+    score_cols_to_select: list[pl.Expr] = []
+    seen_names: set[str] = set()
+    for expr in (score_freqs_ref, score_freqs_cmp, component_freqs_ref, component_freqs_cmp):
+        name = expr.meta.output_name()
+        if name not in seen_names:
+            score_cols_to_select.append(expr)
+            seen_names.add(name)
 
     df_plan = (
         df.select(

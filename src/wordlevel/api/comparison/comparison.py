@@ -138,10 +138,10 @@ class ComparisonResult:
             The name of the comparison
         method:
             The name of a scoring method
-        is_weighted_avg
+        is_weighted_avg:
             Whether the scoring method can be interpreted as a weighted average or difference in
             weighted averages
-        is_nonnegative
+        is_nonnegative:
             Whether the scoring method is inherently non-negative, i.e. all token-level
             contributionso are non-negative
         plan:

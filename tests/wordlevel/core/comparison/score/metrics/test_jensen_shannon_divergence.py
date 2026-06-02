@@ -139,8 +139,12 @@ def test_jensen_shannon_divergence(
 ):
     """
     Test that the JSD is consistent with other ways of computing it:
-    JSD = weight_P * KLD(P | M) + weight_Q * KLD(Q | M)
+    JSD = weight_P * D_KL(P || M) + weight_Q * D_KL(Q || M)
     JSD = H(M) - weight_P * H(P) - weight_Q * H(Q), where H is the Tsallis entropy
+
+    Note: `kullback_leibler_divergence(freqs1, freqs2)` returns D_KL(freqs2 || freqs1)
+    (paper convention; see metric docstring). So we pass `(mixed, freqs)` to get
+    D_KL(freqs || mixed), the form needed for JSD.
     """
     df = pl.DataFrame({"freqs1": freqs1, "freqs2": freqs2}, strict=False)
     df = (
@@ -163,8 +167,8 @@ def test_jensen_shannon_divergence(
         .with_columns(
             # Use mixed dist to get KLD with respect to it, and Tsallis entropy of mixed dist
             tsallis_entropy(pl.col("mixed"), base=base, alpha=alpha).alias("entropies_mixed"),
-            kullback_leibler_divergence(pl.col("freqs1"), pl.col("mixed"), base=base).alias("kld1"),
-            kullback_leibler_divergence(pl.col("freqs2"), pl.col("mixed"), base=base).alias("kld2"),
+            kullback_leibler_divergence(pl.col("mixed"), pl.col("freqs1"), base=base).alias("kld1"),
+            kullback_leibler_divergence(pl.col("mixed"), pl.col("freqs2"), base=base).alias("kld2"),
         )
         .with_columns(
             # Calculate JSD via KLD and Tsallis entropy formulas
