@@ -25,7 +25,7 @@ class Catalog:
 
     Args:
         data:
-            The corpora token-frequency data. Can a Polars DataFrame, Polars LazyFrame,
+            The corpora token-frequency data. Accepts a Polars DataFrame or LazyFrame,
             [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs],
             [`DictOfFreqs`][wordlevel.api.catalog.constructors.DictOfFreqs], or an existing
             `Catalog`. The class will attempt to infer the structure of the data and use the
@@ -35,7 +35,7 @@ class Catalog:
             subwords, n-grams, etc.). Ignored otherwise
         freq_cols:
             If the `data` is a Polars dataframe, the columns that include the token frequencies for
-            each corpus
+            each corpus. Ignored otherwise
         corpora:
             If the `data` is a [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs], the
             names of the corpora, listed in the same order as `data`. If not provided, will default
@@ -96,7 +96,7 @@ class Catalog:
             catalog: An existing `Catalog`
 
         Returns:
-            A new `Catalog` with the same internal data as the input
+            A new `Catalog` with the same internal data as the provided catalog
         """
         init_data = from_catalog(catalog)
 
@@ -216,9 +216,9 @@ class Catalog:
 
     def with_comparisons(self, *comparisons: Comparison) -> Catalog:
         """
-        Returns a new catalog with the comparisons added to it.
+        Returns a new catalog with comparisons added to it.
 
-        Comparisons will overwrite existing comparisons with the same name.
+        New comparisons will overwrite existing comparisons with the same name.
 
         Args:
             comparisons: The comparisons to add to the catalog

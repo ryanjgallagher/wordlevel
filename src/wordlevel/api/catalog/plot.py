@@ -87,12 +87,16 @@ class Plotter:
 
         Bars show the contribution of each token to the overall comparison score, ordered by
         the magnitude. By default, bars pointing in the positive direction are attributed to the
-        reference corpus, and bars pointing in the negative direction are attributed to the
-        comparison corpus.
+        comparison corpus, and bars pointing in the negative direction are attributed to the
+        reference corpus.
 
-        For details, see "[Generalized word shift graphs: A method for visualizing and explaining
-        pairwise comparisons between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3)"
-        (Gallagher et al., 2021).
+        Reference:
+            For more details, see the following paper:
+            > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
+            Danforth, C. M., & Dodds, P. S. (2021). [Generalized word shift graphs: a method for
+            visualizing and explaining pairwise comparisons
+            between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
+            EPJ Data Science, 10(1), 4.
 
         See Also:
             | Plot | Description |
@@ -103,8 +107,9 @@ class Plotter:
             comparison:
                 The alias of a comparison in the catalog. See
                 [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
+                and [`Comparison.alias`][wordlevel.api.comparison.comparison.Comparison.alias]
             max_rank:
-                The number of top-contributing tokens to display
+                The maximum number of top-contributing tokens to display
             vertical:
                 Whether to orient the chart vertically, where tokens are listed top-to-bottom and
                 bars extend horizontally. If `False`, tokens are listed left-to-right and bars
@@ -117,19 +122,19 @@ class Plotter:
                 Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
                 axes may overlap with the labels
             rank_axis:
-                Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with matching
+                Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
             score_axis:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
-                matching fields
+                the same fields
             bar_config:
-                Configuration for the bars. Accepts a `BarConfig` or a dict with matching fields
+                Configuration for the bars. Accepts a `BarConfig` or a dict with the same fields
             label_config:
-                Configuration for the bar labels. Accepts a `LabelConfig` or a dict with matching
+                Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
             scale_factor:
                 Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
-                provide more space for the bar labels
+                provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
             show_border:
@@ -145,7 +150,7 @@ class Plotter:
             An Altair chart of the bar plot
 
         Raises:
-            KeyError: If `comparison` is not the alias of a comparison on the catalog.
+            KeyError: If `comparison` is not the alias of a comparison in the catalog
         """
         comp = self._catalog.comparisons[comparison]
         df_plot = self._get_plot_df(
@@ -196,13 +201,13 @@ class Plotter:
     ) -> alt.LayerChart:
         r"""
         Makes a word shift plot (a stacked bar chart) of the top contributing tokens distinguishing
-        two compared corpora, and how they contribute.
+        two compared corpora.
 
         Word shift plots can only be used with scores derived from weighted averages. For comparing
         corpora using measures that are not weighted averages, use
         [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
 
-        All bars are interpreted in terms of how the comparison corpus compares to the reference
+        All bars are interpreted in terms of how the comparison corpus differs from the reference
         corpus. Positive values are attributed to the comparison; negative values are attributed to
         the reference. For each token, there are two stacked bars. One bar shows whether the token
         is relatively positive or negative and whether it was used more or less in the comparison
@@ -211,16 +216,16 @@ class Plotter:
         bars together.
 
         Mathematically, the bars are derived from the following formula. Let $\tau$ be a token,
-        and let $p_\tau^{(\text{i})}$ and $\phi_\tau^{(\text{i})}$ be the normalized frequency and
-        score of $\tau$ in corpus $i$ respectively. Then the contribution $\delta \Phi_\tau$ of a
-        token is
+        and let $p_\tau^{(\mathcal{C})}$ and $\phi_\tau^{(\mathcal{C})}$ be the normalized frequency
+        and score of $\tau$ in corpus $\mathcal{C}$ respectively. Then the contribution
+        $\delta_\tau$ of the token is:
 
         $$
-        \delta \Phi_\tau
+        \delta_\tau
             =
             \overbrace{
                 \biggl(
-                    p_\tau^{(\text{c})} - p_\tau^{(\text{r})}
+                    p_\tau^{(C)} - p_\tau^{(R)}
                 \biggr)
             }^{
                 \uparrow / \downarrow
@@ -229,7 +234,7 @@ class Plotter:
                 \biggl[
                     \frac{1}{2}
                     \left(
-                        \phi_\tau^{(\text{c})} + \phi_\tau^{(\text{r})} - \Phi^{(\text{Ref.})}
+                        \phi_\tau^{(C)} + \phi_\tau^{(R)} - \Phi^{(\text{ref})}
                     \right)
                 \biggr]
             }^{
@@ -239,29 +244,33 @@ class Plotter:
             \underbrace{
                 \frac{1}{2}
                 \biggl(
-                    p_\tau^{(\text{c})} + p_\tau^{(\text{r})}
+                    p_\tau^{(C)} + p_\tau^{(R)}
                 \biggr)
                 \biggl(
-                    \phi_\tau^{(\text{c})} - \phi_\tau^{(\text{r})}
+                    \phi_\tau^{(C)} - \phi_\tau^{(R)}
                 \biggr)
             }_{
                 \bigtriangleup / \bigtriangledown
             }
         $$
 
-        where $r$ and $c$ are the reference and comparison corpora respectively, and
-        $\Phi^{(\text{Ref.})}$ is the specified reference score.
+        where $R$ and $C$ are the reference and comparison corpora respectively, and
+        $\Phi^{(\text{ref})}$ is the user-provided reference score.
 
         The stacked bars represent the two parts of the summand. The first bar is whether a word is
-        relatively positive ($+ / -$) and appears more or less in the comparison corpus
-        ($\uparrow / \downarrow$). The second bar is whether the score is more or less positive in
-        the comparison corpus ($\bigtriangleup / \bigtriangledown$). Note, the bars may counteract
+        relatively positive $(+ / -)$ and appears more or less in the comparison corpus
+        $(\uparrow / \downarrow)$. The second bar is whether the score is more or less positive in
+        the comparison corpus $(\bigtriangleup / \bigtriangledown)$. Note, the bars may counteract
         one another if the two summand terms are different signs: this is shown visually with
         faded bars in the word shift plot when that is the case.
 
-        For details, see "[Generalized word shift graphs: A method for visualizing and explaining
-        pairwise comparisons between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3)"
-        (Gallagher et al., 2021).
+        Reference:
+            For more details, see the following paper:
+            > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
+            Danforth, C. M., & Dodds, P. S. (2021). [Generalized word shift graphs: a method for
+            visualizing and explaining pairwise comparisons
+            between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
+            EPJ Data Science, 10(1), 4.
 
         See Also:
             | Plot | Description |
@@ -272,8 +281,9 @@ class Plotter:
             comparison:
                 The alias of a comparison in the catalog. See
                 [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
+                and [`Comparison.alias`][wordlevel.api.comparison.comparison.Comparison.alias]
             max_rank:
-                The number of top-contributing tokens to display
+                The maximum number of top-contributing tokens to display
             vertical:
                 Whether to orient the chart vertically, where tokens are listed top-to-bottom and
                 bars extend horizontally. If `False`, tokens are listed left-to-right and bars
@@ -286,20 +296,20 @@ class Plotter:
                 Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
                 axes may overlap with the labels
             rank_axis:
-                Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with matching
+                Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
             score_axis:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
-                matching fields
+                the same fields
             bar_config:
-                Configuration for the bars. Accepts a `ShiftBarConfig` or a dict with matching
+                Configuration for the bars. Accepts a `ShiftBarConfig` or a dict with the same
                 fields
             label_config:
-                Configuration for the bar labels. Accepts a `LabelConfig` or a dict with matching
+                Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
             scale_factor:
                 Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
-                provide more space for the bar labels
+                provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
             show_border:
@@ -315,8 +325,8 @@ class Plotter:
             An Altair chart of the word shift plot
 
         Raises:
-            KeyError: If `comparison` is not the alias of a comparison on the catalog.
-            ValueError: If the comparison's measure is not a weighted average.
+            KeyError: If `comparison` is not the alias of a comparison in the catalog
+            ValueError: If the comparison's measure is not a weighted average
         """
         comp = self._catalog.comparisons[comparison]
         if not comp.is_weighted_avg:

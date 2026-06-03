@@ -11,7 +11,7 @@ from wordlevel.api.comparison.score import Scorer, ScorePlan
 
 class Comparison:
     """
-    A comparison between two corpora: a reference and a comparison.
+    A comparison between two corpora: a reference corpus and a comparison corpus.
 
     Args:
         reference:
@@ -84,7 +84,7 @@ class Comparison:
 
     def alias(self, name: str) -> Comparison:
         """
-        Returns a new `Comparison` with the given alias, a name for the comparison.
+        Returns a new `Comparison` with the given alias, an internal name for it.
 
         Args:
             name: The name to give to the comparison
@@ -130,6 +130,10 @@ class ComparisonResult:
     applied to corpus data.
 
     Attributes:
+        df:
+            The dataframe containing all scoring information for the comparison. Contains one row
+            per token, with columns for the score, rank, attribution, and per-token contribution
+            components.
         reference:
             Name of the reference corpus
         comparison:

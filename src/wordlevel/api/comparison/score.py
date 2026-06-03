@@ -217,7 +217,7 @@ class Scorer:
         r"""
         Calculates the frequency difference between the reference and comparison corpora.
 
-        Each token's contribution is the difference in its raw frequency between each corpus.
+        Each token's contribution is the difference in its raw frequency between the corpora.
         Specifically, the contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
@@ -247,7 +247,7 @@ class Scorer:
         Calculates the proportion difference between the reference and comparison corpora.
 
         Each token's contribution is the difference in its normalized frequency (i.e. proportion)
-        between each corpus. When the `reference_score` is 0 (the default), the contribution
+        within each corpus. When the `reference_score` is 0 (the default), the contribution
         $\delta_\tau$ of a token $\tau$ is:
 
         $$
@@ -331,7 +331,7 @@ class Scorer:
         lexicon to use for both corpora, or one lexicon for each. The overall score for each corpus
         individually is the lexicon-weighted average. Specifically, if $p_\tau$ is the normalized
         frequency of a token $\tau$ in a corpus, and $\phi_\tau$ is the score assigned to it by
-        the lexicon, the the corpus-level score is $\sum_\tau p_\tau \phi_\tau$. This method
+        the lexicon, then the corpus-level score is $\sum_\tau p_\tau \phi_\tau$. This method
         takes the difference in weighted averages between the reference and comparison corpora.
 
         When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
@@ -400,7 +400,7 @@ class Scorer:
             lexicon_reference:
                 Lexicon associating tokens with scores for the reference corpus
             lexicon_comparison:
-                Lexicon associating tokens with scores foro the comparison corpus
+                Lexicon associating tokens with scores for the comparison corpus
             lexicon_token_col:
                 Name of the token column when a dataframe is supplied for the lexicon
             lexicon_score_col:
@@ -408,14 +408,25 @@ class Scorer:
             reference_score:
                 Baseline against which per-token contributions are interpreted. Defaults to the
                 "center" of a lexicon's numerical scale when a `Lexicon` is supplied; otherwise it
-                defaults to 0
+                defaults to 0. If `"mean"`, uses the weighted average of the reference corpus as
+                the reference score
             impute:
                 How to score tokens when a score exists in one lexicon for the reference or
                 comparison but not the other. `"borrow"` applies the score from the other corpus.
-                `"mean"` uses the mean score of the corpus's lexicon (not weighted by frequency)
+                `"mean"` uses the mean score of the corpus's lexicon (not weighted by frequency). A
+                float or Polars expression can also be passed to use a specific value as the imputed
+                score
 
         Returns:
             A new `Comparison` scored by the difference in lexicon-weighted averages
+
+        Raises:
+            ValueError:
+                If no lexicon is supplied (`lexicon`, `lexicon_reference`, and `lexicon_comparison`
+                are all `None`).
+            ValueError:
+                If `lexicon` is supplied alongside `lexicon_reference` or `lexicon_comparison` (the
+                single-lexicon and per-corpus-lexicon paths are mutually exclusive).
         """
         score_alias_ref = "lexicon_score_ref"
         score_alias_cmp = "lexicon_score_cmp"
@@ -498,8 +509,8 @@ class Scorer:
 
         $$
         \delta_\tau =
-            - \frac{\left( p_\tau^{(C)} \right)^\alpha}{\alpha - 1}
-            + \frac{\left( p_\tau^{(R)} \right)^\alpha}{\alpha - 1}
+            \frac{p_\tau^{(C)} - \left[ p_\tau^{(C)} \right]^\alpha}{\alpha - 1}
+            - \frac{p_\tau^{(R)} - \left[ p_\tau^{(R)} \right]^\alpha}{\alpha - 1}
         $$
 
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
@@ -532,9 +543,9 @@ class Scorer:
         where $\Phi^{(\text{ref})}$ is the reference score, and
 
         $$
-            \phi_\tau^{(C)} = - \frac{\left( p_\tau^{(C)} \right)^{\alpha - 1}}{\alpha - 1}
+            \phi_\tau^{(C)} = \frac{1 - \left[ p_\tau^{(C)} \right]^{\alpha - 1}}{\alpha - 1}
             \, , \,
-            \phi_\tau^{(R)} = - \frac{\left( p_\tau^{(R)} \right)^{\alpha - 1}}{\alpha - 1}
+            \phi_\tau^{(R)} = \frac{1 - \left[ p_\tau^{(R)} \right]^{\alpha - 1}}{\alpha - 1}
         $$
 
         Reference:
@@ -554,7 +565,8 @@ class Scorer:
                 Base of the logarithms used to calculate the entropy when $\alpha = 1$. Ignored
                 otherwise
             reference_score:
-                Baseline against which per-token contributions are interpreted. Defaults to 0
+                Baseline against which per-token contributions are interpreted. Defaults to 0.
+                If `"mean"`, uses the Tsallis entropy of the reference corpus as the reference score
 
         Returns:
             A new `Comparison` scored by the difference in Tsallis entropies
@@ -584,7 +596,7 @@ class Scorer:
         Calculates the difference in Shannon entropy between the reference and comparison corpora.
 
         Shannon entropy is a measure of textual diversity and "surprise." If $p_\tau$ is the
-        normalized frequency of a token $\tau$ ina  corpus, then its Shannon entropy is
+        normalized frequency of a token $\tau$ in a corpus, then its Shannon entropy is
         $\sum_\tau p_\tau \log \frac{1}{p_\tau}$. The factor $\log \frac{1}{p_\tau}$ is known as
         the "surprisal" of a token: the less frequent a token, the higher its surprisal.
 
@@ -644,7 +656,8 @@ class Scorer:
             base:
                 Base of the logarithms used to calculate the entropy
             reference_score:
-                Baseline against which per-token contributions are interpreted. Defaults to 0
+                Baseline against which per-token contributions are interpreted. Defaults to 0. If
+                `"mean"`, uses the Shannon entropy of the reference corpus as the reference score
 
         Returns:
             A new `Comparison` scored by the difference in Shannon entropies
@@ -656,16 +669,15 @@ class Scorer:
         Calculates the Kullback-Leibler divergence (KLD) between the reference and comparison corpora.
 
         The KLD is an asymmetric measure of how two corpora differ. From an information-theoretic
-        perspective, it measures how much more information is needed to encode comparison corpus
-        when using the reference as the "optimal coding scheme." It is only well-defined when
-        all of the words in the comparison also appear in the reference. Otherwise, the KLD diverges
-        to infinity.
+        perspective, it measures how much more information is needed to encode the comparison corpus
+        when using the reference as the "codebook." It is only well-defined when all of the words in
+        the comparison also appear in the reference. Otherwise, the KLD diverges to infinity.
 
         The contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
         \delta_\tau =
-            p_\tau^{(C)} \log \frac{1}{p_\tau^{(R)}} - p_\tau^{(C)} \log \frac{1}{p_\tau^{C}}
+            p_\tau^{(C)} \log \frac{1}{p_\tau^{(R)}} - p_\tau^{(C)} \log \frac{1}{p_\tau^{(C)}}
         $$
 
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
@@ -684,7 +696,7 @@ class Scorer:
 
         Args:
             base:
-                Logarithm base. Defaults to 2 (divergence in bits)
+                Base of the logarithms used to calculate the KLD
 
         Returns:
             A new `Comparison` scored by the Kullback-Leibler divergence
@@ -693,7 +705,8 @@ class Scorer:
             ValueError:
                 If the comparison corpus contains any token absent from the reference
                 corpus, which causes the KLD to be infinite. Filter to the intersection of tokens
-                or use a symmetric measure like the Jensen-Shannon divergence.
+                or use a symmetric measure like the [Jensen-Shannon
+                divergence][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence]
         """
         # The reference score does not affect token contributions for the KLD.
         plan = self._make_weighted_avg_score_plan(
@@ -743,11 +756,11 @@ class Scorer:
 
         Alias for
         [`kullback_leibler_divergence`][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence];
-        see that method for more detials.
+        see that method for more details.
 
         Args:
             base:
-                Logarithm base. Defaults to 2 (divergence in bits)
+                Base of the logarithms used to calculate the KLD
 
         Returns:
             A new `Comparison` scored by the Kullback-Leibler divergence
@@ -786,10 +799,10 @@ class Scorer:
 
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
         $R$ and $C$ respectively, the reference and comparison corpora, and $p_\tau^{(M)} = \pi_R \,
-        p_\tau^{(R)} + \pi_C \, p_\tau^{(C)}$ with weights $\pi_R$ and $pi_C$ such that $\pi_R + \pi_C
-        = 1$. Each token's contribution is always non-negative.
+        p_\tau^{(R)} + \pi_C \, p_\tau^{(C)}$ with weights $\pi_R$ and $\pi_C$ such that $\pi_R + \pi_C
+        = 1$. For $\alpha = 1$, each token's contribution is always non-negative.
 
-        When the `reference_score` is 0 and $\alpha \not= 1$, the contribution of the token is:
+        When the `reference_score` is 0 and $\alpha \neq 1$, the contribution of the token is:
 
         $$
         \delta_\tau =
@@ -854,7 +867,9 @@ class Scorer:
             weight_cmp:
                 Mixture weight $\pi_C$ for the comparison corpus
             reference_score:
-                Baseline against which per-token contributions are interpreted. Defaults to 0
+                Baseline against which per-token contributions are interpreted. Defaults to 0. If
+                `"mean"`, uses the weighted average of the reference corpus, where weights are the
+                values described in the general formula above
 
         Returns:
             A new `Comparison` scored by the Jensen-Shannon divergence
@@ -939,7 +954,7 @@ class Scorer:
         divergent. It is also parameterized by an order parameter $\alpha$. When $\alpha < 1$, more
         weight is given to rare tokens; when $\alpha > 1$, more weight is given to common tokens.
 
-        When $\alpha = 1$, the contribution $\delta_\tau$ of a token $\tau$ is:
+        When $\alpha > 0$, the contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
         \delta_\tau =

@@ -15,13 +15,13 @@ class LexiconLoader:
 
     def labMT(self, language: labMTLanguage) -> Lexicon:
         """
-        labMT is a set of sentiment lexicons produced by gathering human ratings from Mechanical
-        Turk (MT) workers for the 10,000 most frequent words for each language.
+        A set of "happiness" sentiment lexicons constructed for various languages.
 
-        Words were rated on a scale from 1 to 9, where 1 is the most negative ("saddest") and 9 is
-        the most positive ("happiest"). The words were sourced from several sources, including the
-        Google Books project, the Google Web Crawl, Twitter, the New York Times, music lyrics, and
-        movie and television titles.
+        The 10,000 most frequent words for each language were rated by Mechanical Turk (MT) workers
+        on a scale from 1 to 9, where 1 is the most negative ("saddest") and 9 is the most positive
+        ("happiest"). The words were sourced from several sources, including the Google Books
+        project, the Google Web Crawl, Twitter, the New York Times, music lyrics, and movie and
+        television titles.
 
         License:
             This data is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0
@@ -53,11 +53,10 @@ class LexiconLoader:
 
     def SocialSent(self, year: SocialSentYear) -> Lexicon:
         """
-        SocialSent is a series of sentiment lexicons constructed for each decade from 1850 to 2000.
+        A set of English sentiment lexicons constructed for each decade from 1850 to 2000.
 
         Each lexicon represents the inferred sentiment of the top 5,000 non-stop
-        words, based on the [Corpus of Historical American
-        English](https://www.english-corpora.org//coha/).
+        words from the [Corpus of Historical American English](https://www.english-corpora.org//coha/).
 
         License:
             This data is made available under the [Public Domain Dedication and License
@@ -66,8 +65,8 @@ class LexiconLoader:
         Citation:
             If you use this lexicon, please cite the following paper.
 
-            > Hamilton, W. L., Clark, K., Leskovec, J., & Jurafsky, D. (2016, November).
-            [Inducing domain-specific sentiment lexicons from unlabeled
+            > Hamilton, W. L., Clark, K., Leskovec, J., & Jurafsky, D. (2016). [Inducing
+            domain-specific sentiment lexicons from unlabeled
             corpora](https://aclanthology.org/D16-1057/). In Proceedings of the 2016 Conference on
             Empirical Methods in Natural Nanguage Processing (pp. 595-605).
 
