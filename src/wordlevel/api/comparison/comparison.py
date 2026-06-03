@@ -86,6 +86,11 @@ class Comparison:
         """
         Returns a new `Comparison` with the given alias, an internal name for it.
 
+        Example:
+            ```python
+            --8<-- "snippets/comparison/comparison.py:alias"
+            ```
+
         Args:
             name: The name to give to the comparison
 
@@ -110,6 +115,11 @@ def comp(reference: str, comparison: str) -> Comparison:
     [`Comparison`][wordlevel.api.comparison.comparison.Comparison].
 
     Equivalent to `Comparison(reference=reference, comparison=comparison)`.
+
+    Example:
+        ```python
+        --8<-- "snippets/comparison/comparison.py:comp"
+        ```
 
     Args:
         reference:

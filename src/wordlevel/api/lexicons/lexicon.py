@@ -23,6 +23,11 @@ class LexiconLoader:
         project, the Google Web Crawl, Twitter, the New York Times, music lyrics, and movie and
         television titles.
 
+        Example:
+            ```python
+            --8<-- "snippets/lexicons/lexicon.py:labmt"
+            ```
+
         License:
             This data is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0
             International (CC BY-NC-SA 4.0) License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
@@ -57,6 +62,11 @@ class LexiconLoader:
 
         Each lexicon represents the inferred sentiment of the top 5,000 non-stop
         words from the [Corpus of Historical American English](https://www.english-corpora.org//coha/).
+
+        Example:
+            ```python
+            --8<-- "snippets/lexicons/lexicon.py:socialsent"
+            ```
 
         License:
             This data is made available under the [Public Domain Dedication and License

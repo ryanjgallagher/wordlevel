@@ -3,7 +3,9 @@ repos:
     rev: v0.12.8
     hooks:
       - id: ruff-check
+        exclude: ^docs/snippets/
       - id: ruff-format
+        exclude: ^docs/snippets/
   - repo: local
     hooks:
       - id: pyright
