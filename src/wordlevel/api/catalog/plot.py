@@ -100,7 +100,7 @@ class Plotter:
 
         See Also:
             | Plot | Description |
-            |------------------------------------------------------------------|----------------------------------------------------------------|
+            |------|-------------|
             | [`Catalog.plot.shift`][wordlevel.api.catalog.plot.Plotter.shift] | Detailed bar plot of comparisons scored with weighted averages |
 
         Args:
@@ -274,7 +274,7 @@ class Plotter:
 
         See Also:
             | Plot | Description |
-            |--------------------------------------------------------------|---------------------------------------------------------|
+            |------|-------------|
             | [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] | Concise bar plot of comparisons scored with any measure |
 
         Args:

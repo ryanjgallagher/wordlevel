@@ -229,6 +229,12 @@ class Scorer:
         tokens that occur more often in the comparison; negative contributions identify tokens that
         occur more often in the reference.
 
+        See Also:
+            | Score | Description |
+            |-------|-------------|
+            | [`Comparison.score.proportion`][wordlevel.api.comparison.score.Scorer.proportion] | Scores corpora by normalized frequencies |
+            | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
+
         Returns:
             A new `Comparison` with the corpora scored by frequency differences
         """
@@ -280,6 +286,12 @@ class Scorer:
             visualizing and explaining pairwise comparisons
             between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
             EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Score | Description |
+            |-------|-------------|
+            | [`Comparison.score.frequency`][wordlevel.api.comparison.score.Scorer.frequency] | Scores corpora by raw frequencies |
+            | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
 
         Args:
             reference_score:
@@ -540,7 +552,7 @@ class Scorer:
         \right)
         $$
 
-        where $\Phi^{(\text{ref})}$ is the reference score, and
+        where $\Phi^{(\text{ref})}$ is the user-provided reference score, and
 
         $$
             \phi_\tau^{(C)} = \frac{1 - \left[ p_\tau^{(C)} \right]^{\alpha - 1}}{\alpha - 1}
@@ -555,6 +567,11 @@ class Scorer:
             visualizing and explaining pairwise comparisons
             between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
             EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Score | Description |
+            |-------|-------------|
+            | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora in the special case when $\alpha=1$ |
 
         Args:
             alpha:
@@ -636,7 +653,7 @@ class Scorer:
         \right)
         $$
 
-        where $\Phi^{(\text{ref})}$ is the reference score, and
+        where $\Phi^{(\text{ref})}$ is the user-provided reference score, and
 
         $$
             \phi_\tau^{(C)} = \log \frac{1}{p_\tau^{(C)}}
@@ -651,6 +668,11 @@ class Scorer:
             visualizing and explaining pairwise comparisons
             between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
             EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Score | Description |
+            |-------|-------------|
+            | [`Comparison.score.tsallis_entropy`][wordlevel.api.comparison.score.Scorer.tsallis_entropy] | Scores corpora using generalized entropy |
 
         Args:
             base:
@@ -693,6 +715,11 @@ class Scorer:
             visualizing and explaining pairwise comparisons
             between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
             EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Score | Description |
+            |-------|-------------|
+            | [`Comparison.score.jensen_shannon_divergence`][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence] | Scores corpora using a bounded, symmetric, entropy-based divergence |
 
         Args:
             base:
@@ -826,7 +853,7 @@ class Scorer:
         \right)
         $$
 
-        where $\Phi^{(\text{ref})}$ is the reference score, and
+        where $\Phi^{(\text{ref})}$ is the user-provided reference score, and
 
         $$
             \phi_\tau^{(C)} =
@@ -853,6 +880,11 @@ class Scorer:
             visualizing and explaining pairwise comparisons
             between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
             EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Score | Description |
+            |-------|-------------|
+            | [`Comparison.score.kullback_leibler_divergence`][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence] | Scores corpora using an asymmetric entropy-based divergence |
 
         Args:
             alpha:
