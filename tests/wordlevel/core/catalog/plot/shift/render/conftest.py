@@ -17,7 +17,7 @@ from wordlevel.core.comparison.score.components import (
     higher_score,
     lower_score,
 )
-from wordlevel.configs import ShiftTypesConfig
+from wordlevel.constants import SHIFT_SCORE_TYPES
 
 
 negative_score_types = {
@@ -129,7 +129,7 @@ def make_mock_df(words, token_col, rank_col, score_col, score_type_col) -> Calla
 
         if long:
             df = df.unpivot(
-                on=list(ShiftTypesConfig().colors().keys()),
+                on=SHIFT_SCORE_TYPES,
                 index=[token_col, rank_col],
                 variable_name=score_type_col,
                 value_name=score_col,

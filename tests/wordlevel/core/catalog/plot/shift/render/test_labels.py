@@ -5,13 +5,13 @@ import altair as alt
 
 from polars.testing import assert_frame_equal
 
+from wordlevel.configs import LabelConfig
 from wordlevel.core.catalog.plot.shift.render.labels import (
     shift_labels,
     get_label_positions,
     to_readable_angle,
     get_position_params,
     to_conditional_expr,
-    LabelConfig,
 )
 
 

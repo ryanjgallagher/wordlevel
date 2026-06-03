@@ -17,15 +17,18 @@ from wordlevel.constants import (
     COMPARISON_ATTRIBUTION,
     REFERENCE_ATTRIBUTION,
 )
-from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
-from wordlevel.core.catalog.plot.shift.render.bars import (
+from wordlevel.configs import (
+    BarConfig,
+    LabelConfig,
     RankAxisConfig,
     ScoreAxisConfig,
-    InternalScoreAxisConfig,
-    BarConfig,
-    InternalBarConfig,
+    ShiftBarConfig,
 )
-from wordlevel.core.catalog.plot.shift.render.labels import LabelConfig
+from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
+from wordlevel.core.catalog.plot.shift.render.bars import (
+    InternalBarConfig,
+    InternalScoreAxisConfig,
+)
 from wordlevel.core.catalog.plot.shift.render.shift import shift
 
 if TYPE_CHECKING:
@@ -49,10 +52,16 @@ class PlotCachedDataFrame:
 
 
 class Plotter:
-    """ """
+    """
+    Namespace for plotting comparisons in a `Catalog`.
+
+    Accessed via the `plot` attribute of a `Catalog` (e.g. `catalog.plot.bar(...)`). Each method
+    takes the alias of a comparison in the catalog and produces an Altair chart. Underlying plot
+    dataframes are cached internally so that repeated calls for the same comparison and plot do
+    not do unnecessary recomputation.
+    """
 
     def __init__(self, catalog: Catalog):
-        """ """
         self._catalog = catalog
         self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = dict()
 
@@ -74,7 +83,74 @@ class Plotter:
         split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart:
         """
-        Basic bar plot
+        Makes a bar chart of the top contributing tokens distinguishing two compared corpora.
+
+        Bars show the contribution of each token to the overall comparison score, ordered by
+        the magnitude. By default, bars pointing in the positive direction are attributed to the
+        comparison corpus, and bars pointing in the negative direction are attributed to the
+        reference corpus.
+
+        Reference:
+            For more details, see the following paper:
+            > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
+            Danforth, C. M., & Dodds, P. S. (2021). [Generalized word shift graphs: a method for
+            visualizing and explaining pairwise comparisons
+            between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
+            EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Plot | Description |
+            |------|-------------|
+            | [`Catalog.plot.shift`][wordlevel.api.catalog.plot.Plotter.shift] | Detailed bar plot of comparisons scored with weighted averages |
+
+        Args:
+            comparison:
+                The alias of a comparison in the catalog. See
+                [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
+                and [`Comparison.alias`][wordlevel.api.comparison.comparison.Comparison.alias]
+            max_rank:
+                The maximum number of top-contributing tokens to display
+            vertical:
+                Whether to orient the chart vertically, where tokens are listed top-to-bottom and
+                bars extend horizontally. If `False`, tokens are listed left-to-right and bars
+                extend vertically
+            height:
+                The height of the chart, in pixels
+            width:
+                The width of the chart, in pixels
+            autoscale_axes:
+                Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
+                axes may overlap with the labels
+            rank_axis:
+                Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
+                fields
+            score_axis:
+                Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
+                the same fields
+            bar_config:
+                Configuration for the bars. Accepts a `BarConfig` or a dict with the same fields
+            label_config:
+                Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
+                fields
+            scale_factor:
+                Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
+                provides more space for the bar labels
+            show_legend:
+                Whether to show the chart legend
+            show_border:
+                Whether to draw a border around the chart
+            split_nonnegative_by_corpus:
+                When the scoring measure is inherently non-negative, whether to direct bar
+                contributions in the positive and negative directions based on which corpus they are
+                attributed to (the reference or comparison). The score axis is updated to reflect
+                that all token-level scores are still positive. If `False`, attributions can still
+                be distinguished per corpus by bar color. Ignored for measures that can be negative
+
+        Returns:
+            An Altair chart of the bar plot
+
+        Raises:
+            KeyError: If `comparison` is not the alias of a comparison in the catalog
         """
         comp = self._catalog.comparisons[comparison]
         df_plot = self._get_plot_df(
@@ -99,7 +175,7 @@ class Plotter:
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
             ),
-            bar_config=InternalBarConfig.from_config(bar_config, detailed=False),
+            bar_config=InternalBarConfig.from_bar_config(bar_config),
             label_config=label_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
@@ -116,19 +192,141 @@ class Plotter:
         autoscale_axes: bool = True,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
-        bar_config: BarConfig | dict | None = None,
+        bar_config: ShiftBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
         show_border: bool = False,
         split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart:
-        """
-        Detailed word shift bar plot
+        r"""
+        Makes a word shift plot (a stacked bar chart) of the top contributing tokens distinguishing
+        two compared corpora.
+
+        Word shift plots can only be used with scores derived from weighted averages. For comparing
+        corpora using measures that are not weighted averages, use
+        [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
+
+        All bars are interpreted in terms of how the comparison corpus differs from the reference
+        corpus. Positive values are attributed to the comparison; negative values are attributed to
+        the reference. For each token, there are two stacked bars. One bar shows whether the token
+        is relatively positive or negative and whether it was used more or less in the comparison
+        versus the reference. The other bar shows whether the token's score is higher or lower in
+        the comparison versus the reference. Tokens are ranked by the magnitude of both stacked
+        bars together.
+
+        Mathematically, the bars are derived from the following formula. Let $\tau$ be a token,
+        and let $p_\tau^{(\mathcal{C})}$ and $\phi_\tau^{(\mathcal{C})}$ be the normalized frequency
+        and score of $\tau$ in corpus $\mathcal{C}$ respectively. Then the contribution
+        $\delta_\tau$ of the token is:
+
+        $$
+        \delta_\tau
+            =
+            \overbrace{
+                \biggl(
+                    p_\tau^{(C)} - p_\tau^{(R)}
+                \biggr)
+            }^{
+                \uparrow / \downarrow
+            }
+            \overbrace{
+                \biggl[
+                    \frac{1}{2}
+                    \left(
+                        \phi_\tau^{(C)} + \phi_\tau^{(R)} - \Phi^{(\text{ref})}
+                    \right)
+                \biggr]
+            }^{
+                + / -
+            }
+            +
+            \underbrace{
+                \frac{1}{2}
+                \biggl(
+                    p_\tau^{(C)} + p_\tau^{(R)}
+                \biggr)
+                \biggl(
+                    \phi_\tau^{(C)} - \phi_\tau^{(R)}
+                \biggr)
+            }_{
+                \bigtriangleup / \bigtriangledown
+            }
+        $$
+
+        where $R$ and $C$ are the reference and comparison corpora respectively, and
+        $\Phi^{(\text{ref})}$ is the user-provided reference score.
+
+        The stacked bars represent the two parts of the summand. The first bar is whether a word is
+        relatively positive $(+ / -)$ and appears more or less in the comparison corpus
+        $(\uparrow / \downarrow)$. The second bar is whether the score is more or less positive in
+        the comparison corpus $(\bigtriangleup / \bigtriangledown)$. Note, the bars may counteract
+        one another if the two summand terms are different signs: this is shown visually with
+        faded bars in the word shift plot when that is the case.
+
+        Reference:
+            For more details, see the following paper:
+            > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
+            Danforth, C. M., & Dodds, P. S. (2021). [Generalized word shift graphs: a method for
+            visualizing and explaining pairwise comparisons
+            between texts](https://link.springer.com/article/10.1140/epjds/s13688-021-00260-3).
+            EPJ Data Science, 10(1), 4.
+
+        See Also:
+            | Plot | Description |
+            |------|-------------|
+            | [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] | Concise bar plot of comparisons scored with any measure |
 
         Args:
+            comparison:
+                The alias of a comparison in the catalog. See
+                [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
+                and [`Comparison.alias`][wordlevel.api.comparison.comparison.Comparison.alias]
+            max_rank:
+                The maximum number of top-contributing tokens to display
+            vertical:
+                Whether to orient the chart vertically, where tokens are listed top-to-bottom and
+                bars extend horizontally. If `False`, tokens are listed left-to-right and bars
+                extend vertically
+            height:
+                The height of the chart, in pixels
+            width:
+                The width of the chart, in pixels
+            autoscale_axes:
+                Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
+                axes may overlap with the labels
             rank_axis:
-                See [RankAxisConfig][wordlevel.core.catalog.plot.shift.render.bars.RankAxisConfig]
+                Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
+                fields
+            score_axis:
+                Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
+                the same fields
+            bar_config:
+                Configuration for the bars. Accepts a `ShiftBarConfig` or a dict with the same
+                fields
+            label_config:
+                Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
+                fields
+            scale_factor:
+                Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
+                provides more space for the bar labels
+            show_legend:
+                Whether to show the chart legend
+            show_border:
+                Whether to draw a border around the chart
+            split_nonnegative_by_corpus:
+                When the scoring measure is inherently non-negative, whether to direct bar
+                contributions in the positive and negative directions based on which corpus they are
+                attributed to (the reference or comparison). The score axis is updated to reflect
+                that all token-level scores are still positive. If `False`, attributions can still
+                be distinguished per corpus by bar color. Ignored for measures that can be negative
+
+        Returns:
+            An Altair chart of the word shift plot
+
+        Raises:
+            KeyError: If `comparison` is not the alias of a comparison in the catalog
+            ValueError: If the comparison's measure is not a weighted average
         """
         comp = self._catalog.comparisons[comparison]
         if not comp.is_weighted_avg:
@@ -158,7 +356,7 @@ class Plotter:
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
             ),
-            bar_config=InternalBarConfig.from_config(bar_config, detailed=True),
+            bar_config=InternalBarConfig.from_shift_bar_config(bar_config),
             label_config=label_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
@@ -172,7 +370,29 @@ class Plotter:
         max_rank: int = 50,
         split_nonnegative_by_corpus: bool = True,
     ) -> pl.DataFrame:
-        """ """
+        """
+        For the given `plot_type`, gets the dataframe needed for plotting from `comparison.df`
+
+        Args:
+            comparison:
+                The comparison to plot
+            plot_type:
+                The type of plot to make
+            max_rank:
+                The number of top-contributing tokens to display
+            split_nonnegative_by_corpus:
+                When the scoring measure is inherently non-negative, whether to direct bar
+                contributions in the positive and negative directions based on which corpus they are
+                attributed to (the reference or comparison). The score axis is updated to reflect
+                that all token-level scores are still positive. If `False`, attributions can still
+                be distinguished per corpus by bar color. Ignored for measures that can be negative
+
+        Returns:
+            The properly formatted dataframe needed for plotting
+
+        Raises:
+            ValueError: If `plot_type` is not recognized
+        """
         cache_key = PlotCacheKey(
             alias=comparison.alias,
             plot_type=plot_type,

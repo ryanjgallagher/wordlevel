@@ -25,8 +25,11 @@ def test_kld_shift_scores(freqs1: list[int], freqs2: list[int], base: float) -> 
         entropies2=tsallis_entropy_dist_scores(pl.col("freqs2"), base=base),
     )
 
-    polars.testing.assert_series_equal(df["scores1"], df["entropies1"], check_names=False)
-    polars.testing.assert_series_equal(df["scores2"], df["entropies2"], check_names=False)
+    # Scores are Tsallis surprisals but positionally swapped relative to (freqs1, freqs2)
+    # so the framework's `p_2 * s_2 - p_1 * s_1` computes D_KL(P_2 || P_1) under
+    # share_component_freqs_by="comparison". See metric docstring for the rearrangement.
+    polars.testing.assert_series_equal(df["scores1"], df["entropies2"], check_names=False)
+    polars.testing.assert_series_equal(df["scores2"], df["entropies1"], check_names=False)
 
 
 @pytest.mark.parametrize(
@@ -34,17 +37,17 @@ def test_kld_shift_scores(freqs1: list[int], freqs2: list[int], base: float) -> 
     [
         # Identical distributions (expect no divergence)
         ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], 2, 0.0),
-        # Comparison distribution does not have all types (expect infinite divergence)
+        # P_2 (data) has a token P_1 (codebook) lacks (expect infinite divergence)
         (
-            [1, 2, 3, 4, 1],  # Reference
-            [5, 4, 3, 2, 0],  # Comparison
+            [5, 4, 3, 2, 0],  # freqs1 = codebook
+            [1, 2, 3, 4, 1],  # freqs2 = data
             2,
             float("inf"),
         ),
         # Non-identical distributions, varying base, zeros that shouldn't result in infinite divergence
         (
-            [1, 2, 3, 4, 5, 5, 0, 0],
-            [5, 2, 5, 1, 3, 1, 3, 0],
+            [5, 2, 5, 1, 3, 1, 3, 0],  # freqs1 = codebook
+            [1, 2, 3, 4, 5, 5, 0, 0],  # freqs2 = data
             10,
             [
                 (1 / 20) * log10(1 / 5),

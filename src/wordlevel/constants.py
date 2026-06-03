@@ -2,7 +2,7 @@
 
 from dataclasses import fields
 
-from wordlevel.configs import ShiftTypesConfig
+from wordlevel.configs import ShiftBarConfig
 
 RANK_COL = "score_rank"
 SCORE_COL = "comparison_score"
@@ -14,7 +14,7 @@ PLOT_CONTRIBUTION_TYPE_COL = "contribution_type"
 REFERENCE_ATTRIBUTION = "reference"
 COMPARISON_ATTRIBUTION = "comparison"
 
-SHIFT_SCORE_TYPES = [f.name for f in fields(ShiftTypesConfig)]
+SHIFT_SCORE_TYPES = [f.name for f in fields(ShiftBarConfig)]
 COUNTERACTED_SUFFIX = "_counteracted"
 
 TOKEN = "token"

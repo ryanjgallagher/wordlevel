@@ -1,29 +1,12 @@
 import math
-from dataclasses import dataclass
 
 import altair as alt
 import polars as pl
 
 from polars import col
 
+from wordlevel.configs import LabelConfig
 from wordlevel.core.catalog.plot.utils import to_altair_optional
-
-
-DEFAULT_LABEL_SIZE: float = 11
-
-
-@dataclass
-class LabelConfig:
-    """ """
-
-    pad: float = 5
-    color: str = "black"
-    size: float | None = DEFAULT_LABEL_SIZE
-    weight: str | int = "normal"
-    rotation: float | None = None
-    mirror_rotation: bool = True
-    on_bar_ends: bool = True
-    font_width_to_height_ratio: float = 0.6
 
 
 def shift_labels(

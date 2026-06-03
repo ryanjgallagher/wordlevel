@@ -212,4 +212,8 @@ pyrightconfig.json
 # Lexicon data
 lexicons/*/data/
 
+# Auto-generated documentation
+/docs/documentation/api/
+/zensical-build.toml
+
 # End of https://www.toptal.com/developers/gitignore/api/python,macos

@@ -5,6 +5,7 @@ import polars as pl
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import comp
 from wordlevel.api.catalog.plot import Plotter
+from wordlevel.configs import BarConfig, ShiftBarConfig
 from wordlevel.constants import (
     RANK_COL,
     PLOT_CONTRIBUTION_COL,
@@ -123,6 +124,24 @@ class TestBar:
         assert len(chart.layer) == 3
         assert len(chart.layer[0].data) == df_mock.height * 2  # reference, comparison
 
+    @pytest.mark.parametrize(
+        "bar_config",
+        [
+            BarConfig(reference="#ff0000"),
+            {"reference": "#ff0000"},
+        ],
+    )
+    def test_bar_config_accepts_object_or_dict(
+        self, catalog: Catalog, bar_config: BarConfig | dict
+    ) -> None:
+        """`bar_config` accepts either a `BarConfig` instance or a matching dict."""
+        plotter = Plotter(catalog)
+        chart = plotter.bar("freq_comp", bar_config=bar_config)
+
+        # The reference color override should propagate to the bars layer's color range
+        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        assert "#ff0000" in scale["range"]
+
 
 class TestShift:
     def test_non_weighted_avg_raises(self, catalog: Catalog) -> None:
@@ -140,3 +159,20 @@ class TestShift:
         assert isinstance(chart, alt.LayerChart)
         assert len(chart.layer) == 3
         assert len(chart.layer[0].data) == df_mock.height * 12  # 12 shift types
+
+    @pytest.mark.parametrize(
+        "bar_config",
+        [
+            ShiftBarConfig(more_of_positive="#ff0000"),
+            {"more_of_positive": "#ff0000"},
+        ],
+    )
+    def test_bar_config_accepts_object_or_dict(
+        self, catalog: Catalog, bar_config: ShiftBarConfig | dict
+    ) -> None:
+        """`bar_config` accepts either a `ShiftBarConfig` instance or a matching dict."""
+        plotter = Plotter(catalog)
+        chart = plotter.shift("entropy_comp", bar_config=bar_config)
+
+        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        assert "#ff0000" in scale["range"]

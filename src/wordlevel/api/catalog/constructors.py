@@ -18,6 +18,23 @@ if TYPE_CHECKING:
 
 @dataclass
 class CatalogData:
+    """
+    The core data that is required to initialize and copy a `Catalog`
+
+    Args:
+        df: Polars
+            DataFrame representing the frequencies of tokens in the corpora in the catalog.
+        token_col:
+            The column in `df` that contains the tokens (words, subwords, n-grams, etc.)
+        freq_cols:
+            The columns in `df` that include the token frequencies for each corpus
+        normalization_suffix:
+            The suffix used on the `freq_cols` to indicate their normalized forms where all
+            frequencies are in the range $[0, 1]$ and sum to 1
+        comparisons:
+            Comparisons made between corpora in the catalog, keyed by each comparison's alias
+    """
+
     df: pl.LazyFrame
     token_col: str
     freq_cols: Collection[str]
@@ -27,13 +44,14 @@ class CatalogData:
 
 ListOfFreqs: TypeAlias = Sequence[Mapping[str, float]]
 """
-A sequence of word-to-frequencey mappings, one per corpus. Each mapping is `{word: frequency}` for a single corpus
+A sequence of token-to-frequency mappings, one per corpus. Each mapping is `{word: frequency}` for 
+a single corpus
 
 Example:
     ```python
     list_of_freqs = [
         {"hi": 1, "hey": 2, "hello": 3},
-        {"hi": 2, "hey"; 4, "bye": 6}
+        {"hi": 2, "hey": 4, "bye": 6}
     ]
     ```
 """
@@ -41,20 +59,31 @@ Example:
 
 DictOfFreqs: TypeAlias = Mapping[str, Mapping[str, float]]
 """
-A mapping of corpus names to word-to-frequency mappings. The mapping is `{corpus: {word: frequency}}`
+A mapping of corpus names to word-to-frequency mappings. The mapping is 
+`{corpus: {word: frequency}}`
 
 Example:
     ```python
     dict_of_freqs = {
         "corpus1": {"hi": 1, "hey": 2, "hello": 3},
-        "corpus2": {"hi": 2, "hey"; 4, "bye": 6}
+        "corpus2": {"hi": 2, "hey": 4, "bye": 6}
     }
     ```
 """
 
 
 def from_catalog(catalog: Catalog) -> CatalogData:
-    """ """
+    """
+    Creates the data for a new catalog from an existing one.
+
+    Copies the data of the original catalog without mutating it.
+
+    Args:
+        catalog: An existing `Catalog`
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+    """
     return CatalogData(
         df=catalog._df.clone().lazy(),
         token_col=catalog._token_col,
@@ -70,7 +99,29 @@ def from_polars(
     freq_cols: Collection[str],
     normalize: bool = True,
 ) -> CatalogData:
-    """ """
+    """
+    Creates the data for a new catalog from a Polars dataframe.
+
+    Args:
+        df:
+            A Polars DataFrame or LazyFrame containing corpus information. Rows are tokens and
+            columns are their frequencies in different corpora
+        token_col:
+            The column that contains the tokens (words, subwords, n-grams, etc.)
+        freq_cols:
+            The columns that include the token frequencies for each corpus
+        normalize:
+            Whether to normalize the corpus frequencies for each corpus so that they are in the
+            range $[0, 1]$ and sum to 1. The original corpus frequencies will be preserved
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+
+    Raises:
+        KeyError: If `token_col` is not a column in `df`.
+        KeyError: If any column in `freq_cols` is not a column in `df`.
+        ValueError: If fewer than two columns are provided in `freq_cols`.
+    """
     # Check all columns exist
     deduped_freq_cols = set(freq_cols)
 
@@ -116,7 +167,26 @@ def from_list_of_freqs(
     freqs: ListOfFreqs,
     corpora: Sequence[str] | None = None,
 ) -> CatalogData:
-    """ """
+    """
+    Creates the data for a new catalog from a sequence of token-to-frequency mappings, each
+    representing the frequencies of tokens in a particular corpus.
+
+    Args:
+        freqs:
+            A sequence of token-to-frequency mappings, one per corpus. Each mapping is
+            `{token: frequency}` for a single corpus
+        corpora:
+            The names of the corpora, listed in the same order as `freqs`. If not provided, will
+            default to `corpus1`, `corpus2`, etc.
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+
+    Raises:
+        ValueError: If `freqs` and `corpora` have different lengths.
+        ValueError: If fewer than two corpora are provided in `freqs`.
+        ValueError: If any corpus in `freqs` has no token frequencies.
+    """
     if corpora is None:
         corpora = [f"corpus{n}" for n in range(1, len(freqs) + 1)]
     else:
@@ -139,7 +209,21 @@ def from_list_of_freqs(
 def from_dict_of_freqs(
     freqs: DictOfFreqs,
 ) -> CatalogData:
-    """ """
+    """
+    Creates the data for a new catalog from named token-to-frequency mappings.
+
+    Args:
+        freqs:
+            A mapping of corpus names to token-to-frequency mappings, one per corpus. Each
+            mapping is `{corpus: {token: frequency}}`, with one mapping per corpus
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+
+    Raises:
+        ValueError: If fewer than two corpora are provided in `freqs`.
+        ValueError: If any corpus in `freqs` has no token frequencies.
+    """
     if len(freqs) < 2:
         raise ValueError("At least two frequency sets (corpora) need to be provided")
 
@@ -153,7 +237,18 @@ def _from_freqs(
     freqs: Iterable[tuple[str, Mapping[str, float]]],
     token: str = TOKEN,
 ) -> CatalogData:
-    """ """
+    """
+    Creates the data for a new catalog from token-frequency data structures
+
+    Args:
+        freqs:
+            A sequence of tuples, one per corpus. Each tuple is `(corpus, {token: frequency})`
+        token:
+            The name the use for the column representing tokens in the produced catalog dataframe
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+    """
     freq_cols: list[str] = []
     lf = pl.LazyFrame(schema={token: pl.String})
 
@@ -179,7 +274,11 @@ def _normalize_frequency_columns(
     freq_cols: Collection[str],
     normalization_suffix: str = NORMALIZATION_SUFFIX,
 ) -> pl.LazyFrame:
-    """ """
+    """
+    Normalizes columns in a dataframe so all values are in the range $[0, 1]$ and sum to 1. The
+    normalized columns are named using a `normalization_suffix`, appended to the original column
+    names.
+    """
     normed_cols = [
         normalize_freqs(col(freq_col)).alias(f"{freq_col}{normalization_suffix}")
         for freq_col in freq_cols

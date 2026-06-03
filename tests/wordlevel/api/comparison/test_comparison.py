@@ -16,8 +16,8 @@ def test_initialization_defaults() -> None:
     assert isinstance(comparison._parameters, dict)
 
 
-def test_initialization_with_all_parameters() -> None:
-    """Test that all explicitly provided parameters are stored correctly."""
+def test_with_state_populates_internal_fields() -> None:
+    """Test that `_with_state` stores every internal field."""
 
     def mock_function(df, token_col, normalization_suffix):
         return df
@@ -25,7 +25,7 @@ def test_initialization_with_all_parameters() -> None:
     mock_plan = mock_function
     params = {"alpha": 1.5, "base": 2}
 
-    comparison = Comparison(
+    comparison = Comparison._with_state(
         reference="ref_col",
         comparison="cmp_col",
         alias="my_alias",
@@ -78,7 +78,7 @@ def test_alias_chaining() -> None:
 
 def test_alias_preserves_scoring_parameters() -> None:
     """Test that alias() preserves method, plan, and parameters from scoring."""
-    comparison = Comparison(
+    comparison = Comparison._with_state(
         "ref", "cmp", method="jensen_shannon", parameters={"alpha": 1.0}, is_weighted_avg=True
     )
 
@@ -102,7 +102,7 @@ def test_no_shared_state_of_parameters_between_instances() -> None:
 
 def test_no_shared_state_of_parameters_when_chaining() -> None:
     """Test that parameters dict isn't shared between original and aliased instances."""
-    comp1 = Comparison("ref", "cmp", parameters={"alpha": 1.0})
+    comp1 = Comparison._with_state("ref", "cmp", parameters={"alpha": 1.0})
     comp2 = comp1.alias("foo")
 
     comp2._parameters["alpha"] = 2.0
@@ -115,7 +115,7 @@ def test_no_shared_state_of_parameters_when_chaining() -> None:
 def test_external_mutation_of_parameters() -> None:
     """Test that external mutation of parameters dict doesn't affect Comparison."""
     params = {"alpha": 1.0}
-    comparison = Comparison("ref", "cmp", parameters=params)
+    comparison = Comparison._with_state("ref", "cmp", parameters=params)
 
     params["alpha"] = 2.0
 

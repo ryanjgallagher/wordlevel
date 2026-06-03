@@ -39,7 +39,7 @@ def simple_plan():
 @pytest.fixture
 def valid_comparison(simple_plan) -> Comparison:
     """Comparison with all required fields populated."""
-    return Comparison(
+    return Comparison._with_state(
         "ref",
         "cmp",
         alias="test_alias",
@@ -181,7 +181,7 @@ class TestLazyEvaluation:
             execution_count["count"] += 1
             return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("score"))
 
-        comparison = Comparison(
+        comparison = Comparison._with_state(
             "ref",
             "cmp",
             alias="test",
@@ -280,7 +280,7 @@ class TestDataFrameExecution:
 
     def test_simple_plan_execution(self, df_mock, simple_plan) -> None:
         """Test that a simple plan adds the expected column."""
-        comparison = Comparison(
+        comparison = Comparison._with_state(
             "ref",
             "cmp",
             alias="test",
@@ -314,7 +314,7 @@ class TestDataFrameExecution:
                 ]
             )
 
-        comparison = Comparison(
+        comparison = Comparison._with_state(
             "ref",
             "cmp",
             alias="test",
@@ -358,7 +358,7 @@ class TestLabelAndSuffixWiring:
             received["token_col"] = lc
             return df
 
-        comparison = Comparison(
+        comparison = Comparison._with_state(
             "ref",
             "cmp",
             alias="test",
@@ -386,7 +386,7 @@ class TestLabelAndSuffixWiring:
             received["normalization_suffix"] = ns
             return df
 
-        comparison = Comparison(
+        comparison = Comparison._with_state(
             "ref",
             "cmp",
             alias="test",

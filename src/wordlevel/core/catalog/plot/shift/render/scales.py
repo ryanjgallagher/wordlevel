@@ -5,11 +5,8 @@ import polars as pl
 
 from polars import col
 
-from wordlevel.core.catalog.plot.shift.render.labels import (
-    DEFAULT_LABEL_SIZE,
-    LabelConfig,
-    get_label_positions,
-)
+from wordlevel.configs import DEFAULT_LABEL_SIZE, LabelConfig
+from wordlevel.core.catalog.plot.shift.render.labels import get_label_positions
 
 
 def shift_scales(

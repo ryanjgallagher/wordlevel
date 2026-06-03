@@ -4,11 +4,11 @@ import pytest
 
 from polars.testing import assert_frame_equal
 
-from wordlevel.configs import ShiftTypesConfig
+from wordlevel.configs import RankAxisConfig, ScoreAxisConfig, ShiftBarConfig
+from wordlevel.constants import SHIFT_SCORE_TYPES
 from wordlevel.core.catalog.plot.shift.render.bars import (
     shift_bars,
-    RankAxisConfig,
-    ScoreAxisConfig,
+    _SHIFT_TYPE_ORDERS,
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
@@ -132,7 +132,7 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filt
         n_expected = n
 
     assert df_chart["rank"].max() == n_expected
-    assert df_chart.height == n_expected * len(ShiftTypesConfig().colors())
+    assert df_chart.height == n_expected * len(SHIFT_SCORE_TYPES)
 
 
 @pytest.mark.parametrize(
@@ -309,93 +309,25 @@ def test_rank_axis_tick_configs(
         assert axis["values"] == expected_output
 
 
-@pytest.mark.parametrize(
-    "colors",
-    [
-        (None),
-        ("category"),
-        (
-            {
-                "lower_score": "#d73027",
-                "lower_score_counteracted": "#fce7e5",
-                "more_of_negative": "#fc8d59",
-                "more_of_negative_counteracted": "#fee090",
-                "less_of_positive": "#a50026",
-                "less_of_positive_counteracted": "#d73027",
-                "higher_score": "#4575b4",
-                "higher_score_counteracted": "#e0f3f8",
-                "more_of_positive": "#91bfdb",
-                "more_of_positive_counteracted": "#eef6fa",
-                "less_of_negative": "#313695",
-                "less_of_negative_counteracted": "#aebcd9",
-            }
-        ),
-    ],
-)
-def test_bar_configs_not_detailed(make_mock_df, score_col, score_type_col, rank_col, colors):
+def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank_col):
     """
-    Tests non-detailed configurations of bars, including the default, passing a string, and passing
-    a custom color dictionary
-    """
-    default_config = InternalBarConfig()
-    df = make_mock_df()
-    expected_domain = set(df[score_type_col].unique())
-
-    chart_params = {
-        "df": df,
-        "score_col": score_col,
-        "score_type_col": score_type_col,
-        "rank_col": rank_col,
-        "bars": None,
-    }
-    if colors is not None:
-        chart_params["bars"] = InternalBarConfig(colors=colors)
-
-    chart = shift_bars(**chart_params)
-
-    chart_json = chart.to_dict()
-    scale = chart_json["encoding"]["color"]["scale"]
-
-    assert set(scale["domain"]) == expected_domain
-
-    if colors is None:
-        assert scale["range"] == default_config.colors
-    elif isinstance(colors, str):
-        assert scale["range"] == colors
-    elif isinstance(colors, dict):
-        assert set(scale["range"]) == set(colors.values())
-
-
-def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, rank_col):
-    """
-    Test that the bar configuration fails if a user does not provide a complete color mapping
-    """
-    with pytest.raises(KeyError):
-        _ = shift_bars(
-            make_mock_df(),
-            rank_col=rank_col,
-            score_col=score_col,
-            score_type_col=score_type_col,
-            bars=InternalBarConfig(colors={"lower_score": "red"}, detailed=False),
-        )
-
-
-def test_bar_configs_detailed(make_mock_df, score_col, score_type_col, rank_col):
-    """
-    Test that detailed bar configurations work as expected
+    Test that the default shift bar configuration applies the ShiftBarConfig defaults
     """
     chart = shift_bars(
         make_mock_df(),
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=InternalBarConfig(detailed=True),
+        bars=InternalBarConfig.from_shift_bar_config(None),
     )
 
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
-    default_colors = ShiftTypesConfig().colors()
+    default_colors = {
+        f.name: getattr(ShiftBarConfig(), f.name)
+        for f in ShiftBarConfig.__dataclass_fields__.values()
+    }
 
     assert set(scale["domain"]) == set(default_colors.keys())
     assert set(scale["range"]) == set(default_colors.values())
@@ -407,59 +339,65 @@ def test_bar_configs_detailed(make_mock_df, score_col, score_type_col, rank_col)
     assert chart_json["encoding"]["order"]["field"] == "stacked_bar_order"
 
 
-def test_bar_configs_detailed_custom_colors(make_mock_df, score_col, score_type_col, rank_col):
+def test_shift_bar_configs_custom_colors(make_mock_df, score_col, score_type_col, rank_col):
     """
-    Test that detailed bar configurations overrides custom colors while maintaining default colors
+    Test that a custom ShiftBarConfig overrides individual colors while keeping the rest at default
     """
-    custom_colors = {"lower_score": "#000000", "more_of_positive": "#999999"}
+    custom_overrides = {"lower_score": "#000000", "more_of_positive": "#999999"}
 
     chart = shift_bars(
         make_mock_df(),
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=InternalBarConfig(detailed=True, colors=custom_colors),
+        bars=InternalBarConfig.from_shift_bar_config(ShiftBarConfig(**custom_overrides)),
     )
 
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
-    default_colors = ShiftTypesConfig().colors()
+    default_colors = {
+        f.name: getattr(ShiftBarConfig(), f.name)
+        for f in ShiftBarConfig.__dataclass_fields__.values()
+    }
     color_mapping = dict(zip(scale["domain"], scale["range"]))
     for score_type, default_color in default_colors.items():
-        if score_type in custom_colors:
-            assert color_mapping[score_type] == custom_colors[score_type]
+        if score_type in custom_overrides:
+            assert color_mapping[score_type] == custom_overrides[score_type]
         else:
             assert color_mapping[score_type] == default_color
 
 
-def test_bar_configs_custom_orders(make_mock_df, score_col, score_type_col, rank_col):
+def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, rank_col):
     """
-    Test that the bar configurations properly execute custom bar orders
+    Test that the bar configuration fails if the colors dict does not cover the score types in the
+    data
     """
-    custom_orders = {"lower_score": 22, "higher_score": 7}
-    df = make_mock_df().filter(pl.col(score_type_col).is_in(custom_orders))
-
-    chart = shift_bars(
-        df,
-        rank_col=rank_col,
-        score_col=score_col,
-        score_type_col=score_type_col,
-        bars=InternalBarConfig(orders=custom_orders),
-    )
-
-    chart_json = chart.to_dict()
-
-    assert chart_json["encoding"]["order"]["field"] == "stacked_bar_order"
-
-    df_chart = pl.DataFrame(chart.data)
-    assert "stacked_bar_order" in df_chart.columns
-
-    for score_type, expected_order in custom_orders.items():
-        order = (
-            df_chart.filter(pl.col(score_type_col) == score_type)
-            .select("stacked_bar_order")
-            .unique()
-            .item()
+    with pytest.raises(KeyError):
+        _ = shift_bars(
+            make_mock_df(),
+            rank_col=rank_col,
+            score_col=score_col,
+            score_type_col=score_type_col,
+            bars=InternalBarConfig(colors={"lower_score": "red"}, orders=None),
         )
-        assert int(order) == expected_order
+
+
+def test_internal_bar_config_from_bar_config_has_no_orders():
+    """
+    `InternalBarConfig.from_bar_config()` produces an internal config without stacking orders, since
+    bar plots don't stack
+    """
+    internal = InternalBarConfig.from_bar_config(None)
+    assert internal.orders is None
+    assert set(internal.colors.keys()) == {"reference", "comparison"}
+
+
+def test_internal_bar_config_from_shift_bar_config_uses_internal_orders():
+    """
+    `InternalBarConfig.from_shift_bar_config()` produces an internal config whose `orders` equals
+    `_SHIFT_TYPE_ORDERS` — i.e., stacking order is controlled internally, not by the user
+    """
+    internal = InternalBarConfig.from_shift_bar_config(None)
+    assert internal.orders == _SHIFT_TYPE_ORDERS
+    assert set(internal.colors.keys()) == set(SHIFT_SCORE_TYPES)
