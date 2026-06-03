@@ -217,6 +217,13 @@ class Scorer:
         r"""
         Calculates the frequency difference between the reference and comparison corpora.
 
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:frequency"
+            ```
+
         Each token's contribution is the difference in its raw frequency between the corpora.
         Specifically, the contribution $\delta_\tau$ of a token $\tau$ is:
 
@@ -251,6 +258,13 @@ class Scorer:
     def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
         r"""
         Calculates the proportion difference between the reference and comparison corpora.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:proportion"
+            ```
 
         Each token's contribution is the difference in its normalized frequency (i.e. proportion)
         within each corpus. When the `reference_score` is 0 (the default), the contribution
@@ -345,6 +359,13 @@ class Scorer:
         frequency of a token $\tau$ in a corpus, and $\phi_\tau$ is the score assigned to it by
         the lexicon, then the corpus-level score is $\sum_\tau p_\tau \phi_\tau$. This method
         takes the difference in weighted averages between the reference and comparison corpora.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:lexicon"
+            ```
 
         When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
 
@@ -517,6 +538,13 @@ class Scorer:
         weight is given to rare tokens; and when $\alpha > 1$, more weight is given to common
         tokens.
 
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:tsallis_entropy"
+            ```
+
         When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
@@ -617,6 +645,13 @@ class Scorer:
         $\sum_\tau p_\tau \log \frac{1}{p_\tau}$. The factor $\log \frac{1}{p_\tau}$ is known as
         the "surprisal" of a token: the less frequent a token, the higher its surprisal.
 
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:shannon_entropy"
+            ```
+
         When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
@@ -694,6 +729,13 @@ class Scorer:
         perspective, it measures how much more information is needed to encode the comparison corpus
         when using the reference as the "codebook." It is only well-defined when all of the words in
         the comparison also appear in the reference. Otherwise, the KLD diverges to infinity.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:kullback_leibler_divergence"
+            ```
 
         The contribution $\delta_\tau$ of a token $\tau$ is:
 
@@ -810,6 +852,13 @@ class Scorer:
         representing the combination of both corpora. This implementation generalizes the JSD
         through an order parameter $\alpha$. When $\alpha < 1$, more weight is given to rare tokens;
         when $\alpha > 1$, more weight is given to common tokens.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:jensen_shannon_divergence"
+            ```
 
         When the `reference_score` is 0 and $\alpha = 1$, the contribution $\delta_\tau$ of a
         token $\tau$ is:
@@ -985,6 +1034,13 @@ class Scorer:
         where 0 indicates that the corpora are identical, and 1 indicates that they are maximally
         divergent. It is also parameterized by an order parameter $\alpha$. When $\alpha < 1$, more
         weight is given to rare tokens; when $\alpha > 1$, more weight is given to common tokens.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/score.py:setup"
+
+            --8<-- "snippets/comparison/score.py:rank_divergence"
+            ```
 
         When $\alpha > 0$, the contribution $\delta_\tau$ of a token $\tau$ is:
 

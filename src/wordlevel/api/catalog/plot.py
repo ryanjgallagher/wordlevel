@@ -90,6 +90,13 @@ class Plotter:
         comparison corpus, and bars pointing in the negative direction are attributed to the
         reference corpus.
 
+        Example:
+            ```python
+            --8<-- "snippets/catalog/plot.py:setup"
+
+            --8<-- "snippets/catalog/plot.py:bar"
+            ```
+
         Reference:
             For more details, see the following paper:
             > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
@@ -206,6 +213,13 @@ class Plotter:
         Word shift plots can only be used with scores derived from weighted averages. For comparing
         corpora using measures that are not weighted averages, use
         [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
+
+        Example:
+            ```python
+            --8<-- "snippets/catalog/plot.py:setup"
+
+            --8<-- "snippets/catalog/plot.py:shift"
+            ```
 
         All bars are interpreted in terms of how the comparison corpus differs from the reference
         corpus. Positive values are attributed to the comparison; negative values are attributed to

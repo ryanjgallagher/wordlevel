@@ -36,13 +36,13 @@ docs = [
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
 show-fixes = true
+force-exclude = true
+extend-exclude = ["docs/snippets"]
 
 [tool.pyright]
 include = ["src", "lexicons"]

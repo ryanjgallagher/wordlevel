@@ -92,6 +92,11 @@ class Catalog:
 
         The new catalog copies the data of the original one without mutating it.
 
+        Example:
+            ```python
+            --8<-- "snippets/catalog/catalog.py:from_catalog"
+            ```
+
         Args:
             catalog: An existing `Catalog`
 
@@ -112,6 +117,11 @@ class Catalog:
     ) -> Catalog:
         """
         Creates a `Catalog` of corpora from a Polars dataframe.
+
+        Example:
+            ```python
+            --8<-- "snippets/catalog/catalog.py:from_polars"
+            ```
 
         Args:
             df:
@@ -152,6 +162,11 @@ class Catalog:
         Creates a `Catalog` of corpora from a sequence of token-to-frequency mappings, each
         representing the frequencies of tokens in a particular corpus.
 
+        Example:
+            ```python
+            --8<-- "snippets/catalog/catalog.py:from_list_of_freqs"
+            ```
+
         Args:
             freqs:
                 A sequence of token-to-frequency mappings, one per corpus. Each mapping is
@@ -176,6 +191,11 @@ class Catalog:
     def from_dict_of_freqs(cls, freqs: DictOfFreqs) -> Catalog:
         """
         Creates a `Catalog` of corpora from named token-to-frequency mappings.
+
+        Example:
+            ```python
+            --8<-- "snippets/catalog/catalog.py:from_dict_of_freqs"
+            ```
 
         Args:
             freqs:
@@ -219,6 +239,13 @@ class Catalog:
         Returns a new catalog with comparisons added to it.
 
         New comparisons will overwrite existing comparisons with the same name.
+
+        Example:
+            ```python
+            --8<-- "snippets/catalog/catalog.py:setup"
+
+            --8<-- "snippets/catalog/catalog.py:with_comparisons"
+            ```
 
         Args:
             comparisons: The comparisons to add to the catalog
