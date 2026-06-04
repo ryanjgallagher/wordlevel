@@ -174,6 +174,18 @@ class TestConstructors:
             assert catalog._normalization_suffix == ""
 
     @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_polars])
+    def test_from_polars_narrows_to_freq_cols(self, df_mock, token_col, freq_cols, constructor):
+        """Test that freq_cols narrows the catalog dataframe to only the specified columns."""
+        subset_freq_cols = freq_cols[:2]
+        excluded_freq_cols = set(freq_cols) - set(subset_freq_cols)
+
+        catalog = constructor(df_mock, token_col=token_col, freq_cols=subset_freq_cols)
+
+        schema_cols = set(catalog._df.collect_schema().names())
+        for excluded_col in excluded_freq_cols:
+            assert excluded_col not in schema_cols
+
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_polars])
     def test_from_polars_always_fills_nulls(
         self, df_mock_with_nulls, token_col, freq_cols, constructor
     ):
