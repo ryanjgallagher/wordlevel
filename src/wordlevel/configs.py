@@ -22,8 +22,8 @@ class BarConfig:
             Color of bars attributed to the comparison corpus
     """
 
-    reference: str = "#134b85"
-    comparison: str = "#994a07"
+    reference: str = "#FECC5D"
+    comparison: str = "#2F7CCE"
 
 
 @dataclass

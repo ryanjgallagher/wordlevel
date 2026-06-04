@@ -142,7 +142,7 @@ def from_polars(
 
     # Do necessary transformations
     lf = df.clone().lazy()
-    lf = lf.with_columns(*[col(freq_col).fill_null(0) for freq_col in deduped_freq_cols])
+    lf = lf.select(token_col, *[col(freq_col).fill_null(0) for freq_col in deduped_freq_cols])
 
     if normalize:
         lf = _normalize_frequency_columns(

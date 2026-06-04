@@ -167,8 +167,9 @@ class TestBasicScorePlan:
             (
                 "score_sign",
                 inverted_score_func,
-                # inverted scores = freqs_ref - freqs_cmp = [-5, 1, 3, -4]; score >= 0 -> [F, T, T, F]
-                ["reference", "comparison", "comparison", "reference"],
+                # inverted scores = freqs_ref - freqs_cmp = [-5, 1, 3, -4]; sum = -5
+                # dynamic attribution (sign match): [comp, ref, ref, comp]
+                ["comparison", "reference", "reference", "comparison"],
             ),
         ],
     )
@@ -259,9 +260,8 @@ class TestWeightedAverageScorePlan:
             (
                 "score_sign",
                 # total scores are negative despite freqs_cmp > freqs_ref (reference_score=10
-                # dominates) -> ["reference", "reference"]
-                # (frequency attribution would give ["comparison", "comparison"])
-                ["reference", "reference"],
+                # dominates) -> both are "comparison" as they support the total negative shift
+                ["comparison", "comparison"],
             ),
         ],
     )
