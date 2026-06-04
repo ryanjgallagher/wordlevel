@@ -68,31 +68,35 @@ def test_rank_attribution():
     assert_series_equal(actual, expected, check_names=False)
 
 
-@pytest.mark.parametrize("comparison_is_positive", [True, False])
-def test_score_sign_attribution(comparison_is_positive):
+def test_score_sign_attribution():
     """ """
-    # Arrange
-    df = pl.DataFrame({"score": [1, 0, -1]})
-
-    if comparison_is_positive:
-        expected = pl.Series(
-            ["comparison", "comparison", "reference"],
-            dtype=pl.Enum(["reference", "comparison"]),
-        )
-    else:
-        expected = pl.Series(
-            ["reference", "reference", "comparison"],
-            dtype=pl.Enum(["reference", "comparison"]),
-        )
-
-    # Act
-    expr = score_sign_attribution(
-        score=pl.col("score"), comparison_is_positive=comparison_is_positive
+    # Arrange 1: Total shift is positive (sum = 2)
+    # Signs: [+, +, -]. Sum Sign: [+].
+    # Attribution: [comp, comp, ref]
+    df_pos = pl.DataFrame({"score": [3, 1, -2]})
+    expected_pos = pl.Series(
+        ["comparison", "comparison", "reference"],
+        dtype=pl.Enum(["reference", "comparison"]),
     )
-    actual = df.select(expr.alias("attribution"))["attribution"]
 
-    # Assert
-    assert_series_equal(actual, expected, check_names=False)
+    # Arrange 2: Total shift is negative (sum = -2)
+    # Signs: [+, +, -]. Sum Sign: [-].
+    # Attribution: [ref, ref, comp]
+    df_neg = pl.DataFrame({"score": [1, 2, -5]})
+    expected_neg = pl.Series(
+        ["reference", "reference", "comparison"],
+        dtype=pl.Enum(["reference", "comparison"]),
+    )
+
+    # Act & Assert 1
+    expr_pos = score_sign_attribution(score=pl.col("score"))
+    actual_pos = df_pos.select(expr_pos.alias("attribution"))["attribution"]
+    assert_series_equal(actual_pos, expected_pos, check_names=False)
+
+    # Act & Assert 2
+    expr_neg = score_sign_attribution(score=pl.col("score"))
+    actual_neg = df_neg.select(expr_neg.alias("attribution"))["attribution"]
+    assert_series_equal(actual_neg, expected_neg, check_names=False)
 
 
 @pytest.mark.parametrize(

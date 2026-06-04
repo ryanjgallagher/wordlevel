@@ -2,7 +2,7 @@ from typing import Literal, Optional
 
 import polars as pl
 
-from wordlevel.core.utils import normalize_freqs
+from wordlevel.core.utils import are_same_sign, normalize_freqs
 
 
 ATTRIBUTION_TYPE = Literal["frequency", "rank", "score_sign"]
@@ -48,22 +48,14 @@ def rank_attribution(
 
 def score_sign_attribution(
     score: pl.Expr,
-    comparison_is_positive: bool = True,
     reference_attribution: str = "reference",
     comparison_attribution: str = "comparison",
 ) -> pl.Expr:
     """ """
-    if comparison_is_positive:
-        greater_than_attribution = comparison_attribution
-        less_than_attribution = reference_attribution
-    else:
-        greater_than_attribution = reference_attribution
-        less_than_attribution = comparison_attribution
-
     return (
-        pl.when(score >= 0)
-        .then(pl.lit(greater_than_attribution))
-        .otherwise(pl.lit(less_than_attribution))
+        pl.when(are_same_sign(score, score.sum()))
+        .then(pl.lit(comparison_attribution))
+        .otherwise(pl.lit(reference_attribution))
         .cast(pl.Enum([reference_attribution, comparison_attribution]))
     )
 

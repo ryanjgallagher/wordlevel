@@ -185,14 +185,19 @@ class TestScoreFunctionWiring:
     def test_score_sign_attribution_wiring(self, df_mock, score_func):
         """Confirm score_sign attribution is wired to the correct methods.
 
-        Checks the invariant: positive comparison_score -> 'comparison', negative -> 'reference'.
-        This verifies the attribution column was derived from comparison_score, not from
-        frequency or rank columns.
+        Checks the invariant: attribution follows the direction of the total shift.
+        If a contribution has the same sign as the total shift, it is attributed to the comparison
+        corpus. Otherwise, it is attributed to the reference corpus.
         """
         comparison = Comparison("ref", "cmp")
         df_result = score_func(comparison.score)._plan(df_mock, "word", "__wl_normed")
 
-        check = (col("comparison_score") >= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
+        total_shift_pos = df_result.select(col("comparison_score").sum() >= 0).item()
+        if total_shift_pos:
+            check = (col("comparison_score") >= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
+        else:
+            check = (col("comparison_score") <= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
+
         assert df_result.select(check.all()).item()
 
     def test_kld_raises_when_comparison_has_token_absent_from_reference(self) -> None:
