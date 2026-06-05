@@ -357,8 +357,9 @@ class Scorer:
         lexicon to use for both corpora, or one lexicon for each. The overall score for each corpus
         individually is the lexicon-weighted average. Specifically, if $p_\tau$ is the normalized
         frequency of a token $\tau$ in a corpus, and $\phi_\tau$ is the score assigned to it by
-        the lexicon, then the corpus-level score is $\sum_\tau p_\tau \phi_\tau$. This method
-        takes the difference in weighted averages between the reference and comparison corpora.
+        the lexicon, then the corpus-level score is $\Phi = \sum_\tau p_\tau \phi_\tau$. This method
+        takes the difference in weighted averages between the reference and comparison corpora,
+        $\Phi^{(C)} - \Phi^{(R)}$.
 
         Example:
             ```python
@@ -375,9 +376,15 @@ class Scorer:
 
         where $\phi_\tau^{(C)}$ is the score of token $\tau$ in the comparison corpus, and
         $p_\tau^{(C)}$ is its normalized frequency. Similarly, $\phi_\tau^{(R)}$ and $p_\tau^{(R)}$
-        are the score and normalized frequency of $\tau$ in the reference corpus. Positive
-        contributions identify tokens that have a higher score-weighted normalized frequency in the
-        comparison than the reference.
+        are the score and normalized frequency of $\tau$ in the reference corpus.
+
+        Positive and negative contributions are interpreted with respect to whether the corpus-level
+        difference in weighted averages $\Phi^{(C)} - \Phi^{(R)}$ is positive or negative.
+        If $\Phi^{(C)} - \Phi^{(R)} > 0$, then the weighted average of the comparison $\Phi^{(C)}$
+        is higher. In this case, positive contributions amplify that difference, while negative
+        contributions counteract it (otherwise it the difference would be even larger). Similarly, if
+        $\Phi^{(C)} - \Phi^{(R)} < 0$, then negative contributions align with the comparison corpus
+        having a lower weighted average, and positive contributions counteract it.
 
         If the `reference_score` is non-zero, and the score of a word is the same in both corpora,
         i.e. $\phi_\tau = \phi^{(C)}_\tau = \phi^{(R)}_\tau$, then a token's contribution is:
@@ -556,6 +563,14 @@ class Scorer:
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
         $R$ and $C$ respectively, the reference and comparison corpora.
 
+        Positive and negative contributions are interpreted with respect to whether the corpus-level
+        difference in entropies $\Phi^{(C)} - \Phi^{(R)}$ is positive or negative.
+        If $\Phi^{(C)} - \Phi^{(R)} > 0$, then the entropy of the comparison $\Phi^{(C)}$ is higher.
+        In this case, positive contributions amplify that difference, while negative contributions
+        counteract it (otherwise it the difference would be even larger). Similarly, if
+        $\Phi^{(C)} - \Phi^{(R)} < 0$, then negative contributions align with the comparison corpus
+        having a lower entropy, and positive contributions counteract it.
+
         When the `reference_score` is non-zero, the contribution of the token is:
 
         $$
@@ -661,8 +676,15 @@ class Scorer:
         $$
 
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
-        $R$ and $C$ respectively, the reference and comparison corpora. Positive contributions
-        identify tokens that are relatively more "surprising" in the comparison than the reference.
+        $R$ and $C$ respectively, the reference and comparison corpora.
+
+        Positive and negative contributions are interpreted with respect to whether the corpus-level
+        difference in entropies $\Phi^{(C)} - \Phi^{(R)}$ is positive or negative.
+        If $\Phi^{(C)} - \Phi^{(R)} > 0$, then the entropy of the comparison $\Phi^{(C)}$ is higher.
+        In this case, positive contributions amplify that difference, while negative contributions
+        counteract it (otherwise it the difference would be even larger). Similarly, if
+        $\Phi^{(C)} - \Phi^{(R)} < 0$, then negative contributions align with the comparison corpus
+        having a lower entropy, and positive contributions counteract it.
 
         When the `reference_score` is non-zero, the contribution of the token is:
 
