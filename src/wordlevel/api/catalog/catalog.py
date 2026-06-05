@@ -33,13 +33,12 @@ class Catalog:
         token_col:
             If the `data` is a Polars dataframe, the column that contains the tokens (words,
             subwords, n-grams, etc.). Ignored otherwise
-        freq_cols:
-            If the `data` is a Polars dataframe, the columns that include the token frequencies for
-            each corpus. Ignored otherwise
         corpora:
             If the `data` is a [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs], the
             names of the corpora, listed in the same order as `data`. If not provided, will default
-            to `corpus1`, `corpus2`, etc. Ignored otherwise
+            to `corpus1`, `corpus2`, etc. If the `data` is a Polars Dataframe or Lazyframe, the
+            names of the columns containing token frequencies, which must be provided. Ignored
+            otherwise
 
     Raises:
         TypeError: If `data` is not one of the supported types.
@@ -49,7 +48,6 @@ class Catalog:
         self,
         data: pl.DataFrame | pl.LazyFrame | Catalog | CatalogData | DictOfFreqs | ListOfFreqs,
         token_col: str | None = None,
-        freq_cols: Collection[str] | None = None,
         corpora: Sequence[str] | None = None,
     ) -> None:
         if isinstance(data, CatalogData):
@@ -59,12 +57,12 @@ class Catalog:
         elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
             if token_col is None:
                 raise ValueError("`token_col` must be specified if providing a DataFrame")
-            if freq_cols is None:
-                raise ValueError("`freq_cols` must be specified if providing a DataFrame")
+            if corpora is None:
+                raise ValueError("`corpora` must be specified if providing a DataFrame")
             init_data = from_polars(
                 df=data,
                 token_col=token_col,
-                freq_cols=freq_cols,
+                freq_cols=corpora,
             )
         elif isinstance(data, Mapping):
             init_data = from_dict_of_freqs(freqs=data)
@@ -112,7 +110,7 @@ class Catalog:
         cls,
         df: pl.DataFrame | pl.LazyFrame,
         token_col: str,
-        freq_cols: Collection[str],
+        corpora: Collection[str],
         normalize: bool = True,
     ) -> Catalog:
         """
@@ -129,7 +127,7 @@ class Catalog:
                 columns are their frequencies in different corpora
             token_col:
                 The column that contains the tokens (words, subwords, n-grams, etc.)
-            freq_cols:
+            corpora:
                 The columns that include the token frequencies for each corpus
             normalize:
                 Whether to normalize the corpus frequencies for each corpus so that they are in the
@@ -140,13 +138,13 @@ class Catalog:
 
         Raises:
             KeyError: If `token_col` is not a column in `df`.
-            KeyError: If any column in `freq_cols` is not a column in `df`.
-            ValueError: If fewer than two columns are provided in `freq_cols`.
+            KeyError: If any column in `corpora` is not a column in `df`.
+            ValueError: If fewer than two columns are provided in `corpora`.
         """
         init_data = from_polars(
             df=df,
             token_col=token_col,
-            freq_cols=freq_cols,
+            freq_cols=corpora,
             normalize=normalize,
         )
 
