@@ -13,6 +13,8 @@ PLOT_CONTRIBUTION_TYPE_COL = "contribution_type"
 
 REFERENCE_ATTRIBUTION = "reference"
 COMPARISON_ATTRIBUTION = "comparison"
+REINFORCE_ATTRIBUTION = "reinforce"
+OFFSET_ATTRIBUTION = "offset"
 
 SHIFT_SCORE_TYPES = [f.name for f in fields(ShiftBarConfig)]
 COUNTERACTED_SUFFIX = "_counteracted"

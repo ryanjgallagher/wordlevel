@@ -11,6 +11,7 @@ def test_initialization_defaults() -> None:
     assert comparison._alias is None
     assert comparison._method is None
     assert comparison._is_weighted_avg is None
+    assert comparison._attributed_by is None
     assert comparison._plan is None
     assert comparison._parameters == {}
     assert isinstance(comparison._parameters, dict)
@@ -31,6 +32,7 @@ def test_with_state_populates_internal_fields() -> None:
         alias="my_alias",
         method="jensen_shannon",
         is_weighted_avg=True,
+        attributed_by="frequency",
         plan=mock_plan,
         parameters=params,
     )
@@ -40,6 +42,7 @@ def test_with_state_populates_internal_fields() -> None:
     assert comparison._alias == "my_alias"
     assert comparison._method == "jensen_shannon"
     assert comparison._is_weighted_avg is True
+    assert comparison._attributed_by == "frequency"
     assert comparison._plan is mock_plan
     assert comparison._parameters == {"alpha": 1.5, "base": 2}
     assert comparison._parameters is not params  # Parameters are copied
@@ -79,7 +82,12 @@ def test_alias_chaining() -> None:
 def test_alias_preserves_scoring_parameters() -> None:
     """Test that alias() preserves method, plan, and parameters from scoring."""
     comparison = Comparison._with_state(
-        "ref", "cmp", method="jensen_shannon", parameters={"alpha": 1.0}, is_weighted_avg=True
+        "ref",
+        "cmp",
+        method="jensen_shannon",
+        parameters={"alpha": 1.0},
+        is_weighted_avg=True,
+        attributed_by="frequency",
     )
 
     new_comparison = comparison.alias("my_alias")
@@ -87,6 +95,7 @@ def test_alias_preserves_scoring_parameters() -> None:
     assert new_comparison._method == "jensen_shannon"
     assert new_comparison._parameters == {"alpha": 1.0}
     assert new_comparison._is_weighted_avg is True
+    assert new_comparison._attributed_by == "frequency"
 
 
 def test_no_shared_state_of_parameters_between_instances() -> None:

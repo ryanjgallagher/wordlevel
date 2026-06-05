@@ -49,8 +49,6 @@ def basic_score_plan(
     score_alias: str = "comparison_score",
     rank_alias: str = "rank",
     attribution_alias: str = "attribution",
-    reference_attribution: str = "reference",
-    comparison_attribution: str = "comparison",
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
     attribution_cols = dict()
@@ -75,8 +73,6 @@ def basic_score_plan(
             **attribution_cols,
             by=attribute_by,
             normalize=False,
-            reference_attribution=reference_attribution,
-            comparison_attribution=comparison_attribution,
             attribution_alias=attribution_alias,
         )
     )
@@ -105,8 +101,6 @@ def weighted_average_score_plan(
     higher_score_alias: str = "higher_score",
     lower_score_alias: str = "lower_score",
     counteracted_suffix: str = "_counteracted",
-    reference_attribution: str = "reference",
-    comparison_attribution: str = "comparison",
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
     attribution_cols = dict()
@@ -182,8 +176,6 @@ def weighted_average_score_plan(
             **attribution_cols,
             by=attribute_by,
             normalize=False,
-            reference_attribution=reference_attribution,
-            comparison_attribution=comparison_attribution,
             attribution_alias=attribution_alias,
         )
         .drop("clean_score_ref", "clean_score_cmp")

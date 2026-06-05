@@ -27,6 +27,33 @@ class BarConfig:
 
 
 @dataclass
+class AlignmentBarConfig:
+    """
+    Configuration for the bar colors of a bar plot scored by a score-sign measure.
+
+    For measures like
+    [lexicon-weighted averages][wordlevel.api.comparison.score.Scorer.lexicon],
+    [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy],
+    [Tsallis entropy][wordlevel.api.comparison.score.Scorer.tsallis_entropy], and the
+    [Kullback-Leibler divergence][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence],
+    a token cannot be cleanly attributed to one corpus. Instead, the bars are split by whether a
+    token's contribution reinforces the overall difference between the corpora (pushing it further
+    in its realized direction) or offsets it (pulling it back).
+
+    Attributes:
+        reinforce:
+            Color of bars where the token reinforces the overall difference, making its magnitude
+            larger
+        offset:
+            Color of bars where the token offsets the overall difference, making its magnitude
+            smaller
+    """
+
+    reinforce: str = "#2F7CCE"
+    offset: str = "#FECC5D"
+
+
+@dataclass
 class ShiftBarConfig:
     """
     Configuration for the bar colors of a word shift plot.

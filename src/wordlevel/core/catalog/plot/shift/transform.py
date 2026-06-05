@@ -13,32 +13,39 @@ def bar_plot_df(
     attribution_col: str,
     contribution_alias: str,
     contribution_type_alias: str,
-    reference_attribution: str = "reference",
-    comparison_attribution: str = "comparison",
+    attribution_labels: tuple[str, str],
     max_rank: int = 50,
     is_nonnegative: bool = False,
     split_nonnegative_by_corpus: bool = True,
 ) -> pl.DataFrame:
-    """ """
-    ref_score = col(score_col)
-    cmp_score = col(score_col)
+    """
+    Builds the plot-ready dataframe for a bar plot.
+
+    `attribution_labels` is the pair of attribution buckets to split contributions into. When a
+    non-negative measure is split by corpus, the first bucket's contributions are directed to the
+    opposing side of the axis; otherwise each bar follows the sign of its own contribution.
+    """
+    first_label, second_label = attribution_labels
+
+    first_score = col(score_col)
+    second_score = col(score_col)
     if is_nonnegative and split_nonnegative_by_corpus:
-        ref_score = -1 * ref_score
+        first_score = -1 * first_score
 
     lf_plot = (
         lf.filter(col(rank_col) <= max_rank)
         .with_columns(
-            pl.when(col(attribution_col) == reference_attribution)
-            .then(ref_score)
+            pl.when(col(attribution_col) == first_label)
+            .then(first_score)
             .otherwise(0)
-            .alias(reference_attribution),
-            pl.when(col(attribution_col) == comparison_attribution)
-            .then(cmp_score)
+            .alias(first_label),
+            pl.when(col(attribution_col) == second_label)
+            .then(second_score)
             .otherwise(0)
-            .alias(comparison_attribution),
+            .alias(second_label),
         )
         .unpivot(
-            on=[reference_attribution, comparison_attribution],
+            on=[first_label, second_label],
             index=[token_col, rank_col],
             value_name=contribution_alias,
             variable_name=contribution_type_alias,

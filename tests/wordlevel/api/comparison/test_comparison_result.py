@@ -46,6 +46,7 @@ def valid_comparison(simple_plan) -> Comparison:
         method="test_method",
         is_weighted_avg=False,
         is_nonnegative=False,
+        attributed_by="frequency",
         plan=simple_plan,
         parameters={"alpha": 1.0},
     )
@@ -55,15 +56,15 @@ def valid_comparison(simple_plan) -> Comparison:
 # TestInitialization - Test direct construction
 # ============================================================================
 @pytest.mark.parametrize(
-    "method,is_weighted_avg,is_nonnegative,parameters",
+    "method,is_weighted_avg,is_nonnegative,attributed_by,parameters",
     [
-        ("rank_divergence", False, True, {"alpha": 1.0}),
-        ("proportion", False, False, {}),
-        ("jensen_shannon_divergence", True, True, {"alpha": 1.0, "base": 2}),
+        ("rank_divergence", False, True, "rank", {"alpha": 1.0}),
+        ("proportion", False, False, "frequency", {}),
+        ("jensen_shannon_divergence", True, True, "frequency", {"alpha": 1.0, "base": 2}),
     ],
 )
 def test_initialization(
-    df_mock, simple_plan, method, is_weighted_avg, is_nonnegative, parameters
+    df_mock, simple_plan, method, is_weighted_avg, is_nonnegative, attributed_by, parameters
 ) -> None:
     """Test initialization with different scoring methods and parameters."""
     lf = simple_plan(df_mock, "word", "__wl_normed").lazy()
@@ -76,6 +77,7 @@ def test_initialization(
         method=method,
         is_weighted_avg=is_weighted_avg,
         is_nonnegative=is_nonnegative,
+        attributed_by=attributed_by,
         parameters=parameters,
     )
 
@@ -85,8 +87,36 @@ def test_initialization(
     assert result.method == method
     assert result.is_weighted_avg == is_weighted_avg
     assert result.is_nonnegative == is_nonnegative
+    assert result.attributed_by == attributed_by
     assert result.parameters == parameters
     assert isinstance(result._lf, pl.LazyFrame)
+
+
+@pytest.mark.parametrize(
+    "attributed_by,expected_labels",
+    [
+        ("frequency", ("reference", "comparison")),
+        ("rank", ("reference", "comparison")),
+        ("score_sign", ("reinforce", "offset")),
+    ],
+)
+def test_attribution_labels(df_mock, simple_plan, attributed_by, expected_labels) -> None:
+    """`attribution_labels` exposes the label pair for the comparison's attribution type."""
+    lf = simple_plan(df_mock, "word", "__wl_normed").lazy()
+
+    result = ComparisonResult(
+        _lf=lf,
+        reference="ref",
+        comparison="cmp",
+        alias="test",
+        method="test",
+        is_weighted_avg=False,
+        is_nonnegative=False,
+        attributed_by=attributed_by,
+        parameters={},
+    )
+
+    assert result.attribution_labels == expected_labels
 
 
 # ============================================================================
@@ -113,6 +143,7 @@ class TestFromComparison:
         assert result.method == valid_comparison._method
         assert result.is_weighted_avg is valid_comparison._is_weighted_avg
         assert result.is_nonnegative is valid_comparison._is_nonnegative
+        assert result.attributed_by == valid_comparison._attributed_by
         assert result.parameters == valid_comparison._parameters
 
     @pytest.mark.parametrize(
@@ -123,6 +154,7 @@ class TestFromComparison:
             ("method", "Missing comparison metadata"),
             ("is_weighted_avg", "Missing comparison metadata"),
             ("is_nonnegative", "Missing comparison metadata"),
+            ("attributed_by", "Missing comparison metadata"),
             ("parameters", "Missing comparison metadata"),
         ],
     )
@@ -188,6 +220,7 @@ class TestLazyEvaluation:
             method="test",
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
             plan=counting_plan,
             parameters=dict(),
         )
@@ -217,6 +250,7 @@ class TestLazyEvaluation:
         ("method", "new_method"),
         ("is_weighted_avg", True),
         ("is_nonnegative", False),
+        ("attributed_by", "score_sign"),
         ("parameters", {"new": "dict"}),
         ("_lf", pl.LazyFrame()),
     ],
@@ -287,6 +321,7 @@ class TestDataFrameExecution:
             method="simple",
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
             plan=simple_plan,
             parameters=dict(),
         )
@@ -321,6 +356,7 @@ class TestDataFrameExecution:
             method="complex",
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
             plan=complex_plan,
             parameters=dict(),
         )
@@ -365,6 +401,7 @@ class TestLabelAndSuffixWiring:
             method="test",
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
             plan=capturing_plan,
             parameters=dict(),
         )
@@ -393,6 +430,7 @@ class TestLabelAndSuffixWiring:
             method="test",
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
             plan=capturing_plan,
             parameters=dict(),
         )

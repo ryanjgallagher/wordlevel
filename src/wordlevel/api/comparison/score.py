@@ -10,8 +10,6 @@ from wordlevel.constants import (
     SCORE_COL,
     RANK_COL,
     ATTRIBUTION_COL,
-    REFERENCE_ATTRIBUTION,
-    COMPARISON_ATTRIBUTION,
     COUNTERACTED_SUFFIX,
 )
 from wordlevel.core.comparison.score.plan import (
@@ -122,8 +120,6 @@ class Scorer:
                 score_alias=SCORE_COL,
                 rank_alias=RANK_COL,
                 attribution_alias=ATTRIBUTION_COL,
-                reference_attribution=REFERENCE_ATTRIBUTION,
-                comparison_attribution=COMPARISON_ATTRIBUTION,
             )
 
         return plan
@@ -182,8 +178,6 @@ class Scorer:
                 lower_score_alias=SHIFT_BAR_NAMES.lower_score,
                 counteracted_suffix=COUNTERACTED_SUFFIX,
                 attribution_alias=ATTRIBUTION_COL,
-                reference_attribution=REFERENCE_ATTRIBUTION,
-                comparison_attribution=COMPARISON_ATTRIBUTION,
             )
 
         return plan
@@ -195,6 +189,7 @@ class Scorer:
         parameters: dict[str, Any],
         is_weighted_avg: bool,
         is_nonnegative: bool,
+        attributed_by: ATTRIBUTION_TYPE,
     ) -> Comparison:
         """ """
         if self._comparison._alias is None:
@@ -210,6 +205,7 @@ class Scorer:
             parameters=parameters,
             is_weighted_avg=is_weighted_avg,
             is_nonnegative=is_nonnegative,
+            attributed_by=attributed_by,
             plan=plan,
         )
 
@@ -252,7 +248,12 @@ class Scorer:
         )
 
         return self._return_comparison(
-            plan, method="frequency", parameters=dict(), is_weighted_avg=False, is_nonnegative=False
+            plan,
+            method="frequency",
+            parameters=dict(),
+            is_weighted_avg=False,
+            is_nonnegative=False,
+            attributed_by="frequency",
         )
 
     def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
@@ -329,6 +330,7 @@ class Scorer:
             parameters={"reference_score": reference_score},
             is_weighted_avg=True,
             is_nonnegative=False,
+            attributed_by="frequency",
         )
 
     def lexicon(
@@ -378,13 +380,13 @@ class Scorer:
         $p_\tau^{(C)}$ is its normalized frequency. Similarly, $\phi_\tau^{(R)}$ and $p_\tau^{(R)}$
         are the score and normalized frequency of $\tau$ in the reference corpus.
 
-        Positive and negative contributions are interpreted with respect to whether the corpus-level
-        difference in weighted averages $\Phi^{(C)} - \Phi^{(R)}$ is positive or negative.
-        If $\Phi^{(C)} - \Phi^{(R)} > 0$, then the weighted average of the comparison $\Phi^{(C)}$
-        is higher. In this case, positive contributions amplify that difference, while negative
-        contributions counteract it (otherwise it the difference would be even larger). Similarly, if
-        $\Phi^{(C)} - \Phi^{(R)} < 0$, then negative contributions align with the comparison corpus
-        having a lower weighted average, and positive contributions counteract it.
+        Each token is interpreted by whether it reinforces or offsets the corpus-level difference in
+        weighted averages $\Phi^{(C)} - \Phi^{(R)}$. A contribution with the same sign as the overall
+        difference reinforces it, making its magnitude larger; a contribution with the opposite sign
+        offsets it, pulling the difference back toward zero. For example, if
+        $\Phi^{(C)} - \Phi^{(R)} > 0$ (the comparison's weighted average is higher), positive
+        contributions reinforce the difference and negative contributions offset it; the
+        interpretation flips when $\Phi^{(C)} - \Phi^{(R)} < 0$.
 
         If the `reference_score` is non-zero, and the score of a word is the same in both corpora,
         i.e. $\phi_\tau = \phi^{(C)}_\tau = \phi^{(R)}_\tau$, then a token's contribution is:
@@ -528,6 +530,7 @@ class Scorer:
             parameters={"reference_score": reference_score, "impute": impute},
             is_weighted_avg=True,
             is_nonnegative=False,
+            attributed_by="score_sign",
         )
 
     def tsallis_entropy(
@@ -563,13 +566,13 @@ class Scorer:
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
         $R$ and $C$ respectively, the reference and comparison corpora.
 
-        Positive and negative contributions are interpreted with respect to whether the corpus-level
-        difference in entropies $\Phi^{(C)} - \Phi^{(R)}$ is positive or negative.
-        If $\Phi^{(C)} - \Phi^{(R)} > 0$, then the entropy of the comparison $\Phi^{(C)}$ is higher.
-        In this case, positive contributions amplify that difference, while negative contributions
-        counteract it (otherwise it the difference would be even larger). Similarly, if
-        $\Phi^{(C)} - \Phi^{(R)} < 0$, then negative contributions align with the comparison corpus
-        having a lower entropy, and positive contributions counteract it.
+        Each token is interpreted by whether it reinforces or offsets the corpus-level difference in
+        entropies $\Phi^{(C)} - \Phi^{(R)}$. A contribution with the same sign as the overall
+        difference reinforces it, making its magnitude larger; a contribution with the opposite sign
+        offsets it, pulling the difference back toward zero. For example, if
+        $\Phi^{(C)} - \Phi^{(R)} > 0$ (the comparison's entropy is higher), positive contributions
+        reinforce the difference and negative contributions offset it; the interpretation flips when
+        $\Phi^{(C)} - \Phi^{(R)} < 0$.
 
         When the `reference_score` is non-zero, the contribution of the token is:
 
@@ -647,6 +650,7 @@ class Scorer:
             parameters={"alpha": alpha, "base": base, "reference_score": reference_score},
             is_weighted_avg=True,
             is_nonnegative=False,
+            attributed_by="score_sign",
         )
 
     def shannon_entropy(
@@ -678,13 +682,13 @@ class Scorer:
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
         $R$ and $C$ respectively, the reference and comparison corpora.
 
-        Positive and negative contributions are interpreted with respect to whether the corpus-level
-        difference in entropies $\Phi^{(C)} - \Phi^{(R)}$ is positive or negative.
-        If $\Phi^{(C)} - \Phi^{(R)} > 0$, then the entropy of the comparison $\Phi^{(C)}$ is higher.
-        In this case, positive contributions amplify that difference, while negative contributions
-        counteract it (otherwise it the difference would be even larger). Similarly, if
-        $\Phi^{(C)} - \Phi^{(R)} < 0$, then negative contributions align with the comparison corpus
-        having a lower entropy, and positive contributions counteract it.
+        Each token is interpreted by whether it reinforces or offsets the corpus-level difference in
+        entropies $\Phi^{(C)} - \Phi^{(R)}$. A contribution with the same sign as the overall
+        difference reinforces it, making its magnitude larger; a contribution with the opposite sign
+        offsets it, pulling the difference back toward zero. For example, if
+        $\Phi^{(C)} - \Phi^{(R)} > 0$ (the comparison's entropy is higher), positive contributions
+        reinforce the difference and negative contributions offset it; the interpretation flips when
+        $\Phi^{(C)} - \Phi^{(R)} < 0$.
 
         When the `reference_score` is non-zero, the contribution of the token is:
 
@@ -768,9 +772,10 @@ class Scorer:
 
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
         $R$ and $C$ respectively, the reference and comparison corpora. The total divergence is
-        always non-negative, but individual per-token contributions can be either sign. Positive
-        contributions indicate tokens that appear more in the comparison corpus; negative
-        contributions indicate tokens that appear more in the reference corpus.
+        always non-negative, but individual per-token contributions can be either sign. A positive
+        contribution identifies a token that appears relatively more in the comparison corpus; a
+        negative contribution, more in the reference. Because the total is non-negative, positive
+        contributions reinforce the divergence and negative contributions offset it.
 
         Reference:
             For more details, see the following paper:
@@ -839,6 +844,7 @@ class Scorer:
             parameters={"base": base},
             is_weighted_avg=True,
             is_nonnegative=False,
+            attributed_by="score_sign",
         )
 
     def kld(self, base: float = 2) -> Comparison:
@@ -1004,6 +1010,7 @@ class Scorer:
             },
             is_weighted_avg=True,
             is_nonnegative=True,
+            attributed_by="frequency",
         )
 
     def jsd(
@@ -1121,4 +1128,5 @@ class Scorer:
             parameters={"alpha": alpha},
             is_weighted_avg=False,
             is_nonnegative=True,
+            attributed_by="rank",
         )
