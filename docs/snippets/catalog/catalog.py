@@ -22,7 +22,7 @@ df = pl.DataFrame(
     }
 )
 
-cl = wl.Catalog.from_polars(df, token_col="token", freq_cols=["before", "after"])
+cl = wl.Catalog.from_polars(df, token_col="token", corpora=["before", "after"])
 # --8<-- [end:from_polars]
 
 

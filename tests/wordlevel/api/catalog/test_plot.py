@@ -27,7 +27,7 @@ def df_mock() -> pl.DataFrame:
 @pytest.fixture
 def catalog(df_mock) -> Catalog:
     """Catalog pre-loaded with both a non-weighted-avg ('freq_comp') and weighted-avg ('entropy_comp') comparison."""
-    base = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2"])
+    base = Catalog(df_mock, token_col="word", corpora=["freq1", "freq2"])
 
     freq = comp("freq1", "freq2").score.frequency().alias("freq_comp")
     entropy = comp("freq1", "freq2").score.tsallis_entropy().alias("entropy_comp")

@@ -26,7 +26,7 @@ def df_mock() -> pl.DataFrame:
 @pytest.fixture
 def catalog(df_mock) -> Catalog:
     """Pre-initialized Catalog for testing."""
-    return Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
+    return Catalog(df_mock, token_col="word", corpora=["freq1", "freq2", "freq3"])
 
 
 # ============================================================================
@@ -119,7 +119,7 @@ class TestCatalogProperties:
         catalog = Catalog(
             df_renamed,
             token_col="token",
-            freq_cols=["freq1", "freq2"],
+            corpora=["freq1", "freq2"],
         )
 
         catalog_new = catalog.with_comparisons(
@@ -150,7 +150,7 @@ class TestIntegration:
     def test_full_workflow(self, df_mock) -> None:
         """Test complete workflow: create catalog -> add comparisons -> access results."""
         # 1. Create catalog
-        catalog = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
+        catalog = Catalog(df_mock, token_col="word", corpora=["freq1", "freq2", "freq3"])
 
         # 2. Add comparisons
         catalog_new = catalog.with_comparisons(
@@ -181,7 +181,7 @@ class TestIntegration:
 
     def test_workflow_with_jsd(self, df_mock) -> None:
         """Test workflow with Jensen-Shannon divergence scoring."""
-        catalog = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2"])
+        catalog = Catalog(df_mock, token_col="word", corpora=["freq1", "freq2"])
 
         catalog_new = catalog.with_comparisons(
             comp("freq1", "freq2").score.jensen_shannon_divergence().alias("jsd")
@@ -201,7 +201,7 @@ class TestIntegration:
 
     def test_workflow_chained(self, df_mock) -> None:
         """Test workflow with chained comparison additions."""
-        cl = Catalog(df_mock, token_col="word", freq_cols=["freq1", "freq2", "freq3"])
+        cl = Catalog(df_mock, token_col="word", corpora=["freq1", "freq2", "freq3"])
 
         catalog_new = (
             cl.with_comparisons(comp("freq1", "freq2").score.proportion().alias("1vs2"))

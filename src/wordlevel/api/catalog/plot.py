@@ -86,9 +86,16 @@ class Plotter:
         Makes a bar chart of the top contributing tokens distinguishing two compared corpora.
 
         Bars show the contribution of each token to the overall comparison score, ordered by
-        the magnitude. By default, bars pointing in the positive direction are attributed to the
+        the magnitude. Generally, bars pointing in the positive direction are attributed to the
         comparison corpus, and bars pointing in the negative direction are attributed to the
         reference corpus.
+
+        Warning:
+            Positive and negative contributions need to be interpreted carefully for some measures,
+            like [lexicon-weighted averages][wordlevel.api.comparison.score.Scorer.lexicon],
+            [Tsallis entropy][wordlevel.api.comparison.score.Scorer.tsallis_entropy], and
+            [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy]. For details,
+            see their scoring documentation.
 
         Example:
             ```python
@@ -222,12 +229,12 @@ class Plotter:
             ```
 
         All bars are interpreted in terms of how the comparison corpus differs from the reference
-        corpus. Positive values are attributed to the comparison; negative values are attributed to
-        the reference. For each token, there are two stacked bars. One bar shows whether the token
-        is relatively positive or negative and whether it was used more or less in the comparison
-        versus the reference. The other bar shows whether the token's score is higher or lower in
-        the comparison versus the reference. Tokens are ranked by the magnitude of both stacked
-        bars together.
+        corpus. For details, see the [scoring
+        documentation][wordlevel.api.comparison.score.Scorer.lexicon]. For each token, there are
+        two stacked bars. One bar shows whether the token is relatively positive or negative and
+        whether it was used more or less in the comparison versus the reference. The other bar shows
+        whether the token's score is higher or lower in the comparison versus the reference. Tokens
+        are ranked by the magnitude of both stacked bars together.
 
         Mathematically, the bars are derived from the following formula. Let $\tau$ be a token,
         and let $p_\tau^{(\mathcal{C})}$ and $\phi_\tau^{(\mathcal{C})}$ be the normalized frequency

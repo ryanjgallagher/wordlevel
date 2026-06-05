@@ -141,15 +141,18 @@ class TestConstructors:
         )
         assert cl_original._df is not cl_new._df
 
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_polars])
     @pytest.mark.parametrize("normalize", [False, True])
-    def test_from_polars(self, df_mock, token_col, freq_cols, normalize):
+    def test_from_polars(self, df_mock, token_col, freq_cols, constructor, normalize):
         """Test initialization from a dataframe via the from_polars classmethod."""
-        catalog = Catalog.from_polars(
-            df_mock,
-            token_col=token_col,
-            freq_cols=freq_cols,
-            normalize=normalize,
-        )
+        # We only expose the `normalize` parameter in the `from_polars` constructor
+        params = {"token_col": token_col, "corpora": freq_cols}
+        if constructor is Catalog:
+            params = params | {"data": df_mock}
+        if constructor is not Catalog:
+            params = params | {"df": df_mock, "normalize": normalize}
+
+        catalog = constructor(**params)
 
         assert isinstance(catalog, Catalog)
 
@@ -166,11 +169,13 @@ class TestConstructors:
         )
         assert catalog._df is not df_mock
 
-        if normalize:
+        # If using `from_polars` constructor and `normalize`
+        if normalize and (constructor is not Catalog):
             assert catalog._normalization_suffix == NORMALIZATION_SUFFIX
             for norm_freq_col in [f"{freq_col}{NORMALIZATION_SUFFIX}" for freq_col in freq_cols]:
                 assert norm_freq_col in catalog._df.collect_schema()
-        else:
+        # If using `from_polars` constructor and not `normalize`
+        elif constructor is not Catalog:
             assert catalog._normalization_suffix == ""
 
     @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_polars])
@@ -179,7 +184,7 @@ class TestConstructors:
         subset_freq_cols = freq_cols[:2]
         excluded_freq_cols = set(freq_cols) - set(subset_freq_cols)
 
-        catalog = constructor(df_mock, token_col=token_col, freq_cols=subset_freq_cols)
+        catalog = constructor(df_mock, token_col=token_col, corpora=subset_freq_cols)
 
         schema_cols = set(catalog._df.collect_schema().names())
         for excluded_col in excluded_freq_cols:
@@ -193,7 +198,7 @@ class TestConstructors:
         catalog = constructor(
             df_mock_with_nulls,
             token_col=token_col,
-            freq_cols=freq_cols,
+            corpora=freq_cols,
         )
 
         null_counts = catalog._df.select(pl.col(*freq_cols).is_null().any()).collect().row(0)
@@ -272,33 +277,33 @@ class TestConstructors:
 
 class TestConstructorValidation:
     def test_from_polars_duplicate_freq_cols(self, df_mock, freq_cols, token_col):
-        catalog = Catalog(data=df_mock, token_col=token_col, freq_cols=freq_cols + freq_cols)
+        catalog = Catalog(data=df_mock, token_col=token_col, corpora=freq_cols + freq_cols)
 
         assert sorted(list(catalog._freq_cols)) == sorted(freq_cols)
 
     def test_from_polars_invalid_freq_cols(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""
         with pytest.raises(
-            ValueError, match="`freq_cols` must be specified if providing a DataFrame"
+            ValueError, match="`corpora` must be specified if providing a DataFrame"
         ):
-            Catalog(data=df_mock, token_col=token_col, freq_cols=None)
+            Catalog(data=df_mock, token_col=token_col, corpora=None)
 
         with pytest.raises(KeyError, match="Frequency column not in provided dataframe"):
-            Catalog(data=df_mock, token_col=token_col, freq_cols=freq_cols + ["1000freq"])
+            Catalog(data=df_mock, token_col=token_col, corpora=freq_cols + ["1000freq"])
 
         for not_enough_cols in [[], [freq_cols[0]]]:
             with pytest.raises(ValueError, match="At least two frequency columns"):
-                Catalog(data=df_mock, token_col=token_col, freq_cols=not_enough_cols)
+                Catalog(data=df_mock, token_col=token_col, corpora=not_enough_cols)
 
     def test_from_polars_invalid_token_col(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""
         with pytest.raises(
             ValueError, match="`token_col` must be specified if providing a DataFrame"
         ):
-            Catalog(data=df_mock, token_col=None, freq_cols=freq_cols)
+            Catalog(data=df_mock, token_col=None, corpora=freq_cols)
 
         with pytest.raises(KeyError, match="Token column not in provided dataframe"):
-            Catalog(data=df_mock, token_col="wordcol", freq_cols=freq_cols)
+            Catalog(data=df_mock, token_col="wordcol", corpora=freq_cols)
 
     def test_from_list_of_freqs_invalid(self, get_mock_freqs):
         """Test that from_list_of_freqs raises errors for invalid inputs"""
