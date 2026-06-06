@@ -10,10 +10,10 @@ DEFAULT_LABEL_SIZE: float = 11
 @dataclass
 class BarConfig:
     """
-    Configuration for the bar colors of a bar plot.
+    Configuration for the bar colors of token contributions attributed by frequency or rank.
 
-    The bars are split by which corpus a token's contribution is attributed to: the reference or the
-    comparison
+    The contributions (and bars) are attributed by whether a token is more common in the reference
+    or the comparison.
 
     Attributes:
         reference:
@@ -29,16 +29,11 @@ class BarConfig:
 @dataclass
 class AlignmentBarConfig:
     """
-    Configuration for the bar colors of a bar plot scored by a score-sign measure.
+    Configuration for the bar colors of token contributions attributed by score sign.
 
-    For measures like
-    [lexicon-weighted averages][wordlevel.api.comparison.score.Scorer.lexicon],
-    [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy],
-    [Tsallis entropy][wordlevel.api.comparison.score.Scorer.tsallis_entropy], and the
-    [Kullback-Leibler divergence][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence],
-    a token cannot be cleanly attributed to one corpus. Instead, the bars are split by whether a
-    token's contribution reinforces the overall difference between the corpora (pushing it further
-    in its realized direction) or offsets it (pulling it back).
+    The contributions (and bars) are attributed by whether a token's score is positive or negative,
+    and whether that score reinforces or offsets the overall corpus-level difference between the
+    reference and comparison.
 
     Attributes:
         reinforce:
