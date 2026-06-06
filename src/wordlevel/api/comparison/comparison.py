@@ -7,6 +7,7 @@ from typing_extensions import Self
 import polars as pl
 
 from wordlevel.api.comparison.score import Scorer, ScorePlan
+from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
 
 
 class Comparison:
@@ -27,6 +28,7 @@ class Comparison:
         self._method: str | None = None
         self._is_weighted_avg: bool | None = None
         self._is_nonnegative: bool | None = None
+        self._attributed_by: ATTRIBUTION_TYPE | None = None
         self._plan: ScorePlan | None = None
         self._parameters: dict = {}
 
@@ -40,6 +42,7 @@ class Comparison:
         method: str | None = None,
         is_weighted_avg: bool | None = None,
         is_nonnegative: bool | None = None,
+        attributed_by: ATTRIBUTION_TYPE | None = None,
         plan: ScorePlan | None = None,
         parameters: dict | None = None,
     ) -> Comparison:
@@ -57,6 +60,10 @@ class Comparison:
             is_nonnegative
                 Whether the scoring method is inherently non-negative, i.e. all token-level
                 contributionso are non-negative
+            attributed_by:
+                The attribution type used to split token contributions between the two bars of a bar
+                plot (`"frequency"` and `"rank"` attribute by corpus; `"score_sign"` attributes by
+                whether a token reinforces or offsets the overall difference)
             plan:
                 The "scoring plan" describing how to compare the reference and comparison corpora
                 according to thes scoring method
@@ -68,6 +75,7 @@ class Comparison:
         instance._method = method
         instance._is_weighted_avg = is_weighted_avg
         instance._is_nonnegative = is_nonnegative
+        instance._attributed_by = attributed_by
         instance._plan = plan
         instance._parameters = (parameters or {}).copy()
 
@@ -104,6 +112,7 @@ class Comparison:
             method=self._method,
             is_weighted_avg=self._is_weighted_avg,
             is_nonnegative=self._is_nonnegative,
+            attributed_by=self._attributed_by,
             plan=self._plan,
             parameters=self._parameters,
         )
@@ -158,9 +167,12 @@ class ComparisonResult:
         is_nonnegative:
             Whether the scoring method is inherently non-negative, i.e. all token-level
             contributionso are non-negative
-        plan:
-            The "scoring plan" describing how to compare the reference and comparison corpora
-            according to thes scoring method
+        attributed_by:
+            The attribution type used to split token contributions between the two bars of a bar
+            plot. `"frequency"` and `"rank"` attribute each token to a corpus; `"score_sign"`
+            attributes each token by whether it reinforces or offsets the overall difference
+        attribution_labels:
+            The pair of labels the attribution produces, determined by `attributed_by`
         parameters:
             Any parameters specfic to the scoring method when making the comparison
     """
@@ -172,7 +184,18 @@ class ComparisonResult:
     method: str
     is_weighted_avg: bool
     is_nonnegative: bool
+    attributed_by: ATTRIBUTION_TYPE
     parameters: dict
+
+    @property
+    def attribution_labels(self) -> tuple[str, str]:
+        """
+        The pair of labels the attribution produces, determined by `attributed_by`.
+
+        Corpus attribution names each token's bucket by corpus; score-sign attribution names it by
+        whether the token reinforces or offsets the overall difference.
+        """
+        return ATTRIBUTION_LABELS[self.attributed_by]
 
     @property
     def df(self) -> pl.DataFrame:
@@ -225,11 +248,12 @@ class ComparisonResult:
             comparison._method is None
             or comparison._is_weighted_avg is None
             or comparison._is_nonnegative is None
+            or comparison._attributed_by is None
             or comparison._parameters is None
         ):
             raise ValueError(
-                "Missing comparison metadata: `method`, `parameters`, `is_weighted_avg`, or "
-                "`is_nonnegative` is None"
+                "Missing comparison metadata: `method`, `parameters`, `is_weighted_avg`, "
+                "`is_nonnegative`, or `attributed_by` is None"
             )
 
         return cls(
@@ -240,5 +264,6 @@ class ComparisonResult:
             method=comparison._method,
             is_weighted_avg=comparison._is_weighted_avg,
             is_nonnegative=comparison._is_nonnegative,
+            attributed_by=comparison._attributed_by,
             parameters=comparison._parameters.copy(),
         )

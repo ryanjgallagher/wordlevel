@@ -72,20 +72,20 @@ def test_score_sign_attribution():
     """ """
     # Arrange 1: Total shift is positive (sum = 2)
     # Signs: [+, +, -]. Sum Sign: [+].
-    # Attribution: [comp, comp, ref]
+    # Same sign as the total reinforces it; opposite sign offsets it: [reinforce, reinforce, offset]
     df_pos = pl.DataFrame({"score": [3, 1, -2]})
     expected_pos = pl.Series(
-        ["comparison", "comparison", "reference"],
-        dtype=pl.Enum(["reference", "comparison"]),
+        ["reinforce", "reinforce", "offset"],
+        dtype=pl.Enum(["reinforce", "offset"]),
     )
 
     # Arrange 2: Total shift is negative (sum = -2)
     # Signs: [+, +, -]. Sum Sign: [-].
-    # Attribution: [ref, ref, comp]
+    # Same sign as the total reinforces it; opposite sign offsets it: [offset, offset, reinforce]
     df_neg = pl.DataFrame({"score": [1, 2, -5]})
     expected_neg = pl.Series(
-        ["reference", "reference", "comparison"],
-        dtype=pl.Enum(["reference", "comparison"]),
+        ["offset", "offset", "reinforce"],
+        dtype=pl.Enum(["reinforce", "offset"]),
     )
 
     # Act & Assert 1
@@ -100,15 +100,39 @@ def test_score_sign_attribution():
 
 
 @pytest.mark.parametrize(
-    "attribute_by,attribution_func",
+    "attribute_by,attribution_func,labels,func_kwargs",
     [
-        ("frequency", frequency_attribution),
-        ("rank", rank_attribution),
-        ("score_sign", score_sign_attribution),
+        (
+            "frequency",
+            frequency_attribution,
+            ("attributed_to_ref", "attributed_to_cmp"),
+            {
+                "reference_attribution": "attributed_to_ref",
+                "comparison_attribution": "attributed_to_cmp",
+            },
+        ),
+        (
+            "rank",
+            rank_attribution,
+            ("attributed_to_ref", "attributed_to_cmp"),
+            {
+                "reference_attribution": "attributed_to_ref",
+                "comparison_attribution": "attributed_to_cmp",
+            },
+        ),
+        (
+            "score_sign",
+            score_sign_attribution,
+            ("attributed_to_reinforce", "attributed_to_offset"),
+            {
+                "reinforce_attribution": "attributed_to_reinforce",
+                "offset_attribution": "attributed_to_offset",
+            },
+        ),
     ],
 )
-def test_attribute_score(attribute_by, attribution_func):
-    """ """
+def test_attribute_score(attribute_by, attribution_func, labels, func_kwargs):
+    """`attribute_scores` dispatches to the right function and uses the `labels` override."""
     # Arrange
     df = pl.DataFrame(
         {"ref": [1, 6, 4, 3, 2, 1], "cmp": [2, 3, 6, 7, 1, 0], "scr": [-1, 3, 2, 0, 4, 5]}
@@ -119,13 +143,7 @@ def test_attribute_score(attribute_by, attribution_func):
     else:
         params = {"score": pl.col("scr")}
 
-    df = df.with_columns(
-        attribution_func(
-            **params,
-            reference_attribution="attributed_to_ref",
-            comparison_attribution="attributed_to_cmp",
-        ).alias("expected_attribution")
-    )
+    df = df.with_columns(attribution_func(**params, **func_kwargs).alias("expected_attribution"))
 
     # Act
     df = attribute_scores(
@@ -134,8 +152,7 @@ def test_attribute_score(attribute_by, attribution_func):
         reference=pl.col("ref"),
         comparison=pl.col("cmp"),
         score=pl.col("scr"),
-        reference_attribution="attributed_to_ref",
-        comparison_attribution="attributed_to_cmp",
+        labels=labels,
         attribution_alias="actual_attribution",
     )
 

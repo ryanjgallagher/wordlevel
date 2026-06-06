@@ -5,7 +5,7 @@ import polars as pl
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import comp
 from wordlevel.api.catalog.plot import Plotter
-from wordlevel.configs import BarConfig, ShiftBarConfig
+from wordlevel.configs import AlignmentBarConfig, BarConfig, ShiftBarConfig
 from wordlevel.constants import (
     RANK_COL,
     PLOT_CONTRIBUTION_COL,
@@ -141,6 +141,50 @@ class TestBar:
         # The reference color override should propagate to the bars layer's color range
         scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
+
+    @pytest.mark.parametrize(
+        "bar_config",
+        [
+            AlignmentBarConfig(reinforce="#00ff00"),
+            {"reinforce": "#00ff00"},
+        ],
+    )
+    def test_bar_config_accepts_alignment_object_or_dict(
+        self, catalog: Catalog, bar_config: AlignmentBarConfig | dict
+    ) -> None:
+        """For a score-sign measure, `bar_config` accepts an `AlignmentBarConfig` or matching dict."""
+        plotter = Plotter(catalog)
+        chart = plotter.bar("entropy_comp", bar_config=bar_config)
+
+        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        assert "#00ff00" in scale["range"]
+
+    def test_default_score_sign_bar_uses_reinforce_offset_domain(self, catalog: Catalog) -> None:
+        """A score-sign comparison colors its bars by the reinforce/offset labels, not by corpus."""
+        plotter = Plotter(catalog)
+        chart = plotter.bar("entropy_comp")
+
+        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        assert set(scale["domain"]) == {"reinforce", "offset"}
+
+    @pytest.mark.parametrize(
+        "comparison,bad_config",
+        [
+            # Corpus-attributed measure given a sign-attribution config/keys
+            ("freq_comp", AlignmentBarConfig()),
+            ("freq_comp", {"reinforce": "#ffffff"}),
+            # Sign-attributed measure given a corpus-attribution config/keys
+            ("entropy_comp", BarConfig()),
+            ("entropy_comp", {"reference": "#ffffff"}),
+        ],
+    )
+    def test_bar_config_mismatch_raises(
+        self, catalog: Catalog, comparison: str, bad_config: object
+    ) -> None:
+        """A config or dict that doesn't match the comparison's attribution raises a ValueError."""
+        plotter = Plotter(catalog)
+        with pytest.raises(ValueError):
+            plotter.bar(comparison, bar_config=bad_config)
 
 
 class TestShift:

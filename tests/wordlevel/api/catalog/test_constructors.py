@@ -76,6 +76,7 @@ def mock_comparison_result(df_mock, freq_cols) -> ComparisonResult:
         method="test_method",
         is_weighted_avg=False,
         is_nonnegative=False,
+        attributed_by="frequency",
         parameters={},
     )
 
@@ -362,6 +363,7 @@ class TestConstructorMutation:
             method="test",
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
             parameters={},
         )
         cl_original._comparisons["new_comparison"] = new_result

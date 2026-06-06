@@ -388,7 +388,7 @@ def test_internal_bar_config_from_bar_config_has_no_orders():
     `InternalBarConfig.from_bar_config()` produces an internal config without stacking orders, since
     bar plots don't stack
     """
-    internal = InternalBarConfig.from_bar_config(None)
+    internal = InternalBarConfig.from_bar_config(None, attributed_by="frequency")
     assert internal.orders is None
     assert set(internal.colors.keys()) == {"reference", "comparison"}
 

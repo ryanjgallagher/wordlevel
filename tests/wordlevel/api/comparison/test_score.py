@@ -3,7 +3,12 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
-from wordlevel.constants import REFERENCE_ATTRIBUTION, COMPARISON_ATTRIBUTION, SCORE_COL
+from wordlevel.constants import (
+    REFERENCE_ATTRIBUTION,
+    COMPARISON_ATTRIBUTION,
+    REINFORCE_ATTRIBUTION,
+    SCORE_COL,
+)
 from wordlevel.api.comparison.comparison import Comparison
 from wordlevel.api.comparison.score import Scorer
 from wordlevel.core.utils import normalize_freqs
@@ -37,39 +42,48 @@ def test_accessing_scorer_via_comparison() -> None:
 
 class TestScoreFunctionWiring:
     @pytest.mark.parametrize(
-        "score_func,expected_method,expected_params,expected_weighted_avg",
+        "score_func,expected_method,expected_params,expected_weighted_avg,expected_attributed_by",
         [
-            (lambda s: s.rank_divergence(), "rank_divergence", ["alpha"], False),
-            (lambda s: s.frequency(), "frequency", [], False),
-            (lambda s: s.proportion(), "proportion", ["reference_score"], True),
+            (lambda s: s.rank_divergence(), "rank_divergence", ["alpha"], False, "rank"),
+            (lambda s: s.frequency(), "frequency", [], False, "frequency"),
+            (lambda s: s.proportion(), "proportion", ["reference_score"], True, "frequency"),
             (
                 lambda s: s.tsallis_entropy(),
                 "tsallis_entropy",
                 ["alpha", "base", "reference_score"],
                 True,
+                "score_sign",
             ),
             (
                 lambda s: s.kullback_leibler_divergence(),
                 "kullback_leibler_divergence",
                 ["base"],
                 True,
+                "score_sign",
             ),
             (
                 lambda s: s.jensen_shannon_divergence(),
                 "jensen_shannon_divergence",
                 ["alpha", "base", "weight_ref", "weight_cmp", "reference_score"],
                 True,
+                "frequency",
             ),
             (
                 lambda s: s.lexicon(lexicon={"the": 1.0}),
                 "lexicon",
                 ["reference_score", "impute"],
                 True,
+                "score_sign",
             ),
         ],
     )
     def test_score_function_metadata(
-        self, score_func, expected_method, expected_params, expected_weighted_avg
+        self,
+        score_func,
+        expected_method,
+        expected_params,
+        expected_weighted_avg,
+        expected_attributed_by,
     ) -> None:
         """All scoring methods return properly structured Comparison objects with correct metadata."""
         corpus1 = "freq_1990"
@@ -89,6 +103,7 @@ class TestScoreFunctionWiring:
         # Sets correct metadata fields
         assert result._method == expected_method
         assert result._is_weighted_avg == expected_weighted_avg
+        assert result._attributed_by == expected_attributed_by
         for param in expected_params:
             assert param in result._parameters
 
@@ -185,18 +200,17 @@ class TestScoreFunctionWiring:
     def test_score_sign_attribution_wiring(self, df_mock, score_func):
         """Confirm score_sign attribution is wired to the correct methods.
 
-        Checks the invariant: attribution follows the direction of the total shift.
-        If a contribution has the same sign as the total shift, it is attributed to the comparison
-        corpus. Otherwise, it is attributed to the reference corpus.
+        Checks the invariant: attribution follows the direction of the total shift. A contribution
+        with the same sign as the total shift reinforces it; otherwise it offsets it.
         """
         comparison = Comparison("ref", "cmp")
         df_result = score_func(comparison.score)._plan(df_mock, "word", "__wl_normed")
 
         total_shift_pos = df_result.select(col("comparison_score").sum() >= 0).item()
         if total_shift_pos:
-            check = (col("comparison_score") >= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
+            check = (col("comparison_score") >= 0) == (col("attribution") == REINFORCE_ATTRIBUTION)
         else:
-            check = (col("comparison_score") <= 0) == (col("attribution") == COMPARISON_ATTRIBUTION)
+            check = (col("comparison_score") <= 0) == (col("attribution") == REINFORCE_ATTRIBUTION)
 
         assert df_result.select(check.all()).item()
 
@@ -295,6 +309,7 @@ class TestAliasing:
             parameters={"param1": "value1"},
             is_weighted_avg=False,
             is_nonnegative=False,
+            attributed_by="frequency",
         )
 
         if alias is None:

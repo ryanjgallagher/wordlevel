@@ -26,6 +26,7 @@ class TestBarPlotDf:
             attribution_col="attribution",
             contribution_alias="my_contribution",
             contribution_type_alias="my_type",
+            attribution_labels=("reference", "comparison"),
             max_rank=50,
         )
 
@@ -70,6 +71,7 @@ class TestBarPlotDf:
             attribution_col="attribution",
             contribution_alias="contribution",
             contribution_type_alias="contribution_type",
+            attribution_labels=("reference", "comparison"),
             max_rank=50,
             is_nonnegative=is_nonnegative,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,

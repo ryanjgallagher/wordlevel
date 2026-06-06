@@ -14,10 +14,10 @@ from wordlevel.constants import (
     PLOT_CONTRIBUTION_TYPE_COL,
     RANK_COL,
     SCORE_COL,
-    COMPARISON_ATTRIBUTION,
     REFERENCE_ATTRIBUTION,
 )
 from wordlevel.configs import (
+    AlignmentBarConfig,
     BarConfig,
     LabelConfig,
     RankAxisConfig,
@@ -75,7 +75,7 @@ class Plotter:
         autoscale_axes: bool = True,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
-        bar_config: BarConfig | dict | None = None,
+        bar_config: BarConfig | AlignmentBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
@@ -86,16 +86,16 @@ class Plotter:
         Makes a bar chart of the top contributing tokens distinguishing two compared corpora.
 
         Bars show the contribution of each token to the overall comparison score, ordered by
-        the magnitude. Generally, bars pointing in the positive direction are attributed to the
-        comparison corpus, and bars pointing in the negative direction are attributed to the
-        reference corpus.
-
-        Warning:
-            Positive and negative contributions need to be interpreted carefully for some measures,
-            like [lexicon-weighted averages][wordlevel.api.comparison.score.Scorer.lexicon],
-            [Tsallis entropy][wordlevel.api.comparison.score.Scorer.tsallis_entropy], and
-            [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy]. For details,
-            see their scoring documentation.
+        the magnitude. How the contributions are attributed and interpreted depends on the scoring
+        measure. For frequency- and rank-based measures—such as
+        [proportions][wordlevel.api.comparison.score.Scorer.proportion] and
+        [rank-turbulence divergence][wordlevel.api.comparison.score.Scorer.rank_divergence]—each
+        token is attributed to the corpus for which it is most characteristic, i.e. which corpus it
+        appears more in. For measures where attribution is based on the sign of the
+        contribution—such as [lexicon-weighted averages][wordlevel.api.comparison.score.Scorer.lexicon]
+        and [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy]—a token's
+        contribution is interpreted in terms of whether it reinforces or offsets the difference
+        between the corpora. See the per-measure scoring documentation for details.
 
         Example:
             ```python
@@ -142,7 +142,9 @@ class Plotter:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
                 the same fields
             bar_config:
-                Configuration for the bars. Accepts a `BarConfig` or a dict with the same fields
+                Configuration for the bars. Accepts a `BarConfig`for corpus-attributed measures or
+                an `AlignmentBarConfig`for sign-attributed measures. Also accepts a dict keyed by
+                the same corresponding attribution labels
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
@@ -189,7 +191,7 @@ class Plotter:
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
             ),
-            bar_config=InternalBarConfig.from_bar_config(bar_config),
+            bar_config=InternalBarConfig.from_bar_config(bar_config, comp.attributed_by),
             label_config=label_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
@@ -437,8 +439,7 @@ class Plotter:
                 attribution_col=ATTRIBUTION_COL,
                 contribution_alias=PLOT_CONTRIBUTION_COL,
                 contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
-                reference_attribution=REFERENCE_ATTRIBUTION,
-                comparison_attribution=COMPARISON_ATTRIBUTION,
+                attribution_labels=comparison.attribution_labels,
                 max_rank=max_rank,
                 is_nonnegative=comparison.is_nonnegative,
                 split_nonnegative_by_corpus=split_nonnegative_by_corpus,

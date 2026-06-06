@@ -4,8 +4,15 @@ import polars as pl
 from typing_extensions import Self
 from dataclasses import asdict, dataclass
 
-from wordlevel.configs import BarConfig, RankAxisConfig, ScoreAxisConfig, ShiftBarConfig
+from wordlevel.configs import (
+    AlignmentBarConfig,
+    BarConfig,
+    RankAxisConfig,
+    ScoreAxisConfig,
+    ShiftBarConfig,
+)
 from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
 
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
@@ -65,14 +72,44 @@ class InternalBarConfig:
     orders: dict[str, int] | None
 
     @classmethod
-    def from_bar_config(cls, config: BarConfig | dict | None) -> Self:
+    def from_bar_config(
+        cls,
+        config: BarConfig | AlignmentBarConfig | dict | None,
+        attributed_by: ATTRIBUTION_TYPE,
+    ) -> Self:
         """
-        Creates an InternalBarConfig from a BarConfig
+        Creates an InternalBarConfig from a BarConfig or AlignmentBarConfig.
+
+        The expected config class depends on how the comparison is attributed: corpus attribution
+        (`"frequency"`, `"rank"`) uses a `BarConfig`; score-sign attribution uses an
+        `AlignmentBarConfig`. A dict keyed by the attribution labels is also accepted. A config or
+        dict that does not match the comparison's attribution raises a `ValueError`.
         """
+        expected_cls: type[BarConfig] | type[AlignmentBarConfig]
+        if attributed_by == "score_sign":
+            expected_cls = AlignmentBarConfig
+        else:
+            expected_cls = BarConfig
+
+        labels = ATTRIBUTION_LABELS[attributed_by]
+
         if config is None:
-            config = BarConfig()
+            config = expected_cls()
         elif isinstance(config, dict):
-            config = BarConfig(**config)
+            invalid_keys = set(config) - set(labels)
+            if invalid_keys:
+                raise ValueError(
+                    f"Invalid bar color key(s) {sorted(invalid_keys)} for a comparison attributed "
+                    f"by {attributed_by!r}. Valid keys are {list(labels)} (or pass a "
+                    f"{expected_cls.__name__})."
+                )
+            config = expected_cls(**config)
+        elif not isinstance(config, expected_cls):
+            raise ValueError(
+                f"A comparison attributed by {attributed_by!r} expects a {expected_cls.__name__} "
+                f"or a dict keyed by {list(labels)}, but got a {type(config).__name__}."
+            )
+
         return cls(colors=asdict(config), orders=None)
 
     @classmethod

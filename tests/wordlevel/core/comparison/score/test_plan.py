@@ -5,6 +5,7 @@ from polars import col
 from polars.testing import assert_series_equal, assert_series_not_equal
 
 from wordlevel.constants import SHIFT_SCORE_TYPES
+from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS
 from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL
 from wordlevel.core.comparison.score.plan import (
     basic_score_plan,
@@ -168,8 +169,8 @@ class TestBasicScorePlan:
                 "score_sign",
                 inverted_score_func,
                 # inverted scores = freqs_ref - freqs_cmp = [-5, 1, 3, -4]; sum = -5
-                # dynamic attribution (sign match): [comp, ref, ref, comp]
-                ["comparison", "reference", "reference", "comparison"],
+                # same sign as the total reinforces it, opposite offsets it: [reinf, off, off, reinf]
+                ["reinforce", "offset", "offset", "reinforce"],
             ),
         ],
     )
@@ -198,7 +199,9 @@ class TestBasicScorePlan:
             attribution_alias="attribution",
         )
 
-        expected = pl.Series(expected_attribution, dtype=pl.Enum(["reference", "comparison"]))
+        expected = pl.Series(
+            expected_attribution, dtype=pl.Enum(list(ATTRIBUTION_LABELS[attribute_by]))
+        )
         assert_series_equal(df_result["attribution"], expected, check_names=False)
 
 
@@ -254,14 +257,14 @@ class TestWeightedAverageScorePlan:
                 "frequency",
                 # freqs_cmp > freqs_ref -> ["comparison", "comparison"]
                 # (total scores are negative with reference_score=10, so score_sign would give
-                # ["reference", "reference"] -- proves frequency columns are wired, not score)
+                # ["offset", "offset"] -- proves frequency columns are wired, not score)
                 ["comparison", "comparison"],
             ),
             (
                 "score_sign",
                 # total scores are negative despite freqs_cmp > freqs_ref (reference_score=10
-                # dominates) -> both are "comparison" as they support the total negative shift
-                ["comparison", "comparison"],
+                # dominates); both contributions share the total's sign, so they reinforce it
+                ["reinforce", "reinforce"],
             ),
         ],
     )
@@ -283,7 +286,9 @@ class TestWeightedAverageScorePlan:
             attribution_alias="attribution",
         )
 
-        expected = pl.Series(expected_attribution, dtype=pl.Enum(["reference", "comparison"]))
+        expected = pl.Series(
+            expected_attribution, dtype=pl.Enum(list(ATTRIBUTION_LABELS[attribute_by]))
+        )
         assert_series_equal(df_result["attribution"], expected, check_names=False)
 
 
