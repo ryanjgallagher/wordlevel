@@ -763,6 +763,10 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:kullback_leibler_divergence"
             ```
 
+        Warning:
+            Using this measure forces the comparison to be evaluated eagerly rather than lazily,
+            because validating it requires computing over the full vocabulary.
+
         The contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$

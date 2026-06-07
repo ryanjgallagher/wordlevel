@@ -189,7 +189,9 @@ class Plotter:
             autoscale_axes=autoscale_axes,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
-                score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
+                score_axis,
+                all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative,
+                percent=comp.normalized,
             ),
             bar_config=InternalBarConfig.from_bar_config(bar_config, comp.attributed_by),
             label_config=label_config,
@@ -377,7 +379,9 @@ class Plotter:
             autoscale_axes=autoscale_axes,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
-                score_axis, all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative
+                score_axis,
+                all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative,
+                percent=comp.normalized,
             ),
             bar_config=InternalBarConfig.from_shift_bar_config(bar_config),
             label_config=label_config,
@@ -429,6 +433,12 @@ class Plotter:
             elif max_rank < self._plot_dfs[cache_key].max_rank:
                 return self._plot_dfs[cache_key].df.filter(col(RANK_COL) <= max_rank)
 
+        # Normalized contributions are displayed as percentages.
+        if comparison.normalized:
+            scale = 100.0
+        else:
+            scale = 1.0
+
         # Compute the dataframe if not seen in the cache
         if plot_type == "bar":
             df_plot = bar_plot_df(
@@ -443,6 +453,7 @@ class Plotter:
                 max_rank=max_rank,
                 is_nonnegative=comparison.is_nonnegative,
                 split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+                scale=scale,
             )
         elif plot_type == "shift":
             df_plot = shift_plot_df(
@@ -456,6 +467,7 @@ class Plotter:
                 max_rank=max_rank,
                 is_nonnegative=comparison.is_nonnegative,
                 split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+                scale=scale,
             )
         else:
             raise ValueError(f"The `plot_type` is not a valid value: {plot_type}")

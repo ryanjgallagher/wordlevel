@@ -7,6 +7,7 @@ from wordlevel.configs import ShiftBarConfig
 RANK_COL = "score_rank"
 SCORE_COL = "comparison_score"
 ATTRIBUTION_COL = "attribution"
+NORMALIZATION_CONSTANT_COL = "normalization_constant"
 
 PLOT_CONTRIBUTION_COL = "contribution"
 PLOT_CONTRIBUTION_TYPE_COL = "contribution_type"

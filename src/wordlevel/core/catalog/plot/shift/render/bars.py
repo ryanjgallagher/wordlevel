@@ -10,6 +10,8 @@ from wordlevel.configs import (
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
+    DEFAULT_SCORE_AXIS_TITLE,
+    PERCENT_SCORE_AXIS_TITLE,
 )
 from wordlevel.core.catalog.plot.utils import to_altair_optional
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
@@ -41,18 +43,36 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
             Whether the axis tick labels should be all positive values. Used for plotting inherently
             non-negative measures in the positive and negative direction while indicating their
             positive values
+        percent:
+            Whether the contributions are shown as percentages. When `True`, tick labels are
+            suffixed with `%` and the default axis title reflects percentages
     """
 
     all_positive_labels: bool = False
+    percent: bool = False
 
     @classmethod
-    def from_config(cls, config: ScoreAxisConfig | dict | None, all_positive_labels: bool) -> Self:
-        """ """
+    def from_config(
+        cls,
+        config: ScoreAxisConfig | dict | None,
+        all_positive_labels: bool,
+        percent: bool = False,
+    ) -> Self:
+        """
+        Resolves a user `ScoreAxisConfig` into the internal config. When contributions are shown as
+        percentages and the title is left at its default, the title reflects percentages.
+        """
         if config is None:
             config = ScoreAxisConfig()
         elif isinstance(config, dict):
             config = ScoreAxisConfig(**config)
-        return cls(**asdict(config), all_positive_labels=all_positive_labels)
+
+        config = asdict(config)
+        # Only default to the percent title if the user didn't specify it
+        if percent and config["title"] == DEFAULT_SCORE_AXIS_TITLE:
+            config["title"] = PERCENT_SCORE_AXIS_TITLE
+
+        return cls(**config, all_positive_labels=all_positive_labels, percent=percent)
 
 
 @dataclass
@@ -222,11 +242,19 @@ def shift_bars(
     else:
         score_type_orders = alt.Undefined
 
-    # Configure whether to show all positive labels on the score axis
+    # Configure the score axis tick labels: optionally force positive values (for non-negative
+    # measures shown in both directions) and optionally suffix a percent sign.
     if score_axis.all_positive_labels:
-        score_label_expr = "abs(datum.value)"
+        score_tick_label_expr = "abs(datum.value)"
     else:
-        score_label_expr = alt.Undefined
+        score_tick_label_expr = "datum.value"
+
+    if score_axis.percent:
+        score_tick_label_expr = score_tick_label_expr + " + '%'"
+    elif score_axis.all_positive_labels:
+        score_tick_label_expr = score_tick_label_expr
+    else:
+        score_tick_label_expr = alt.Undefined
 
     # Create aspects of the plot
     score_alt_axis = alt.Axis(
@@ -234,7 +262,7 @@ def shift_bars(
         titleFontSize=to_altair_optional(score_axis.title_fontsize),
         labelFontSize=to_altair_optional(score_axis.label_fontsize),
         grid=score_axis.grid,
-        labelExpr=score_label_expr,
+        labelExpr=score_tick_label_expr,
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),

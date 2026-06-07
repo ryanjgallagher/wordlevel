@@ -8,6 +8,7 @@ from wordlevel.api.catalog.plot import Plotter
 from wordlevel.configs import AlignmentBarConfig, BarConfig, ShiftBarConfig
 from wordlevel.constants import (
     RANK_COL,
+    SCORE_COL,
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
 )
@@ -220,3 +221,35 @@ class TestShift:
 
         scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
+
+
+def _score_axis_title(chart: alt.LayerChart) -> str:
+    """Extracts the score (x) axis title from the bars layer of a rendered chart."""
+    return chart.layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
+
+
+class TestNormalizedPlot:
+    """Integration of normalization with plotting: percent scaling and the percent axis title."""
+
+    @pytest.fixture
+    def normalized_catalog(self, df_mock: pl.DataFrame) -> Catalog:
+        return Catalog(df_mock, token_col="word", corpora=["freq1", "freq2"]).with_comparisons(
+            comp("freq1", "freq2").score.tsallis_entropy().alias("raw"),
+            comp("freq1", "freq2").score.tsallis_entropy().normalize("sum_abs").alias("normed"),
+        )
+
+    def test_contributions_scaled_to_percent(self, normalized_catalog: Catalog) -> None:
+        """Normalized plot contributions are the normalized scores multiplied by 100."""
+        result = normalized_catalog.comparisons["normed"]
+
+        df_plot = normalized_catalog.plot._get_plot_df(
+            comparison=result, plot_type="bar", max_rank=50
+        )
+
+        expected = 100 * result.df[SCORE_COL].abs().max()
+        assert df_plot[PLOT_CONTRIBUTION_COL].abs().max() == pytest.approx(expected)
+
+    def test_axis_title_reflects_normalization(self, normalized_catalog: Catalog) -> None:
+        """The percent flag is wired through so a normalized plot gets the percent axis title."""
+        assert _score_axis_title(normalized_catalog.plot.bar("normed")) == "Percent contribution"
+        assert _score_axis_title(normalized_catalog.plot.bar("raw")) == "Contribution"
