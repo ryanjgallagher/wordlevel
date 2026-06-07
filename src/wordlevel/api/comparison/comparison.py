@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cached_property
+from typing import get_args
 from typing_extensions import Self
 
 import polars as pl
@@ -140,6 +141,9 @@ class Comparison:
         - `"abs_sum"` divides by the absolute sum of contributions, $|\sum_\tau \delta_\tau|$. The
           normalized contributions then sum to $\pm 1$.
 
+        Normalizing again by the same strategy is a no-op; normalizing by a different strategy
+        raises an error, since the contributions are already on a normalized scale.
+
         Example:
             ```python
             --8<-- "snippets/comparison/normalization.py:setup"
@@ -163,13 +167,22 @@ class Comparison:
             ValueError:
                 If the comparison has not been scored yet (there is no scoring plan to normalize).
             ValueError:
+                If the comparison is already normalized by a different strategy.
+            ValueError:
                 If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
                 zero by construction, so the absolute sum is always zero.
         """
         if self._plan is None:
             raise ValueError("Cannot normalize a comparison before it has been scored")
-        if by not in {"sum_abs", "abs_sum"}:
-            raise ValueError(f"`by` must be one of 'sum_abs' or 'abs_sum', got {by!r}")
+        if by not in get_args(NORMALIZE_BY):
+            raise ValueError(f"`by` must be one of {get_args(NORMALIZE_BY)}, got {by!r}")
+        if self._normalized_by is not None:
+            if self._normalized_by == by:
+                return self
+            raise ValueError(
+                f"Comparison is already normalized by {self._normalized_by!r}; cannot also "
+                f"normalize by {by!r}."
+            )
         if by == "abs_sum" and self._method == "proportion":
             raise ValueError(
                 "Cannot normalize a 'proportion' comparison by 'abs_sum': proportions sum to one "

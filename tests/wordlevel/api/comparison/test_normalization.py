@@ -7,7 +7,7 @@ from polars.testing import assert_series_equal
 
 from wordlevel.api.comparison.comparison import Comparison, comp
 from wordlevel.api.comparison.score import Scorer
-from wordlevel.constants import SCORE_COL
+from wordlevel.constants import SCORE_COL, NORMALIZATION_CONSTANT_COL
 from wordlevel.core.utils import normalize_freqs
 
 
@@ -67,10 +67,18 @@ class TestNormalizeMethod:
         assert normalized._is_weighted_avg == scored._is_weighted_avg
         assert normalized._attributed_by == scored._attributed_by
 
-    def test_renormalizing_does_not_raise(self) -> None:
-        """Re-normalizing is redundant computation, not an error."""
-        twice = comp("ref", "cmp").score.proportion().normalize("sum_abs").normalize("sum_abs")
-        assert twice._normalized_by == "sum_abs"
+    def test_renormalizing_same_strategy_is_noop(self) -> None:
+        """Normalizing again by the same strategy returns the comparison unchanged."""
+        normalized = comp("ref", "cmp").score.proportion().normalize("sum_abs")
+
+        assert normalized.normalize("sum_abs") is normalized
+
+    def test_renormalizing_different_strategy_raises(self) -> None:
+        """Normalizing by a different strategy than the existing one is an error."""
+        normalized = comp("ref", "cmp").score.shannon_entropy().normalize("sum_abs")
+
+        with pytest.raises(ValueError, match="already normalized"):
+            normalized.normalize("abs_sum")
 
     def test_alias_preserves_normalized_by(self) -> None:
         """Aliasing carries the normalization state forward."""
@@ -79,6 +87,22 @@ class TestNormalizeMethod:
 
 
 class TestNormalizedPlan:
+    def test_normalization_constant_is_the_real_divisor(self, df_mock: pl.DataFrame) -> None:
+        """The constant column holds the divisor computed from the un-normalized measure scores."""
+        raw = comp("ref", "cmp").score.shannon_entropy()._plan(df_mock, "word", "__wl_normed")
+        expected = raw[SCORE_COL].abs().sum()
+
+        normalized = (
+            comp("ref", "cmp")
+            .score.shannon_entropy()
+            .normalize("sum_abs")
+            ._plan(df_mock, "word", "__wl_normed")
+            .lazy()
+            .collect()
+        )
+
+        assert normalized[NORMALIZATION_CONSTANT_COL].unique().item() == pytest.approx(expected)
+
     def test_sum_abs_equals_abs_sum_for_nonnegative_measure(self, df_mock: pl.DataFrame) -> None:
         """For an inherently non-negative measure the two strategies coincide."""
         sum_abs = (
@@ -86,12 +110,16 @@ class TestNormalizedPlan:
             .score.jensen_shannon_divergence()
             .normalize("sum_abs")
             ._plan(df_mock, "word", "__wl_normed")
+            .lazy()
+            .collect()
         )
         abs_sum = (
             comp("ref", "cmp")
             .score.jensen_shannon_divergence()
             .normalize("abs_sum")
             ._plan(df_mock, "word", "__wl_normed")
+            .lazy()
+            .collect()
         )
         assert_series_equal(sum_abs[SCORE_COL], abs_sum[SCORE_COL])
 

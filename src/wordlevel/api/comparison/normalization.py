@@ -25,23 +25,17 @@ def make_normalized_plan(base_plan: ScorePlan, by: NORMALIZE_BY) -> ScorePlan:
     """
     Wraps a scoring plan so that its token contributions are normalized by a single scalar.
 
-    The wrapped plan runs `base_plan`, then validates that the normalization constant is non-zero —
-    a divide-by-zero that depends on the data, so it can only be caught once the scores are realized
-    (mirroring the Kullback-Leibler divergence's `validated_plan`). If the constant is zero, it
-    raises; otherwise it rescales the contributions via the pure-core `normalize_scores`.
+    The wrapped plan runs `base_plan` and collects it once, then validates that the normalization
+    constant is non-zero — a divide-by-zero that depends on the data, so it can only be caught once
+    the scores are realized. If the constant is zero, it raises; otherwise it normalizes the scores.
     """
 
     def plan(
         df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
     ) -> pl.DataFrame | pl.LazyFrame:
-        df_scored = base_plan(df, token_col, normalization_suffix)
+        df_scored = base_plan(df, token_col, normalization_suffix).lazy().collect()
 
-        constant = (
-            df_scored.lazy()
-            .select(normalization_constant_expr(by, SCORE_COL).alias(NORMALIZATION_CONSTANT_COL))
-            .collect()
-            .item()
-        )
+        constant = df_scored.select(normalization_constant_expr(by, SCORE_COL)).item()
         if constant == 0:
             raise ValueError(
                 f"Cannot normalize by {by!r}: {_ZERO_CONSTANT_DESCRIPTION[by]}, so the "
@@ -49,7 +43,7 @@ def make_normalized_plan(base_plan: ScorePlan, by: NORMALIZE_BY) -> ScorePlan:
             )
 
         return normalize_scores(
-            df_scored,
+            df_scored.lazy(),
             by=by,
             score_col=SCORE_COL,
             component_cols=SHIFT_SCORE_TYPES,
