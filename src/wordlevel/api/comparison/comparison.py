@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cached_property
+from typing import get_args
 from typing_extensions import Self
 
 import polars as pl
 
 from wordlevel.api.comparison.score import Scorer, ScorePlan
+from wordlevel.api.comparison.normalization import make_normalized_plan
+from wordlevel.constants import NORMALIZATION_CONSTANT_COL
+from wordlevel.core.comparison.normalization import NORMALIZE_BY
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
 
 
@@ -31,6 +35,7 @@ class Comparison:
         self._attributed_by: ATTRIBUTION_TYPE | None = None
         self._plan: ScorePlan | None = None
         self._parameters: dict = {}
+        self._normalized_by: str | None = None
 
     @classmethod
     def _with_state(
@@ -45,6 +50,7 @@ class Comparison:
         attributed_by: ATTRIBUTION_TYPE | None = None,
         plan: ScorePlan | None = None,
         parameters: dict | None = None,
+        normalized_by: str | None = None,
     ) -> Comparison:
         """
         Constructs a `Comparison` with parameters related to its state.
@@ -69,6 +75,9 @@ class Comparison:
                 according to thes scoring method
             parameters:
                 Any parameters specfic to the scoring method when making the comparison
+            normalized_by:
+                The normalization applied to token contributions, or `None` if they are not
+                normalized
         """
         instance = cls(reference, comparison)
         instance._alias = alias
@@ -78,6 +87,7 @@ class Comparison:
         instance._attributed_by = attributed_by
         instance._plan = plan
         instance._parameters = (parameters or {}).copy()
+        instance._normalized_by = normalized_by
 
         return instance
 
@@ -115,6 +125,82 @@ class Comparison:
             attributed_by=self._attributed_by,
             plan=self._plan,
             parameters=self._parameters,
+            normalized_by=self._normalized_by,
+        )
+
+    def normalize(self, by: NORMALIZE_BY) -> Comparison:
+        r"""
+        Returns a new `Comparison` whose token contributions are normalized onto a common scale.
+
+        Each scoring measure produces a per-token contribution $\delta_\tau$. Normalization
+        rescales every contribution by a single constant so that scores become interpretable
+        and comparable across measures. There are two normalization strategies:
+
+        - `"sum_abs"` divides by the sum of absolute contributions, $\sum_\tau |\delta_\tau|$. The
+          absolute values of the normalized contributions then sum to 1.
+        - `"abs_sum"` divides by the absolute sum of contributions, $|\sum_\tau \delta_\tau|$. The
+          normalized contributions then sum to $\pm 1$.
+
+        Normalizing again by the same strategy is a no-op; normalizing by a different strategy
+        raises an error, since the contributions are already on a normalized scale.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/normalization.py:setup"
+
+            --8<-- "snippets/comparison/normalization.py:normalize"
+            ```
+
+        Warning:
+            Using this method forces the comparison to be evaluated eagerly rather than lazily,
+            because validating it requires computing the scores over the full vocabulary.
+
+        Args:
+            by:
+                The normalization strategy. `"sum_abs"` divides every token's contribution by
+                $\sum_\tau |\delta_\tau|$; `"abs_sum"` divides by $|\sum_\tau \delta_\tau|$
+
+        Returns:
+            A new `Comparison` with normalized token contributions
+
+        Raises:
+            ValueError:
+                If the comparison has not been scored yet (there is no scoring plan to normalize).
+            ValueError:
+                If the comparison is already normalized by a different strategy.
+            ValueError:
+                If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
+                zero by construction, so the absolute sum is always zero.
+        """
+        if self._plan is None:
+            raise ValueError("Cannot normalize a comparison before it has been scored")
+        if by not in get_args(NORMALIZE_BY):
+            raise ValueError(f"`by` must be one of {get_args(NORMALIZE_BY)}, got {by!r}")
+        if self._normalized_by is not None:
+            if self._normalized_by == by:
+                return self
+            raise ValueError(
+                f"Comparison is already normalized by {self._normalized_by!r}; cannot also "
+                f"normalize by {by!r}."
+            )
+        if by == "abs_sum" and self._method == "proportion":
+            raise ValueError(
+                "Cannot normalize a 'proportion' comparison by 'abs_sum': proportions sum to one "
+                "in each corpus, so the net difference is zero by construction. Use 'sum_abs' "
+                "instead."
+            )
+
+        return self._with_state(
+            reference=self._ref,
+            comparison=self._cmp,
+            alias=self._alias,
+            method=self._method,
+            is_weighted_avg=self._is_weighted_avg,
+            is_nonnegative=self._is_nonnegative,
+            attributed_by=self._attributed_by,
+            plan=make_normalized_plan(self._plan, by),
+            parameters=self._parameters,
+            normalized_by=by,
         )
 
 
@@ -175,6 +261,14 @@ class ComparisonResult:
             The pair of labels the attribution produces, determined by `attributed_by`
         parameters:
             Any parameters specfic to the scoring method when making the comparison
+        normalized:
+            Whether the token contributions have been normalized
+        normalized_by:
+            The normalization strategy applied to the token contributions, or `None` if they are not
+            normalized
+        normalization_constant:
+            The constant by which the token contributions were divided to normalize them, or `None`
+            if they are not normalized
     """
 
     _lf: pl.LazyFrame
@@ -186,6 +280,28 @@ class ComparisonResult:
     is_nonnegative: bool
     attributed_by: ATTRIBUTION_TYPE
     parameters: dict
+    normalized_by: str | None = None
+
+    @property
+    def normalized(self) -> bool:
+        """Whether the token contributions have been normalized."""
+        return self.normalized_by is not None
+
+    @property
+    def normalization_constant(self) -> float | None:
+        """
+        The constant by which the token contributions were divided to normalize them.
+
+        `None` if the contributions are not normalized.
+        """
+        if not self.normalized:
+            return None
+
+        constant = self.df[NORMALIZATION_CONSTANT_COL].first()
+        if constant is None:
+            return None
+
+        return float(constant)  # type: ignore[arg-type]
 
     @property
     def attribution_labels(self) -> tuple[str, str]:
@@ -266,4 +382,5 @@ class ComparisonResult:
             is_nonnegative=comparison._is_nonnegative,
             attributed_by=comparison._attributed_by,
             parameters=comparison._parameters.copy(),
+            normalized_by=comparison._normalized_by,
         )

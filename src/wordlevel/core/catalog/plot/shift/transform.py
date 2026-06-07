@@ -17,13 +17,15 @@ def bar_plot_df(
     max_rank: int = 50,
     is_nonnegative: bool = False,
     split_nonnegative_by_corpus: bool = True,
+    scale: float = 1.0,
 ) -> pl.DataFrame:
     """
     Builds the plot-ready dataframe for a bar plot.
 
     `attribution_labels` is the pair of attribution buckets to split contributions into. When a
     non-negative measure is split by corpus, the first bucket's contributions are directed to the
-    opposing side of the axis; otherwise each bar follows the sign of its own contribution.
+    opposing side of the axis; otherwise each bar follows the sign of its own contribution. Every
+    contribution is multiplied by `scale` (e.g. `100` to display normalized scores as percentages).
     """
     first_label, second_label = attribution_labels
 
@@ -50,6 +52,7 @@ def bar_plot_df(
             value_name=contribution_alias,
             variable_name=contribution_type_alias,
         )
+        .with_columns(col(contribution_alias) * scale)
     )
 
     return lf_plot.collect()
@@ -66,8 +69,12 @@ def shift_plot_df(
     max_rank: int = 50,
     is_nonnegative: bool = False,
     split_nonnegative_by_corpus: bool = True,
+    scale: float = 1.0,
 ) -> pl.DataFrame:
-    """ """
+    """
+    Every contribution is multiplied by `scale` (e.g. `100` to display normalized scores as
+    percentages).
+    """
     lf_plot = df.filter(col(rank_col) <= max_rank)
 
     if is_nonnegative and split_nonnegative_by_corpus:
@@ -82,6 +89,6 @@ def shift_plot_df(
         index=[token_col, rank_col],
         value_name=contribution_alias,
         variable_name=contribution_type_alias,
-    )
+    ).with_columns(col(contribution_alias) * scale)
 
     return lf_plot.collect()

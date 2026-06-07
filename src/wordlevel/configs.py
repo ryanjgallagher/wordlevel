@@ -6,6 +6,9 @@ from types import SimpleNamespace
 
 DEFAULT_LABEL_SIZE: float = 11
 
+DEFAULT_SCORE_AXIS_TITLE = "Contribution"
+PERCENT_SCORE_AXIS_TITLE = "Percent contribution"
+
 
 @dataclass
 class BarConfig:
@@ -129,7 +132,9 @@ class ScoreAxisConfig:
 
     Attributes:
         title:
-            Label for the score axis. If `None`, the title is hidden
+            Label for the score axis. Defaults to `"Contribution"`, which becomes
+            `"Percent contribution"` when the scores are shown as percentages (i.e. normalized).
+            Set a different string to override, or `None` to hide the title
         title_fontsize:
             Font size of the title, in pixels. If `None`, Altair's default is used
         label_fontsize:
@@ -138,7 +143,7 @@ class ScoreAxisConfig:
             Whether to draw gridlines along the score axis
     """
 
-    title: str | None = "Contribution"
+    title: str | None = DEFAULT_SCORE_AXIS_TITLE
     title_fontsize: float | None = None
     label_fontsize: float | None = None
     grid: bool = False

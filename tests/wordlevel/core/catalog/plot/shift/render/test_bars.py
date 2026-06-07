@@ -4,7 +4,13 @@ import pytest
 
 from polars.testing import assert_frame_equal
 
-from wordlevel.configs import RankAxisConfig, ScoreAxisConfig, ShiftBarConfig
+from wordlevel.configs import (
+    RankAxisConfig,
+    ScoreAxisConfig,
+    ShiftBarConfig,
+    DEFAULT_SCORE_AXIS_TITLE,
+    PERCENT_SCORE_AXIS_TITLE,
+)
 from wordlevel.constants import SHIFT_SCORE_TYPES
 from wordlevel.core.catalog.plot.shift.render.bars import (
     shift_bars,
@@ -255,6 +261,75 @@ def test_score_axis_all_positive_labels(
         assert score_axis["labelExpr"] == "abs(datum.value)"
     else:
         assert "labelExpr" not in score_axis
+
+
+@pytest.mark.parametrize(
+    "percent, all_positive_labels, expected_label_expr",
+    [
+        (False, False, None),
+        (False, True, "abs(datum.value)"),
+        (True, False, "datum.value + '%'"),
+        (True, True, "abs(datum.value) + '%'"),
+    ],
+)
+def test_score_axis_percent_labels(
+    make_mock_df,
+    score_col,
+    score_type_col,
+    rank_col,
+    percent,
+    all_positive_labels,
+    expected_label_expr,
+):
+    """When `percent` is set, the score-axis tick labels are suffixed with a percent sign."""
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        score_axis=InternalScoreAxisConfig(
+            all_positive_labels=all_positive_labels, percent=percent
+        ),
+    )
+
+    score_axis = chart.to_dict()["encoding"]["x"]["axis"]
+
+    if expected_label_expr is None:
+        assert "labelExpr" not in score_axis
+    else:
+        assert score_axis["labelExpr"] == expected_label_expr
+
+
+@pytest.mark.parametrize(
+    "config, percent, expected_title",
+    [
+        # The default title becomes the percent title only when shown as percentages
+        (None, False, DEFAULT_SCORE_AXIS_TITLE),
+        (None, True, PERCENT_SCORE_AXIS_TITLE),
+        # A custom title is preserved, even when shown as percentages
+        (ScoreAxisConfig(title="Custom"), True, "Custom"),
+        # An explicitly hidden title (None) stays hidden (no title rendered)
+        (ScoreAxisConfig(title=None), True, None),
+    ],
+)
+def test_score_axis_title_resolved_and_rendered(
+    make_mock_df, score_col, score_type_col, rank_col, config, percent, expected_title
+):
+    """The resolved title (percent only swaps the default) is carried through to the chart."""
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        score_axis=InternalScoreAxisConfig.from_config(
+            config, all_positive_labels=False, percent=percent
+        ),
+    )
+
+    score_axis = chart.to_dict()["encoding"]["x"]["axis"]
+    assert score_axis.get("title") == expected_title
 
 
 @pytest.mark.parametrize(

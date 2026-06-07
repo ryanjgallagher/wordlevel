@@ -2,7 +2,8 @@ import pytest
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
+from wordlevel.api.comparison.comparison import Comparison, ComparisonResult, comp
+from wordlevel.constants import NORMALIZATION_CONSTANT_COL
 
 
 # ============================================================================
@@ -440,3 +441,62 @@ class TestLabelAndSuffixWiring:
         )
 
         assert received["normalization_suffix"] == normalization_suffix
+
+
+# ============================================================================
+# TestNormalizationFields - Test the normalization attributes
+# ============================================================================
+
+
+class TestNormalizationFields:
+    """Test the `normalized`, `normalized_by`, and `normalization_constant` attributes."""
+
+    def test_unnormalized_defaults(self, df_mock, simple_plan) -> None:
+        """An unnormalized result reports no normalization and a `None` constant."""
+        result = ComparisonResult(
+            _lf=simple_plan(df_mock, "word", "__wl_normed").lazy(),
+            reference="ref",
+            comparison="cmp",
+            alias="test",
+            method="test",
+            is_weighted_avg=False,
+            is_nonnegative=False,
+            attributed_by="frequency",
+            parameters={},
+        )
+
+        assert result.normalized is False
+        assert result.normalized_by is None
+        assert result.normalization_constant is None
+
+    def test_normalized_fields_read_from_constant_column(self, df_mock) -> None:
+        """A normalized result reports its strategy and reads the constant from the frame."""
+        lf = df_mock.with_columns(pl.lit(4.0).alias(NORMALIZATION_CONSTANT_COL)).lazy()
+
+        result = ComparisonResult(
+            _lf=lf,
+            reference="ref",
+            comparison="cmp",
+            alias="test",
+            method="test",
+            is_weighted_avg=False,
+            is_nonnegative=False,
+            attributed_by="frequency",
+            parameters={},
+            normalized_by="sum_abs",
+        )
+
+        assert result.normalized is True
+        assert result.normalized_by == "sum_abs"
+        assert result.normalization_constant == 4.0
+
+    def test_from_comparison_threads_normalization(self, df_mock) -> None:
+        """`from_comparison` carries the normalization strategy and computes the constant."""
+        comparison = comp("ref", "cmp").score.proportion().normalize("sum_abs").alias("test")
+
+        result = ComparisonResult.from_comparison(
+            comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
+        )
+
+        assert result.normalized_by == "sum_abs"
+        assert result.normalization_constant is not None
