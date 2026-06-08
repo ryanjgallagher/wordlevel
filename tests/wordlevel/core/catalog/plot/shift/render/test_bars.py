@@ -113,6 +113,29 @@ def test_chart_dimensions(make_mock_df, score_col, score_type_col, rank_col, wid
         assert "height" not in chart_json
 
 
+@pytest.mark.parametrize("show_border", [True, False])
+def test_show_border(make_mock_df, score_col, score_type_col, rank_col, show_border):
+    """
+    Test that the chart serializes for both show_border values and that the view config (which
+    hides the top and right border axes) is only set when the border is not shown. Passing
+    alt.Undefined to .properties(view=...) previously raised on serialization when show_border=True.
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        show_border=show_border,
+    )
+
+    chart_json = chart.to_dict()
+
+    if show_border:
+        assert "view" not in chart_json
+    else:
+        assert chart_json["view"]["strokeWidth"] == 0
+
+
 @pytest.mark.parametrize("filter_max_rank", [True, False])
 def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filter_max_rank):
     """

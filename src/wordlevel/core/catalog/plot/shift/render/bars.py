@@ -189,12 +189,6 @@ def shift_bars(
             orders=None,
         )
 
-    # Configure whether to show all border axes, i.e. whether to hide the top and right axes
-    if show_border:
-        axes_view = alt.Undefined
-    else:
-        axes_view = alt.ViewConfig(strokeWidth=0)
-
     # Configure the legend
     if show_legend:
         legend = alt.Undefined
@@ -202,13 +196,17 @@ def shift_bars(
         # To show the legend, we overwrite that it's "undefined" according to Altair
         legend = None
 
-    # Configure the width and height. Altair does not allow these to be None or alt.Undefined.
-    # Instead, we have to unpack them from a dict (default is that they're not in the dictionary)
-    chart_size = dict()
+    # Configure the chart properties. Altair does not allow width, height, or view to be None or
+    # alt.Undefined, so we unpack them from a dict (default is that they're not in the dictionary).
+    # When show_border is True, the view config is omitted so the default border is drawn; otherwise
+    # the top and right border axes are hidden with a zero stroke width.
+    chart_params = dict()
     if width is not None:
-        chart_size["width"] = width
+        chart_params["width"] = width
     if height is not None:
-        chart_size["height"] = height
+        chart_params["height"] = height
+    if not show_border:
+        chart_params["view"] = alt.ViewConfig(strokeWidth=0)
 
     # Configure the rank axis tick values and labels
     if rank_axis.label_tick_values is not None:
@@ -292,7 +290,7 @@ def shift_bars(
         alt.Chart(df)
         .mark_bar()
         .encode(x=x_axis, y=y_axis, color=color, order=score_type_orders)
-        .properties(**chart_size, view=axes_view)
+        .properties(**chart_params)
     )
 
     return bars_chart
