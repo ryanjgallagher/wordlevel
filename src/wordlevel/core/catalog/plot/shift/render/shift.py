@@ -45,12 +45,12 @@ def shift(
         if width is None:
             width = DEFAULT_SCORE_AXIS_PIXEL_SIZE
         if height is None:
-            height = max(max_rank * DEFAULT_PIXELS_PER_RANK, DEFAULT_SCORE_AXIS_PIXEL_SIZE)
+            height = max_rank * DEFAULT_PIXELS_PER_RANK
     else:
         if height is None:
             height = DEFAULT_SCORE_AXIS_PIXEL_SIZE
         if width is None:
-            width = max(max_rank * DEFAULT_PIXELS_PER_RANK, DEFAULT_SCORE_AXIS_PIXEL_SIZE)
+            width = max_rank * DEFAULT_PIXELS_PER_RANK
 
     bars = shift_bars(
         df,

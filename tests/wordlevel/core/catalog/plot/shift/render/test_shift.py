@@ -72,7 +72,7 @@ def test_shift_default_dimensions(
     )
 
     spec = chart.to_dict()
-    expected_long = max(max_rank * DEFAULT_PIXELS_PER_RANK, DEFAULT_SCORE_AXIS_PIXEL_SIZE)
+    expected_long = max_rank * DEFAULT_PIXELS_PER_RANK
 
     if vertical:
         assert spec["width"] == DEFAULT_SCORE_AXIS_PIXEL_SIZE
