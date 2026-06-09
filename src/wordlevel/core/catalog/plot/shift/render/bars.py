@@ -317,8 +317,12 @@ def shift_bars(
         labelExpr=score_tick_label_expr,
         grid=score_axis.grid,
         gridColor=to_altair_optional(score_axis.grid_color),
-        domainColor=to_altair_optional(border.color),
-        tickColor=to_altair_optional(border.color),
+        domainColor=to_altair_optional(
+            score_axis.axis_color if score_axis.axis_color is not None else border.color
+        ),
+        tickColor=to_altair_optional(
+            score_axis.tick_color if score_axis.tick_color is not None else border.color
+        ),
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
@@ -330,8 +334,12 @@ def shift_bars(
         labelAngle=rank_label_rotation,
         grid=rank_axis.grid,
         gridColor=to_altair_optional(rank_axis.grid_color),
-        domainColor=to_altair_optional(border.color),
-        tickColor=to_altair_optional(border.color),
+        domainColor=to_altair_optional(
+            rank_axis.axis_color if rank_axis.axis_color is not None else border.color
+        ),
+        tickColor=to_altair_optional(
+            rank_axis.tick_color if rank_axis.tick_color is not None else border.color
+        ),
     )
     rank_alt_scale = alt.Scale(
         paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding

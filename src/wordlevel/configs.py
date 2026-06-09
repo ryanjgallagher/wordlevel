@@ -147,6 +147,11 @@ class ScoreAxisConfig:
             Whether to draw grid lines along the score axis
         grid_color:
             Color of the grid lines
+        axis_color:
+            Color of the axis line. If not `None`, overrides `BorderConfig.color`
+        tick_color:
+            Color of the axis ticks. For the color of the tick labels, see `label_color`. If not
+            `None`, overrides `BorderConfig.color`
     """
 
     title: str | None = DEFAULT_SCORE_AXIS_TITLE
@@ -156,6 +161,8 @@ class ScoreAxisConfig:
     label_fontsize: float | None = None
     grid: bool = False
     grid_color: str | None = None
+    axis_color: str | None = None
+    tick_color: str | None = None
 
 
 @dataclass
@@ -202,6 +209,11 @@ class RankAxisConfig:
             Whether to draw grid lines along the rank axis
         grid_color:
             Color of the grid lines
+        axis_color:
+            Color of the axis line. If not `None`, overrides `BorderConfig.color`
+        tick_color:
+            Color of the axis ticks. For the color of the tick labels, see `label_color`. If not
+            `None`, overrides `BorderConfig.color`
     """
 
     rank_size: float = 14
@@ -217,6 +229,8 @@ class RankAxisConfig:
     label_first_tick: bool = True
     grid: bool = True
     grid_color: str | None = None
+    axis_color: str | None = None
+    tick_color: str | None = None
 
 
 @dataclass
