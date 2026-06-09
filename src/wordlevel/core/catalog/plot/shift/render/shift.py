@@ -3,7 +3,7 @@ from typing import cast
 import altair as alt
 import polars as pl
 
-from wordlevel.configs import LabelConfig, RankAxisConfig
+from wordlevel.configs import BorderConfig, LabelConfig, RankAxisConfig
 from wordlevel.core.catalog.plot.shift.render.bars import (
     shift_bars,
     InternalScoreAxisConfig,
@@ -31,9 +31,9 @@ def shift(
     score_axis: InternalScoreAxisConfig | dict | None = None,
     bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
+    border_config: BorderConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,
-    show_border: bool = False,
 ) -> alt.LayerChart:
     """
     Makes a word shift plot of the top contributing tokens distinguishing two corpora.
@@ -75,13 +75,13 @@ def shift(
             Configuration for the bars
         label_config:
             Configuration for the bar labels
+        border_config:
+            Configuration for the axes and border
         scale_factor:
             Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
             provides more space for the bar labels
         show_legend:
             Whether to show the chart legend
-        show_border:
-            Whether to draw a border around the chart
 
     Returns:
         An Altair chart of the word shift plot
@@ -113,8 +113,8 @@ def shift(
         rank_axis=rank_axis,
         score_axis=score_axis,
         bars=bar_config,
+        border=border_config,
         show_legend=show_legend,
-        show_border=show_border,
         **size_param,
     )
 

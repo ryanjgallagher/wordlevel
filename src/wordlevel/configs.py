@@ -241,3 +241,20 @@ class LabelConfig:
     mirror_rotation: bool = True
     on_bar_ends: bool = True
     font_width_to_height_ratio: float = 0.6
+
+
+@dataclass
+class BorderConfig:
+    """
+    Configuration for the border of the entire chart, regardless of axis
+
+    Attributes:
+        color:
+            Color of the axes, border, and tick marks
+        width:
+            Width of the border, in pixels. `0` draws no borders. Does not affect the main axes
+            or ticks
+    """
+
+    color: str | None = None
+    width: float = 0

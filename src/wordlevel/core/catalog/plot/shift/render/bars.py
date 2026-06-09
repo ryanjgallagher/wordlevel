@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 from wordlevel.configs import (
     AlignmentBarConfig,
     BarConfig,
+    BorderConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
@@ -158,8 +159,8 @@ def shift_bars(
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
     bars: InternalBarConfig | None = None,
+    border: BorderConfig | dict | None = None,
     show_legend: bool = False,
-    show_border: bool = False,
 ) -> alt.Chart:
     """
     Makes the bar chart layer of a word shift plot
@@ -194,12 +195,12 @@ def shift_bars(
             Configuration for the rank axis
         score_axis:
             Configuration for the score axis
-        bar_config:
+        bars:
             Configuration for the bars
+        border:
+            Configuration for the axes and border
         show_legend:
             Whether to show the chart legend
-        show_border:
-            Whether to draw a border around the chart
 
     Returns:
         An Altair chart of the bar graph layer
@@ -250,10 +251,15 @@ def shift_bars(
         if height is not None:
             chart_params["height"] = height
 
-    # When show_border is True, the view config is omitted so the default border is drawn; otherwise
-    # the top and right border axes are hidden with a zero stroke width.
-    if not show_border:
-        chart_params["view"] = alt.ViewConfig(strokeWidth=0)
+    # Configure the border
+    if isinstance(border, dict):
+        border = BorderConfig(**border)
+    elif border is None:
+        border = BorderConfig()
+
+    chart_params["view"] = alt.ViewConfig(
+        stroke=to_altair_optional(border.color), strokeWidth=border.width
+    )
 
     # Configure the rank axis tick values and labels
     if rank_axis.label_tick_values is not None:
@@ -308,6 +314,8 @@ def shift_bars(
         labelFontSize=to_altair_optional(score_axis.label_fontsize),
         grid=score_axis.grid,
         labelExpr=score_tick_label_expr,
+        domainColor=to_altair_optional(border.color),
+        tickColor=to_altair_optional(border.color),
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
@@ -316,6 +324,8 @@ def shift_bars(
         labelAngle=rank_label_rotation,
         grid=rank_axis.grid,
         values=rank_tick_values,
+        domainColor=to_altair_optional(border.color),
+        tickColor=to_altair_optional(border.color),
     )
     rank_alt_scale = alt.Scale(
         paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding

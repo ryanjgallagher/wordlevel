@@ -5,6 +5,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    BorderConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
@@ -165,27 +166,51 @@ def test_score_dimension_absent_when_unset(
         assert "height" not in spec
 
 
-@pytest.mark.parametrize("show_border", [True, False])
-def test_show_border(make_mock_df, score_col, score_type_col, rank_col, show_border):
+@pytest.mark.parametrize(
+    "border, expected_color, expected_width",
+    [
+        (None, None, 0),  # default: no box, axes left at the chart default color
+        (BorderConfig(), None, 0),
+        (BorderConfig(color="black", width=1), "black", 1),  # black box and black axes/ticks
+        (BorderConfig(color="black"), "black", 0),  # colored axes/ticks, but no box (width 0)
+        ({"color": "red", "width": 2}, "red", 2),  # dict form is accepted
+    ],
+)
+def test_border_config(
+    make_mock_df, score_col, score_type_col, rank_col, border, expected_color, expected_width
+):
     """
-    Test that the chart serializes for both show_border values and that the view config (which
-    hides the top and right border axes) is only set when the border is not shown. Passing
-    alt.Undefined to .properties(view=...) previously raised on serialization when show_border=True.
+    BorderConfig controls both the view-border stroke (color + width) and the shared axis line and
+    tick color. width=0 draws no box, but the color still applies to the axis domain and ticks.
     """
     chart = shift_bars(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
         score_type_col=score_type_col,
-        show_border=show_border,
+        vertical=True,
+        border=border,
     )
 
-    chart_json = chart.to_dict()
+    spec = chart.to_dict()
 
-    if show_border:
-        assert "view" not in chart_json
+    # The view border: width always set; stroke color only when a color is given
+    view = spec["view"]
+    assert view["strokeWidth"] == expected_width
+    if expected_color is None:
+        assert "stroke" not in view
     else:
-        assert chart_json["view"]["strokeWidth"] == 0
+        assert view["stroke"] == expected_color
+
+    # The axis line and tick marks share the border color on both axes
+    for axis_channel in ("x", "y"):
+        axis = spec["encoding"][axis_channel]["axis"]
+        if expected_color is None:
+            assert "domainColor" not in axis
+            assert "tickColor" not in axis
+        else:
+            assert axis["domainColor"] == expected_color
+            assert axis["tickColor"] == expected_color
 
 
 @pytest.mark.parametrize("filter_max_rank", [True, False])
