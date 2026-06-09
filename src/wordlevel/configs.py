@@ -135,18 +135,27 @@ class ScoreAxisConfig:
             Label for the score axis. Defaults to `"Contribution"`, which becomes
             `"Percent contribution"` when the scores are shown as percentages (i.e. normalized).
             Set a different string to override, or `None` to hide the title
+        title_color:
+            Color of the title. If `None`, Altair's default is used
         title_fontsize:
             Font size of the title, in pixels. If `None`, Altair's default is used
+        label_color:
+            Color of the axis tick labels. If `None`, Altair's default is used
         label_fontsize:
             Font size of the axis tick labels, in pixels. If `None`, Altair's default is used
         grid:
-            Whether to draw gridlines along the score axis
+            Whether to draw grid lines along the score axis
+        grid_color:
+            Color of the grid lines
     """
 
     title: str | None = DEFAULT_SCORE_AXIS_TITLE
+    title_color: str | None = None
     title_fontsize: float | None = None
+    label_color: str | None = None
     label_fontsize: float | None = None
     grid: bool = False
+    grid_color: str | None = None
 
 
 @dataclass
@@ -171,8 +180,12 @@ class RankAxisConfig:
             added to the ends of the rank axis
         title:
             Label for the rank axis. If `None`, the title is hidden
+        title_color:
+            Color of the title. If `None`, Altair's default is used
         title_fontsize:
             Font size of the title, in pixels. If `None`, Altair's default is used
+        label_color:
+            Color of the axis tick labels. If `None`, Altair's default is used
         label_fontsize:
             Font size of the axis tick labels, in pixels. If `None`, Altair's default is used
         label_tick_values:
@@ -186,19 +199,24 @@ class RankAxisConfig:
             `label_tick_step`. Has no effect when `label_tick_step` is `1` or when
             `label_tick_values` is set
         grid:
-            Whether to draw gridlines along the rank axis
+            Whether to draw grid lines along the rank axis
+        grid_color:
+            Color of the grid lines
     """
 
     rank_size: float = 14
     bar_padding: float = 0.1
     axis_padding: float = 0.5
     title: str | None = "Rank"
+    title_color: str | None = None
     title_fontsize: float | None = None
+    label_color: str | None = None
     label_fontsize: float | None = None
     label_tick_values: list[int] | None = None
     label_tick_step: int | None = 5
     label_first_tick: bool = True
     grid: bool = True
+    grid_color: str | None = None
 
 
 @dataclass
@@ -250,10 +268,9 @@ class BorderConfig:
 
     Attributes:
         color:
-            Color of the axes, border, and tick marks
+            Color of the axes, border, and tick marks. If None, falls back to the Altair defaults
         width:
-            Width of the border, in pixels. `0` draws no borders. Does not affect the main axes
-            or ticks
+            Width of the border, in pixels. `0` draws no borders, but does not affect the main axes
     """
 
     color: str | None = None

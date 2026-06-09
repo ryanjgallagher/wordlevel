@@ -310,20 +310,26 @@ def shift_bars(
     # Create aspects of the plot
     score_alt_axis = alt.Axis(
         title=to_altair_optional(score_axis.title),
+        titleColor=to_altair_optional(score_axis.title_color),
         titleFontSize=to_altair_optional(score_axis.title_fontsize),
+        labelColor=to_altair_optional(score_axis.label_color),
         labelFontSize=to_altair_optional(score_axis.label_fontsize),
-        grid=score_axis.grid,
         labelExpr=score_tick_label_expr,
+        grid=score_axis.grid,
+        gridColor=to_altair_optional(score_axis.grid_color),
         domainColor=to_altair_optional(border.color),
         tickColor=to_altair_optional(border.color),
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
+        titleColor=to_altair_optional(rank_axis.title_color),
         titleFontSize=to_altair_optional(rank_axis.title_fontsize),
+        labelColor=to_altair_optional(rank_axis.label_color),
         labelFontSize=to_altair_optional(rank_axis.label_fontsize),
+        values=rank_tick_values,
         labelAngle=rank_label_rotation,
         grid=rank_axis.grid,
-        values=rank_tick_values,
+        gridColor=to_altair_optional(rank_axis.grid_color),
         domainColor=to_altair_optional(border.color),
         tickColor=to_altair_optional(border.color),
     )

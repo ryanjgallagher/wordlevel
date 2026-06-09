@@ -336,6 +336,62 @@ def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col)
     assert score_axis["grid"] == score_config.grid
 
 
+@pytest.mark.parametrize(
+    "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
+)
+def test_axis_text_and_grid_colors(
+    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+):
+    """
+    label_color, title_color, and grid_color on the rank/score axis configs pass through to the
+    corresponding alt.Axis keys. These are the per-axis text/gridline colors, distinct from the
+    structural stroke color set by BorderConfig (domainColor/tickColor).
+    """
+    config = axis_config_cls(label_color="#111111", title_color="#222222", grid_color="#333333")
+
+    kwargs = {"rank_axis": config} if channel == "y" else {"score_axis": config}
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        **kwargs,
+    )
+
+    axis = chart.to_dict()["encoding"][channel]["axis"]
+    assert axis["labelColor"] == "#111111"
+    assert axis["titleColor"] == "#222222"
+    assert axis["gridColor"] == "#333333"
+
+
+@pytest.mark.parametrize(
+    "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
+)
+def test_axis_colors_absent_by_default(
+    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+):
+    """
+    When the per-axis colors are left at their default (None), the corresponding keys are not
+    emitted, so Altair falls back to its own defaults.
+    """
+    kwargs = (
+        {"rank_axis": axis_config_cls()} if channel == "y" else {"score_axis": axis_config_cls()}
+    )
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        **kwargs,
+    )
+
+    axis = chart.to_dict()["encoding"][channel]["axis"]
+    for key in ("labelColor", "titleColor", "gridColor"):
+        assert key not in axis
+
+
 @pytest.mark.parametrize("all_positive_labels", [True, False])
 def test_score_axis_all_positive_labels(
     make_mock_df, score_col, score_type_col, rank_col, all_positive_labels
