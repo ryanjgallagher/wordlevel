@@ -162,8 +162,47 @@ def shift_bars(
     show_border: bool = False,
 ) -> alt.Chart:
     """
-    Assumes a dataframe which has one row per word per type of contribution. There should be columns
-    for the contribution, contribution type, and rank
+    Makes the bar chart layer of a word shift plot
+
+    Args:
+        df:
+            A long dataframe with one row per token per type of score to plot. For example, if a
+            token has two contributing components `more_of_positive` and `higher_score`, then it
+            should have two rows, where the `score_col` indicates the length of each
+        score_col:
+            Column in the dataframe indicating the "score" associated with each bar, i.e. its length
+        rank_col:
+            Column in the dataframe indicating the rank of each token, taking into account all of
+            its contributing scores
+        score_type_col:
+            Column in the dataframe indicating the type of "score" associated with each bar
+        max_rank:
+            The maximum number of top-contributing tokens to display
+        filter_max_rank:
+            Whether to filter by the `max_rank` or ignore the parameter
+        vertical:
+            Whether to orient the chart vertically, where tokens are listed top-to-bottom and
+            bars extend horizontally. If `False`, tokens are listed left-to-right and bars
+            extend vertically
+        height:
+            The height of the chart, in pixels. Ignored if `vertical`, see
+            `RankAxisConfig.rank_size` to control the height
+        width:
+            The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
+            `RankAxisConfig.rank_size` to control the width
+        rank_axis:
+            Configuration for the rank axis
+        score_axis:
+            Configuration for the score axis
+        bar_config:
+            Configuration for the bars
+        show_legend:
+            Whether to show the chart legend
+        show_border:
+            Whether to draw a border around the chart
+
+    Returns:
+        An Altair chart of the bar graph layer
     """
     # Filter the dataframe to the top N rows
     if filter_max_rank:
@@ -196,15 +235,23 @@ def shift_bars(
         # To show the legend, we overwrite that it's "undefined" according to Altair
         legend = None
 
-    # Configure the chart properties. Altair does not allow width, height, or view to be None or
-    # alt.Undefined, so we unpack them from a dict (default is that they're not in the dictionary).
+    # Configure the chart size. We always use `rank_axis.rank_size` to control the size of the bars,
+    # implicitly controlling the size of the whole rank axis. If the corresponding dimension param
+    # is passed, it is ignored
+    # For the configurable dimension, Altair does not allow them to be None or alt.Undefined, so we
+    # unpack them from a dict (default is that they're not in the dictionary).
+    chart_params = dict()
+    if vertical:
+        chart_params["height"] = alt.Step(rank_axis.rank_size)
+        if width is not None:
+            chart_params["width"] = width
+    else:
+        chart_params["width"] = alt.Step(rank_axis.rank_size)
+        if height is not None:
+            chart_params["height"] = height
+
     # When show_border is True, the view config is omitted so the default border is drawn; otherwise
     # the top and right border axes are hidden with a zero stroke width.
-    chart_params = dict()
-    if width is not None:
-        chart_params["width"] = width
-    if height is not None:
-        chart_params["height"] = height
     if not show_border:
         chart_params["view"] = alt.ViewConfig(strokeWidth=0)
 

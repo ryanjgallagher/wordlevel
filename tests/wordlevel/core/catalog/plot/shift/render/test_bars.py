@@ -86,31 +86,83 @@ def test_chart_orientation(make_mock_df, score_col, score_type_col, rank_col, ve
         assert encoding["y"]["field"] == score_col
 
 
-@pytest.mark.parametrize("width, height", [(800, 600), (None, 500), (300, None), (None, None)])
-def test_chart_dimensions(make_mock_df, score_col, score_type_col, rank_col, width, height):
+@pytest.mark.parametrize("vertical", [True, False])
+@pytest.mark.parametrize("rank_size", [10, 14, 25])
+def test_rank_dimension_from_rank_size(
+    make_mock_df, score_col, score_type_col, rank_col, vertical, rank_size
+):
     """
-    Test that width and height are specified correctly
+    The rank-axis dimension (height when vertical, width when horizontal) is an alt.Step derived
+    from RankAxisConfig.rank_size, so each rank occupies a fixed size regardless of bar count.
     """
     chart = shift_bars(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
         score_type_col=score_type_col,
-        width=width,
-        height=height,
+        vertical=vertical,
+        rank_axis=RankAxisConfig(rank_size=rank_size),
     )
 
-    chart_json = chart.to_dict()
+    spec = chart.to_dict()
+    rank_dim = "height" if vertical else "width"
+    assert spec[rank_dim] == {"step": rank_size}
 
-    if width is not None:
-        assert chart_json["width"] == width
-    else:
-        assert "width" not in chart_json
 
-    if height is not None:
-        assert chart_json["height"] == height
+@pytest.mark.parametrize("vertical", [True, False])
+def test_rank_dimension_ignores_explicit_size(
+    make_mock_df, score_col, score_type_col, rank_col, vertical
+):
+    """
+    The rank-axis dimension always comes from rank_size, so an explicit pixel size passed for that
+    axis (height when vertical, width when horizontal) is ignored. The score-axis dimension in the
+    other direction is still honored.
+    """
+    rank_size = RankAxisConfig().rank_size
+
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=vertical,
+        height=999,
+        width=777,
+    )
+
+    spec = chart.to_dict()
+    if vertical:
+        assert spec["height"] == {"step": rank_size}  # explicit height ignored
+        assert spec["width"] == 777  # score-axis width honored
     else:
-        assert "height" not in chart_json
+        assert spec["width"] == {"step": rank_size}  # explicit width ignored
+        assert spec["height"] == 999  # score-axis height honored
+
+
+@pytest.mark.parametrize("vertical", [True, False])
+def test_score_dimension_absent_when_unset(
+    make_mock_df, score_col, score_type_col, rank_col, vertical
+):
+    """
+    When the score-axis dimension is not given it is left out of the spec, while the rank-axis
+    dimension is still the rank_size Step.
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=vertical,
+    )
+
+    spec = chart.to_dict()
+    rank_size = RankAxisConfig().rank_size
+    if vertical:
+        assert spec["height"] == {"step": rank_size}
+        assert "width" not in spec
+    else:
+        assert spec["width"] == {"step": rank_size}
+        assert "height" not in spec
 
 
 @pytest.mark.parametrize("show_border", [True, False])

@@ -157,6 +157,9 @@ class RankAxisConfig:
     The rank axis is the axis along which tokens are listed in order of contribution.
 
     Attributes:
+        rank_size:
+            The amount of space, in pixels, that each rank occupies. This implicitly controls the
+            height/width of the plot, depending on whether it is vertical/horizontal respectively
         title:
             Label for the rank axis. If `None`, the title is hidden
         title_fontsize:
@@ -177,6 +180,7 @@ class RankAxisConfig:
             Whether to draw gridlines along the rank axis
     """
 
+    rank_size: float = 14
     title: str | None = "Rank"
     title_fontsize: float | None = None
     label_fontsize: float | None = None

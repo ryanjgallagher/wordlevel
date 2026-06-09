@@ -4,7 +4,6 @@ import altair as alt
 from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftBarConfig
 from wordlevel.core.catalog.plot.shift.render.shift import (
     shift,
-    DEFAULT_PIXELS_PER_RANK,
     DEFAULT_SCORE_AXIS_PIXEL_SIZE,
 )
 from wordlevel.core.catalog.plot.shift.render.bars import (
@@ -52,34 +51,89 @@ def test_shift_autoscale_toggle(
         assert isinstance(chart.layer[2], alt.LayerChart)
 
 
-@pytest.mark.parametrize("max_rank", [10, 50])
 @pytest.mark.parametrize("vertical", [True, False])
 def test_shift_default_dimensions(
-    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical, max_rank
+    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
 ):
     """
-    Check that default width and height are computed from max_rank and vertical orientation
-    when not explicitly provided
+    The score-axis dimension defaults to DEFAULT_SCORE_AXIS_PIXEL_SIZE; the rank-axis dimension is
+    the per-rank rank_size Step, so it scales per-rank rather than by total chart size.
     """
     chart = shift(
-        make_mock_df(n=max_rank),
+        make_mock_df(n=50),
         score_col=score_col,
         rank_col=rank_col,
         token_col=token_col,
         score_type_col=score_type_col,
-        max_rank=max_rank,
+        max_rank=50,
         vertical=vertical,
     )
 
     spec = chart.to_dict()
-    expected_long = max_rank * DEFAULT_PIXELS_PER_RANK
+    rank_step = {"step": RankAxisConfig().rank_size}
 
     if vertical:
         assert spec["width"] == DEFAULT_SCORE_AXIS_PIXEL_SIZE
-        assert spec["height"] == expected_long
+        assert spec["height"] == rank_step
     else:
         assert spec["height"] == DEFAULT_SCORE_AXIS_PIXEL_SIZE
-        assert spec["width"] == expected_long
+        assert spec["width"] == rank_step
+
+
+@pytest.mark.parametrize("vertical", [True, False])
+@pytest.mark.parametrize("rank_size", [8, 20])
+def test_shift_rank_size_controls_rank_dimension(
+    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical, rank_size
+):
+    """
+    RankAxisConfig.rank_size sets the per-rank Step on the rank-axis dimension (height when
+    vertical, width when horizontal) and flows through `shift`.
+    """
+    chart = shift(
+        make_mock_df(n=50),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        score_type_col=score_type_col,
+        max_rank=50,
+        vertical=vertical,
+        rank_axis=RankAxisConfig(rank_size=rank_size),
+    )
+
+    spec = chart.to_dict()
+    rank_dim = "height" if vertical else "width"
+    assert spec[rank_dim] == {"step": rank_size}
+
+
+@pytest.mark.parametrize("vertical", [True, False])
+def test_shift_ignores_rank_axis_pixel_size(
+    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+):
+    """
+    An explicit pixel size for the rank-axis dimension is ignored: `height` when vertical, `width`
+    when horizontal (that dimension stays the rank_size Step). The score-axis dimension is honored.
+    """
+    chart = shift(
+        make_mock_df(n=50),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        score_type_col=score_type_col,
+        max_rank=50,
+        vertical=vertical,
+        height=999,
+        width=777,
+    )
+
+    spec = chart.to_dict()
+    rank_step = {"step": RankAxisConfig().rank_size}
+
+    if vertical:
+        assert spec["height"] == rank_step  # explicit height ignored
+        assert spec["width"] == 777  # explicit width honored (score axis)
+    else:
+        assert spec["width"] == rank_step  # explicit width ignored
+        assert spec["height"] == 999  # explicit height honored (score axis)
 
 
 @pytest.mark.parametrize("max_rank", [11, 40])
