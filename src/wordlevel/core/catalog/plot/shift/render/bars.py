@@ -317,6 +317,9 @@ def shift_bars(
         grid=rank_axis.grid,
         values=rank_tick_values,
     )
+    rank_alt_scale = alt.Scale(
+        paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding
+    )
 
     color = alt.Color(
         f"{score_type_col}:N",
@@ -327,9 +330,9 @@ def shift_bars(
     # Configure the orientation
     if vertical:
         x_axis = alt.X(score_col, axis=score_alt_axis)
-        y_axis = alt.Y(f"{rank_col}:O", axis=rank_alt_axis)
+        y_axis = alt.Y(f"{rank_col}:O", axis=rank_alt_axis, scale=rank_alt_scale)
     else:
-        x_axis = alt.X(f"{rank_col}:O", axis=rank_alt_axis)
+        x_axis = alt.X(f"{rank_col}:O", axis=rank_alt_axis, scale=rank_alt_scale)
         y_axis = alt.Y(score_col, axis=score_alt_axis)
 
     # Create chart layer

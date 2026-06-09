@@ -158,8 +158,17 @@ class RankAxisConfig:
 
     Attributes:
         rank_size:
-            The amount of space, in pixels, that each rank occupies. This implicitly controls the
+            Amount of space, in pixels, that each rank occupies. This implicitly controls the
             height/width of the plot, depending on whether it is vertical/horizontal respectively
+        bar_padding:
+            Amount of space, given to padding between bars, as a fraction between 0 and 1. When `0`,
+            the bars touch; when close to `1`, most of the visual space is padding (not bars). The
+            bar thickness is `rank_size * (1 - bar_padding)`
+        axis_padding:
+            Amount of space given to adding space between the first and last bar and the axis.
+            The space is a fraction between 0 and 1 of the `rank_size`. When `0`, the first and last
+            bar sit flush against the rank axis; when `1`, padding equivalent to `rank_size` is
+            added to the ends of the rank axis
         title:
             Label for the rank axis. If `None`, the title is hidden
         title_fontsize:
@@ -181,6 +190,8 @@ class RankAxisConfig:
     """
 
     rank_size: float = 14
+    bar_padding: float = 0.1
+    axis_padding: float = 0.5
     title: str | None = "Rank"
     title_fontsize: float | None = None
     label_fontsize: float | None = None
