@@ -282,9 +282,30 @@ class BorderConfig:
 
     Attributes:
         color:
-            Color of the axes, border, and tick marks. If None, falls back to the Altair defaults
+            Color of the axes, tick marks, border, and zero line. Defaults to `"#888"` (Altair's
+            default axis grey)
         width:
             Width of the border, in pixels. `0` draws no borders, but does not affect the main axes
+    """
+
+    color: str | None = "#888"
+    width: float = 0
+
+
+@dataclass
+class ZeroLineConfig:
+    """
+    Configuration for the zero line drawn at the score-axis origin.
+
+    The zero line is a reference rule at a contribution of `0`, spanning the rank axis (running
+    vertically through a vertical chart, horizontally through a horizontal one).
+
+    Attributes:
+        color:
+            Color of the zero line. If `None`, falls back to `BorderConfig.color` so the line
+            matches the chart frame
+        width:
+            Width of the zero line, in pixels. `0` draws no line
     """
 
     color: str | None = None

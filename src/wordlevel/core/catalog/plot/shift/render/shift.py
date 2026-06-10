@@ -3,7 +3,7 @@ from typing import cast
 import altair as alt
 import polars as pl
 
-from wordlevel.configs import BorderConfig, LabelConfig, RankAxisConfig
+from wordlevel.configs import BorderConfig, LabelConfig, RankAxisConfig, ZeroLineConfig
 from wordlevel.core.catalog.plot.shift.render.bars import (
     shift_bars,
     InternalScoreAxisConfig,
@@ -11,9 +11,40 @@ from wordlevel.core.catalog.plot.shift.render.bars import (
 )
 from wordlevel.core.catalog.plot.shift.render.labels import shift_labels
 from wordlevel.core.catalog.plot.shift.render.scales import shift_scales
+from wordlevel.core.catalog.plot.utils import to_altair_optional
 
 
 DEFAULT_SCORE_AXIS_PIXEL_SIZE = 400
+
+
+def zero_line(
+    config: ZeroLineConfig | dict | None = None,
+    border: BorderConfig | dict | None = None,
+    vertical: bool = True,
+) -> alt.Chart:
+    """
+    Plots a guide line at `0` on the score axis.
+
+    The line's color comes from `config`, falling back to `border` so it matches the chart frame
+    when not set. A width of `0` (the default) draws no visible line.
+    """
+    if isinstance(config, dict):
+        config = ZeroLineConfig(**config)
+    elif config is None:
+        config = ZeroLineConfig()
+
+    if isinstance(border, dict):
+        border = BorderConfig(**border)
+    elif border is None:
+        border = BorderConfig()
+
+    color = config.color if config.color is not None else border.color
+    rule = alt.Chart().mark_rule(color=to_altair_optional(color), strokeWidth=config.width)
+
+    if vertical:
+        return rule.encode(x=alt.datum(0))
+    else:
+        return rule.encode(y=alt.datum(0))
 
 
 def shift(
@@ -32,6 +63,7 @@ def shift(
     bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
     border_config: BorderConfig | dict | None = None,
+    zero_line_config: ZeroLineConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,
 ) -> alt.LayerChart:
@@ -77,6 +109,8 @@ def shift(
             Configuration for the bar labels
         border_config:
             Configuration for the axes and border
+        zero_line_config:
+            Configuration for the zero line at the score-axis origin
         scale_factor:
             Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
             provides more space for the bar labels
@@ -146,5 +180,8 @@ def shift(
         )
 
         chart_layers.append(scales)
+
+    zero_rule = zero_line(zero_line_config, border_config, vertical=vertical)
+    chart_layers.append(zero_rule)
 
     return cast(alt.LayerChart, alt.layer(*chart_layers))

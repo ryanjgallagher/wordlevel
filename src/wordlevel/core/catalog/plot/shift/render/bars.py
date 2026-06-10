@@ -308,6 +308,8 @@ def shift_bars(
         score_tick_label_expr = alt.Undefined
 
     # Create aspects of the plot
+    # translate=0 removes Altair's default half-pixel axis nudge so the axis ticks and gridlines
+    # align exactly with the bars and the zero line
     score_alt_axis = alt.Axis(
         title=to_altair_optional(score_axis.title),
         titleColor=to_altair_optional(score_axis.title_color),
@@ -323,6 +325,7 @@ def shift_bars(
         tickColor=to_altair_optional(
             score_axis.tick_color if score_axis.tick_color is not None else border.color
         ),
+        translate=0,
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
@@ -340,6 +343,7 @@ def shift_bars(
         tickColor=to_altair_optional(
             rank_axis.tick_color if rank_axis.tick_color is not None else border.color
         ),
+        translate=0,
     )
     rank_alt_scale = alt.Scale(
         paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding

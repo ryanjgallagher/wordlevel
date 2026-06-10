@@ -24,6 +24,7 @@ from wordlevel.configs import (
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
+    ZeroLineConfig,
 )
 from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
 from wordlevel.core.catalog.plot.shift.render.bars import (
@@ -79,6 +80,7 @@ class Plotter:
         bar_config: BarConfig | AlignmentBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
+        zero_line_config: ZeroLineConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
         split_nonnegative_by_corpus: bool = True,
@@ -152,6 +154,9 @@ class Plotter:
             border_config:
                 Configuration for the border of the entire chart. Accepts a `BorderConfig` or a dict
                 with the same fields
+            zero_line_config:
+                Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
+                or a dict with the same fields
             scale_factor:
                 Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
                 provides more space for the bar labels
@@ -198,6 +203,7 @@ class Plotter:
             bar_config=InternalBarConfig.from_bar_config(bar_config, comp.attributed_by),
             label_config=label_config,
             border_config=border_config,
+            zero_line_config=zero_line_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
         )
@@ -215,6 +221,7 @@ class Plotter:
         bar_config: ShiftBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
+        zero_line_config: ZeroLineConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
         split_nonnegative_by_corpus: bool = True,
@@ -339,6 +346,9 @@ class Plotter:
             border_config:
                 Configuration for the border of the entire chart. Accepts a `BorderConfig` or a dict
                 with the same fields
+            zero_line_config:
+                Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
+                or a dict with the same fields
             scale_factor:
                 Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
                 provides more space for the bar labels
@@ -391,6 +401,7 @@ class Plotter:
             bar_config=InternalBarConfig.from_shift_bar_config(bar_config),
             label_config=label_config,
             border_config=border_config,
+            zero_line_config=zero_line_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
         )

@@ -24,15 +24,17 @@ def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, token_col,
     )
 
     assert isinstance(chart, alt.LayerChart)
-    assert len(chart.layer) == 3
+    # bars, labels, scales, zero line
+    assert len(chart.layer) == 4
 
 
-@pytest.mark.parametrize("autoscale, n_layers_expected", [(True, 3), (False, 2)])
+@pytest.mark.parametrize("autoscale, n_layers_expected", [(True, 4), (False, 3)])
 def test_shift_autoscale_toggle(
     make_mock_df, score_col, rank_col, token_col, score_type_col, autoscale, n_layers_expected
 ):
     """
-    Check that autoscale_axes=False removes the scaling layer
+    Check that autoscale_axes=False removes the scaling layer (the bars, labels, and zero-line
+    layers remain)
     """
     chart = shift(
         make_mock_df(),
@@ -47,7 +49,7 @@ def test_shift_autoscale_toggle(
     assert len(chart.layer) == n_layers_expected
 
     if autoscale:
-        # The last layer should be the scales layer (which is a LayerChart of 2 rules)
+        # The scales layer (a LayerChart of 2 rules) sits at index 2, before the zero-line layer
         assert isinstance(chart.layer[2], alt.LayerChart)
 
 

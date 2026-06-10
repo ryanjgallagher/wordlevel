@@ -117,12 +117,12 @@ class TestGetPlotDf:
 
 class TestBar:
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
-        """bar() returns a LayerChart with 3 layers and the correct number of data rows."""
+        """bar() returns a LayerChart with 4 layers and the correct number of data rows."""
         plotter = Plotter(catalog)
         chart = plotter.bar("freq_comp")
 
         assert isinstance(chart, alt.LayerChart)
-        assert len(chart.layer) == 3
+        assert len(chart.layer) == 4  # bars, labels, scales, zero line
         assert len(chart.layer[0].data) == df_mock.height * 2  # reference, comparison
 
     @pytest.mark.parametrize(
@@ -197,12 +197,12 @@ class TestShift:
             plotter.shift("freq_comp")
 
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
-        """shift() returns a LayerChart with 3 layers and the correct number of data rows."""
+        """shift() returns a LayerChart with 4 layers and the correct number of data rows."""
         plotter = Plotter(catalog)
         chart = plotter.shift("entropy_comp")
 
         assert isinstance(chart, alt.LayerChart)
-        assert len(chart.layer) == 3
+        assert len(chart.layer) == 4  # bars, labels, scales, zero line
         assert len(chart.layer[0].data) == df_mock.height * 12  # 12 shift types
 
     @pytest.mark.parametrize(

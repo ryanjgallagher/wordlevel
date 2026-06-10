@@ -169,8 +169,11 @@ def test_score_dimension_absent_when_unset(
 @pytest.mark.parametrize(
     "border, expected_color, expected_width",
     [
-        (None, None, 0),  # default: no box, axes left at the chart default color
-        (BorderConfig(), None, 0),
+        # The default border color is Altair's axis grey, shared by the axes/ticks (and zero line)
+        (None, "#888", 0),
+        (BorderConfig(), "#888", 0),
+        # Explicitly opting out (color=None) defers to Altair's per-element defaults (keys absent)
+        (BorderConfig(color=None), None, 0),
         (BorderConfig(color="black", width=1), "black", 1),  # black box and black axes/ticks
         (BorderConfig(color="black"), "black", 0),  # colored axes/ticks, but no box (width 0)
         ({"color": "red", "width": 2}, "red", 2),  # dict form is accepted
