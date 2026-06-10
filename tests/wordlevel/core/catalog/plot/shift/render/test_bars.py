@@ -88,13 +88,13 @@ def test_chart_orientation(make_mock_df, score_col, score_type_col, rank_col, ve
 
 
 @pytest.mark.parametrize("vertical", [True, False])
-@pytest.mark.parametrize("rank_size", [10, 14, 25])
-def test_rank_dimension_from_rank_size(
-    make_mock_df, score_col, score_type_col, rank_col, vertical, rank_size
+@pytest.mark.parametrize("bar_width", [10, 14, 25])
+def test_rank_dimension_from_bar_width(
+    make_mock_df, score_col, score_type_col, rank_col, vertical, bar_width
 ):
     """
     The rank-axis dimension (height when vertical, width when horizontal) is an alt.Step derived
-    from RankAxisConfig.rank_size, so each rank occupies a fixed size regardless of bar count.
+    from RankAxisConfig.bar_width, so each rank occupies a fixed size regardless of bar count.
     """
     chart = shift_bars(
         make_mock_df(),
@@ -102,12 +102,12 @@ def test_rank_dimension_from_rank_size(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=vertical,
-        rank_axis=RankAxisConfig(rank_size=rank_size),
+        rank_axis=RankAxisConfig(bar_width=bar_width),
     )
 
     spec = chart.to_dict()
     rank_dim = "height" if vertical else "width"
-    assert spec[rank_dim] == {"step": rank_size}
+    assert spec[rank_dim] == {"step": bar_width}
 
 
 @pytest.mark.parametrize("vertical", [True, False])
@@ -115,11 +115,11 @@ def test_rank_dimension_ignores_explicit_size(
     make_mock_df, score_col, score_type_col, rank_col, vertical
 ):
     """
-    The rank-axis dimension always comes from rank_size, so an explicit pixel size passed for that
+    The rank-axis dimension always comes from bar_width, so an explicit pixel size passed for that
     axis (height when vertical, width when horizontal) is ignored. The score-axis dimension in the
     other direction is still honored.
     """
-    rank_size = RankAxisConfig().rank_size
+    bar_width = RankAxisConfig().bar_width
 
     chart = shift_bars(
         make_mock_df(),
@@ -133,10 +133,10 @@ def test_rank_dimension_ignores_explicit_size(
 
     spec = chart.to_dict()
     if vertical:
-        assert spec["height"] == {"step": rank_size}  # explicit height ignored
+        assert spec["height"] == {"step": bar_width}  # explicit height ignored
         assert spec["width"] == 777  # score-axis width honored
     else:
-        assert spec["width"] == {"step": rank_size}  # explicit width ignored
+        assert spec["width"] == {"step": bar_width}  # explicit width ignored
         assert spec["height"] == 999  # score-axis height honored
 
 
@@ -146,7 +146,7 @@ def test_score_dimension_absent_when_unset(
 ):
     """
     When the score-axis dimension is not given it is left out of the spec, while the rank-axis
-    dimension is still the rank_size Step.
+    dimension is still the bar_width Step.
     """
     chart = shift_bars(
         make_mock_df(),
@@ -157,12 +157,12 @@ def test_score_dimension_absent_when_unset(
     )
 
     spec = chart.to_dict()
-    rank_size = RankAxisConfig().rank_size
+    bar_width = RankAxisConfig().bar_width
     if vertical:
-        assert spec["height"] == {"step": rank_size}
+        assert spec["height"] == {"step": bar_width}
         assert "width" not in spec
     else:
-        assert spec["width"] == {"step": rank_size}
+        assert spec["width"] == {"step": bar_width}
         assert "height" not in spec
 
 

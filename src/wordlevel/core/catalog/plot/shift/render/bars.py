@@ -187,10 +187,10 @@ def shift_bars(
             extend vertically
         height:
             The height of the chart, in pixels. Ignored if `vertical`, see
-            `RankAxisConfig.rank_size` to control the height
+            `RankAxisConfig.bar_width` to control the height
         width:
             The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
-            `RankAxisConfig.rank_size` to control the width
+            `RankAxisConfig.bar_width` to control the width
         rank_axis:
             Configuration for the rank axis
         score_axis:
@@ -236,18 +236,18 @@ def shift_bars(
         # To show the legend, we overwrite that it's "undefined" according to Altair
         legend = None
 
-    # Configure the chart size. We always use `rank_axis.rank_size` to control the size of the bars,
+    # Configure the chart size. We always use `rank_axis.bar_width` to control the size of the bars,
     # implicitly controlling the size of the whole rank axis. If the corresponding dimension param
     # is passed, it is ignored
     # For the configurable dimension, Altair does not allow them to be None or alt.Undefined, so we
     # unpack them from a dict (default is that they're not in the dictionary).
     chart_params = dict()
     if vertical:
-        chart_params["height"] = alt.Step(rank_axis.rank_size)
+        chart_params["height"] = alt.Step(rank_axis.bar_width)
         if width is not None:
             chart_params["width"] = width
     else:
-        chart_params["width"] = alt.Step(rank_axis.rank_size)
+        chart_params["width"] = alt.Step(rank_axis.bar_width)
         if height is not None:
             chart_params["height"] = height
 

@@ -324,10 +324,10 @@ class Plotter:
                 extend vertically
             height:
                 The height of the chart, in pixels. Ignored if `vertical`, see
-                `RankAxisConfig.rank_size` to control the height
+                `RankAxisConfig.bar_width` to control the height
             width:
                 The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
-                `RankAxisConfig.rank_size` to control the width
+                `RankAxisConfig.bar_width` to control the width
             autoscale_axes:
                 Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
                 axes may overlap with the labels

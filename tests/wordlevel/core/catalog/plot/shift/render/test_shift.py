@@ -59,7 +59,7 @@ def test_shift_default_dimensions(
 ):
     """
     The score-axis dimension defaults to DEFAULT_SCORE_AXIS_PIXEL_SIZE; the rank-axis dimension is
-    the per-rank rank_size Step, so it scales per-rank rather than by total chart size.
+    the per-rank bar_width Step, so it scales per-rank rather than by total chart size.
     """
     chart = shift(
         make_mock_df(n=50),
@@ -72,7 +72,7 @@ def test_shift_default_dimensions(
     )
 
     spec = chart.to_dict()
-    rank_step = {"step": RankAxisConfig().rank_size}
+    rank_step = {"step": RankAxisConfig().bar_width}
 
     if vertical:
         assert spec["width"] == DEFAULT_SCORE_AXIS_PIXEL_SIZE
@@ -83,12 +83,12 @@ def test_shift_default_dimensions(
 
 
 @pytest.mark.parametrize("vertical", [True, False])
-@pytest.mark.parametrize("rank_size", [8, 20])
-def test_shift_rank_size_controls_rank_dimension(
-    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical, rank_size
+@pytest.mark.parametrize("bar_width", [8, 20])
+def test_shift_bar_width_controls_rank_dimension(
+    make_mock_df, score_col, rank_col, token_col, score_type_col, vertical, bar_width
 ):
     """
-    RankAxisConfig.rank_size sets the per-rank Step on the rank-axis dimension (height when
+    RankAxisConfig.bar_width sets the per-rank Step on the rank-axis dimension (height when
     vertical, width when horizontal) and flows through `shift`.
     """
     chart = shift(
@@ -99,12 +99,12 @@ def test_shift_rank_size_controls_rank_dimension(
         score_type_col=score_type_col,
         max_rank=50,
         vertical=vertical,
-        rank_axis=RankAxisConfig(rank_size=rank_size),
+        rank_axis=RankAxisConfig(bar_width=bar_width),
     )
 
     spec = chart.to_dict()
     rank_dim = "height" if vertical else "width"
-    assert spec[rank_dim] == {"step": rank_size}
+    assert spec[rank_dim] == {"step": bar_width}
 
 
 @pytest.mark.parametrize("vertical", [True, False])
@@ -113,7 +113,7 @@ def test_shift_ignores_rank_axis_pixel_size(
 ):
     """
     An explicit pixel size for the rank-axis dimension is ignored: `height` when vertical, `width`
-    when horizontal (that dimension stays the rank_size Step). The score-axis dimension is honored.
+    when horizontal (that dimension stays the bar_width Step). The score-axis dimension is honored.
     """
     chart = shift(
         make_mock_df(n=50),
@@ -128,7 +128,7 @@ def test_shift_ignores_rank_axis_pixel_size(
     )
 
     spec = chart.to_dict()
-    rank_step = {"step": RankAxisConfig().rank_size}
+    rank_step = {"step": RankAxisConfig().bar_width}
 
     if vertical:
         assert spec["height"] == rank_step  # explicit height ignored

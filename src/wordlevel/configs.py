@@ -143,15 +143,15 @@ class ScoreAxisConfig:
             Color of the axis tick labels. If `None`, Altair's default is used
         label_fontsize:
             Font size of the axis tick labels, in pixels. If `None`, Altair's default is used
+        tick_color:
+            Color of the axis ticks. For the color of the tick labels, see `label_color`. If not
+            `None`, overrides `BorderConfig.color`
         grid:
             Whether to draw grid lines along the score axis
         grid_color:
             Color of the grid lines
         axis_color:
             Color of the axis line. If not `None`, overrides `BorderConfig.color`
-        tick_color:
-            Color of the axis ticks. For the color of the tick labels, see `label_color`. If not
-            `None`, overrides `BorderConfig.color`
     """
 
     title: str | None = DEFAULT_SCORE_AXIS_TITLE
@@ -159,10 +159,10 @@ class ScoreAxisConfig:
     title_fontsize: float | None = None
     label_color: str | None = None
     label_fontsize: float | None = None
+    tick_color: str | None = None
     grid: bool = False
     grid_color: str | None = None
     axis_color: str | None = None
-    tick_color: str | None = None
 
 
 @dataclass
@@ -173,17 +173,17 @@ class RankAxisConfig:
     The rank axis is the axis along which tokens are listed in order of contribution.
 
     Attributes:
-        rank_size:
+        bar_width:
             Amount of space, in pixels, that each rank occupies. This implicitly controls the
             height/width of the plot, depending on whether it is vertical/horizontal respectively
         bar_padding:
             Amount of space, given to padding between bars, as a fraction between 0 and 1. When `0`,
             the bars touch; when close to `1`, most of the visual space is padding (not bars). The
-            bar thickness is `rank_size * (1 - bar_padding)`
+            bar thickness is `bar_width * (1 - bar_padding)`
         axis_padding:
             Amount of space given to adding space between the first and last bar and the axis.
-            The space is a fraction between 0 and 1 of the `rank_size`. When `0`, the first and last
-            bar sit flush against the rank axis; when `1`, padding equivalent to `rank_size` is
+            The space is a fraction between 0 and 1 of the `bar_width`. When `0`, the first and last
+            bar sit flush against the rank axis; when `1`, padding equivalent to `bar_width` is
             added to the ends of the rank axis
         title:
             Label for the rank axis. If `None`, the title is hidden
@@ -205,18 +205,18 @@ class RankAxisConfig:
             Whether to include a tick at rank 1 in addition to the ticks defined by
             `label_tick_step`. Has no effect when `label_tick_step` is `1` or when
             `label_tick_values` is set
+        tick_color:
+            Color of the axis ticks. For the color of the tick labels, see `label_color`. If not
+            `None`, overrides `BorderConfig.color`
         grid:
             Whether to draw grid lines along the rank axis
         grid_color:
             Color of the grid lines
         axis_color:
             Color of the axis line. If not `None`, overrides `BorderConfig.color`
-        tick_color:
-            Color of the axis ticks. For the color of the tick labels, see `label_color`. If not
-            `None`, overrides `BorderConfig.color`
     """
 
-    rank_size: float = 14
+    bar_width: float = 14
     bar_padding: float = 0.1
     axis_padding: float = 0.5
     title: str | None = "Rank"
@@ -227,10 +227,10 @@ class RankAxisConfig:
     label_tick_values: list[int] | None = None
     label_tick_step: int | None = 5
     label_first_tick: bool = True
+    tick_color: str | None = None
     grid: bool = True
     grid_color: str | None = None
     axis_color: str | None = None
-    tick_color: str | None = None
 
 
 @dataclass
