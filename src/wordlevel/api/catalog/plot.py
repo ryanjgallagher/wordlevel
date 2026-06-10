@@ -17,12 +17,14 @@ from wordlevel.constants import (
     REFERENCE_ATTRIBUTION,
 )
 from wordlevel.configs import (
-    AlignmentBarConfig,
+    ScoreSignBarConfig,
     BarConfig,
+    BorderConfig,
     LabelConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
+    ZeroLineConfig,
 )
 from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
 from wordlevel.core.catalog.plot.shift.render.bars import (
@@ -75,11 +77,12 @@ class Plotter:
         autoscale_axes: bool = True,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
-        bar_config: BarConfig | AlignmentBarConfig | dict | None = None,
+        bar_config: BarConfig | ScoreSignBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
+        border_config: BorderConfig | dict | None = None,
+        zero_line_config: ZeroLineConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
-        show_border: bool = False,
         split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart:
         """
@@ -143,18 +146,22 @@ class Plotter:
                 the same fields
             bar_config:
                 Configuration for the bars. Accepts a `BarConfig`for corpus-attributed measures or
-                an `AlignmentBarConfig`for sign-attributed measures. Also accepts a dict keyed by
+                an `ScoreSignBarConfig`for sign-attributed measures. Also accepts a dict keyed by
                 the same corresponding attribution labels
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
+            border_config:
+                Configuration for the border of the entire chart. Accepts a `BorderConfig` or a dict
+                with the same fields
+            zero_line_config:
+                Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
+                or a dict with the same fields
             scale_factor:
                 Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
                 provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
-            show_border:
-                Whether to draw a border around the chart
             split_nonnegative_by_corpus:
                 When the scoring measure is inherently non-negative, whether to direct bar
                 contributions in the positive and negative directions based on which corpus they are
@@ -195,9 +202,10 @@ class Plotter:
             ),
             bar_config=InternalBarConfig.from_bar_config(bar_config, comp.attributed_by),
             label_config=label_config,
+            border_config=border_config,
+            zero_line_config=zero_line_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
-            show_border=show_border,
         )
 
     def shift(
@@ -212,9 +220,10 @@ class Plotter:
         score_axis: ScoreAxisConfig | dict | None = None,
         bar_config: ShiftBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
+        border_config: BorderConfig | dict | None = None,
+        zero_line_config: ZeroLineConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
-        show_border: bool = False,
         split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart:
         r"""
@@ -314,9 +323,11 @@ class Plotter:
                 bars extend horizontally. If `False`, tokens are listed left-to-right and bars
                 extend vertically
             height:
-                The height of the chart, in pixels
+                The height of the chart, in pixels. Ignored if `vertical`, see
+                `RankAxisConfig.bar_width` to control the height
             width:
-                The width of the chart, in pixels
+                The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
+                `RankAxisConfig.bar_width` to control the width
             autoscale_axes:
                 Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
                 axes may overlap with the labels
@@ -332,13 +343,17 @@ class Plotter:
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
+            border_config:
+                Configuration for the border of the entire chart. Accepts a `BorderConfig` or a dict
+                with the same fields
+            zero_line_config:
+                Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
+                or a dict with the same fields
             scale_factor:
                 Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
                 provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
-            show_border:
-                Whether to draw a border around the chart
             split_nonnegative_by_corpus:
                 When the scoring measure is inherently non-negative, whether to direct bar
                 contributions in the positive and negative directions based on which corpus they are
@@ -385,9 +400,10 @@ class Plotter:
             ),
             bar_config=InternalBarConfig.from_shift_bar_config(bar_config),
             label_config=label_config,
+            border_config=border_config,
+            zero_line_config=zero_line_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
-            show_border=show_border,
         )
 
     def _get_plot_df(

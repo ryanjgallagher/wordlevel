@@ -5,6 +5,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    BorderConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
@@ -86,31 +87,133 @@ def test_chart_orientation(make_mock_df, score_col, score_type_col, rank_col, ve
         assert encoding["y"]["field"] == score_col
 
 
-@pytest.mark.parametrize("width, height", [(800, 600), (None, 500), (300, None), (None, None)])
-def test_chart_dimensions(make_mock_df, score_col, score_type_col, rank_col, width, height):
+@pytest.mark.parametrize("vertical", [True, False])
+@pytest.mark.parametrize("bar_width", [10, 14, 25])
+def test_rank_dimension_from_bar_width(
+    make_mock_df, score_col, score_type_col, rank_col, vertical, bar_width
+):
     """
-    Test that width and height are specified correctly
+    The rank-axis dimension (height when vertical, width when horizontal) is an alt.Step derived
+    from RankAxisConfig.bar_width, so each rank occupies a fixed size regardless of bar count.
     """
     chart = shift_bars(
         make_mock_df(),
         score_col=score_col,
         rank_col=rank_col,
         score_type_col=score_type_col,
-        width=width,
-        height=height,
+        vertical=vertical,
+        rank_axis=RankAxisConfig(bar_width=bar_width),
     )
 
-    chart_json = chart.to_dict()
+    spec = chart.to_dict()
+    rank_dim = "height" if vertical else "width"
+    assert spec[rank_dim] == {"step": bar_width}
 
-    if width is not None:
-        assert chart_json["width"] == width
-    else:
-        assert "width" not in chart_json
 
-    if height is not None:
-        assert chart_json["height"] == height
+@pytest.mark.parametrize("vertical", [True, False])
+def test_rank_dimension_ignores_explicit_size(
+    make_mock_df, score_col, score_type_col, rank_col, vertical
+):
+    """
+    The rank-axis dimension always comes from bar_width, so an explicit pixel size passed for that
+    axis (height when vertical, width when horizontal) is ignored. The score-axis dimension in the
+    other direction is still honored.
+    """
+    bar_width = RankAxisConfig().bar_width
+
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=vertical,
+        height=999,
+        width=777,
+    )
+
+    spec = chart.to_dict()
+    if vertical:
+        assert spec["height"] == {"step": bar_width}  # explicit height ignored
+        assert spec["width"] == 777  # score-axis width honored
     else:
-        assert "height" not in chart_json
+        assert spec["width"] == {"step": bar_width}  # explicit width ignored
+        assert spec["height"] == 999  # score-axis height honored
+
+
+@pytest.mark.parametrize("vertical", [True, False])
+def test_score_dimension_absent_when_unset(
+    make_mock_df, score_col, score_type_col, rank_col, vertical
+):
+    """
+    When the score-axis dimension is not given it is left out of the spec, while the rank-axis
+    dimension is still the bar_width Step.
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=vertical,
+    )
+
+    spec = chart.to_dict()
+    bar_width = RankAxisConfig().bar_width
+    if vertical:
+        assert spec["height"] == {"step": bar_width}
+        assert "width" not in spec
+    else:
+        assert spec["width"] == {"step": bar_width}
+        assert "height" not in spec
+
+
+@pytest.mark.parametrize(
+    "border, expected_color, expected_width",
+    [
+        # The default border color is Altair's axis grey, shared by the axes/ticks (and zero line)
+        (None, "#888", 0),
+        (BorderConfig(), "#888", 0),
+        # Explicitly opting out (color=None) defers to Altair's per-element defaults (keys absent)
+        (BorderConfig(color=None), None, 0),
+        (BorderConfig(color="black", width=1), "black", 1),  # black box and black axes/ticks
+        (BorderConfig(color="black"), "black", 0),  # colored axes/ticks, but no box (width 0)
+        ({"color": "red", "width": 2}, "red", 2),  # dict form is accepted
+    ],
+)
+def test_border_config(
+    make_mock_df, score_col, score_type_col, rank_col, border, expected_color, expected_width
+):
+    """
+    BorderConfig controls both the view-border stroke (color + width) and the shared axis line and
+    tick color. width=0 draws no box, but the color still applies to the axis domain and ticks.
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        border=border,
+    )
+
+    spec = chart.to_dict()
+
+    # The view border: width always set; stroke color only when a color is given
+    view = spec["view"]
+    assert view["strokeWidth"] == expected_width
+    if expected_color is None:
+        assert "stroke" not in view
+    else:
+        assert view["stroke"] == expected_color
+
+    # The axis line and tick marks share the border color on both axes
+    for axis_channel in ("x", "y"):
+        axis = spec["encoding"][axis_channel]["axis"]
+        if expected_color is None:
+            assert "domainColor" not in axis
+            assert "tickColor" not in axis
+        else:
+            assert axis["domainColor"] == expected_color
+            assert axis["tickColor"] == expected_color
 
 
 @pytest.mark.parametrize("filter_max_rank", [True, False])
@@ -234,6 +337,147 @@ def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col)
     score_axis = chart_json["encoding"]["x"]["axis"]
     assert score_axis["title"] == score_config.title
     assert score_axis["grid"] == score_config.grid
+
+
+@pytest.mark.parametrize(
+    "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
+)
+def test_axis_text_and_grid_colors(
+    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+):
+    """
+    label_color, title_color, and grid_color on the rank/score axis configs pass through to the
+    corresponding alt.Axis keys. These are the per-axis text/gridline colors, distinct from the
+    structural stroke color set by BorderConfig (domainColor/tickColor).
+    """
+    config = axis_config_cls(label_color="#111111", title_color="#222222", grid_color="#333333")
+
+    kwargs = {"rank_axis": config} if channel == "y" else {"score_axis": config}
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        **kwargs,
+    )
+
+    axis = chart.to_dict()["encoding"][channel]["axis"]
+    assert axis["labelColor"] == "#111111"
+    assert axis["titleColor"] == "#222222"
+    assert axis["gridColor"] == "#333333"
+
+
+@pytest.mark.parametrize(
+    "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
+)
+def test_axis_colors_absent_by_default(
+    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+):
+    """
+    When the per-axis colors are left at their default (None), the corresponding keys are not
+    emitted, so Altair falls back to its own defaults.
+    """
+    kwargs = (
+        {"rank_axis": axis_config_cls()} if channel == "y" else {"score_axis": axis_config_cls()}
+    )
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        **kwargs,
+    )
+
+    axis = chart.to_dict()["encoding"][channel]["axis"]
+    for key in ("labelColor", "titleColor", "gridColor"):
+        assert key not in axis
+
+
+@pytest.mark.parametrize(
+    "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
+)
+@pytest.mark.parametrize(
+    "axis_color, tick_color, border_color, expected_domain, expected_tick",
+    [
+        # Neither set -> both fall back to the border color
+        (None, None, "black", "black", "black"),
+        # axis_color overrides the line; tick_color independently falls back to border
+        ("red", None, "black", "red", "black"),
+        # tick_color overrides the ticks; axis_color independently falls back to border
+        (None, "blue", "black", "black", "blue"),
+        # Both override the border
+        ("red", "blue", "black", "red", "blue"),
+        # Nothing set anywhere -> keys absent (Altair default)
+        (None, None, None, None, None),
+        # axis_color works even without a border color
+        ("red", None, None, "red", None),
+    ],
+)
+def test_axis_color_overrides_and_fallback(
+    make_mock_df,
+    score_col,
+    score_type_col,
+    rank_col,
+    axis_config_cls,
+    channel,
+    axis_color,
+    tick_color,
+    border_color,
+    expected_domain,
+    expected_tick,
+):
+    """
+    `axis_color`/`tick_color` on an axis config override the BorderConfig color independently of
+    each other; when either is None it falls back to `border.color` (and is omitted entirely when
+    that is None too).
+    """
+    config = axis_config_cls(axis_color=axis_color, tick_color=tick_color)
+    kwargs = {"rank_axis": config} if channel == "y" else {"score_axis": config}
+
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        border=BorderConfig(color=border_color),
+        **kwargs,
+    )
+
+    axis = chart.to_dict()["encoding"][channel]["axis"]
+    for key, expected in (("domainColor", expected_domain), ("tickColor", expected_tick)):
+        if expected is None:
+            assert key not in axis
+        else:
+            assert axis[key] == expected
+
+
+def test_axis_colors_are_per_axis(make_mock_df, score_col, score_type_col, rank_col):
+    """
+    The rank-axis and score-axis line/tick colors are independent of one another (setting one does
+    not leak into the other).
+    """
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        rank_axis=RankAxisConfig(axis_color="red", tick_color="green"),
+        score_axis=InternalScoreAxisConfig(axis_color="blue", tick_color="orange"),
+        border=BorderConfig(color="black"),
+    )
+
+    encoding = chart.to_dict()["encoding"]
+    rank_axis = encoding["y"]["axis"]  # rank axis is y when vertical
+    score_axis = encoding["x"]["axis"]
+
+    assert rank_axis["domainColor"] == "red"
+    assert rank_axis["tickColor"] == "green"
+    assert score_axis["domainColor"] == "blue"
+    assert score_axis["tickColor"] == "orange"
 
 
 @pytest.mark.parametrize("all_positive_labels", [True, False])

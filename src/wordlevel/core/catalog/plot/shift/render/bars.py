@@ -5,8 +5,9 @@ from typing_extensions import Self
 from dataclasses import asdict, dataclass
 
 from wordlevel.configs import (
-    AlignmentBarConfig,
+    ScoreSignBarConfig,
     BarConfig,
+    BorderConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
@@ -94,20 +95,20 @@ class InternalBarConfig:
     @classmethod
     def from_bar_config(
         cls,
-        config: BarConfig | AlignmentBarConfig | dict | None,
+        config: BarConfig | ScoreSignBarConfig | dict | None,
         attributed_by: ATTRIBUTION_TYPE,
     ) -> Self:
         """
-        Creates an InternalBarConfig from a BarConfig or AlignmentBarConfig.
+        Creates an InternalBarConfig from a BarConfig or ScoreSignBarConfig.
 
         The expected config class depends on how the comparison is attributed: corpus attribution
         (`"frequency"`, `"rank"`) uses a `BarConfig`; score-sign attribution uses an
-        `AlignmentBarConfig`. A dict keyed by the attribution labels is also accepted. A config or
+        `ScoreSignBarConfig`. A dict keyed by the attribution labels is also accepted. A config or
         dict that does not match the comparison's attribution raises a `ValueError`.
         """
-        expected_cls: type[BarConfig] | type[AlignmentBarConfig]
+        expected_cls: type[BarConfig] | type[ScoreSignBarConfig]
         if attributed_by == "score_sign":
-            expected_cls = AlignmentBarConfig
+            expected_cls = ScoreSignBarConfig
         else:
             expected_cls = BarConfig
 
@@ -158,12 +159,51 @@ def shift_bars(
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
     bars: InternalBarConfig | None = None,
+    border: BorderConfig | dict | None = None,
     show_legend: bool = False,
-    show_border: bool = False,
 ) -> alt.Chart:
     """
-    Assumes a dataframe which has one row per word per type of contribution. There should be columns
-    for the contribution, contribution type, and rank
+    Makes the bar chart layer of a word shift plot
+
+    Args:
+        df:
+            A long dataframe with one row per token per type of score to plot. For example, if a
+            token has two contributing components `more_of_positive` and `higher_score`, then it
+            should have two rows, where the `score_col` indicates the length of each
+        score_col:
+            Column in the dataframe indicating the "score" associated with each bar, i.e. its length
+        rank_col:
+            Column in the dataframe indicating the rank of each token, taking into account all of
+            its contributing scores
+        score_type_col:
+            Column in the dataframe indicating the type of "score" associated with each bar
+        max_rank:
+            The maximum number of top-contributing tokens to display
+        filter_max_rank:
+            Whether to filter by the `max_rank` or ignore the parameter
+        vertical:
+            Whether to orient the chart vertically, where tokens are listed top-to-bottom and
+            bars extend horizontally. If `False`, tokens are listed left-to-right and bars
+            extend vertically
+        height:
+            The height of the chart, in pixels. Ignored if `vertical`, see
+            `RankAxisConfig.bar_width` to control the height
+        width:
+            The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
+            `RankAxisConfig.bar_width` to control the width
+        rank_axis:
+            Configuration for the rank axis
+        score_axis:
+            Configuration for the score axis
+        bars:
+            Configuration for the bars
+        border:
+            Configuration for the axes and border
+        show_legend:
+            Whether to show the chart legend
+
+    Returns:
+        An Altair chart of the bar graph layer
     """
     # Filter the dataframe to the top N rows
     if filter_max_rank:
@@ -189,12 +229,6 @@ def shift_bars(
             orders=None,
         )
 
-    # Configure whether to show all border axes, i.e. whether to hide the top and right axes
-    if show_border:
-        axes_view = alt.Undefined
-    else:
-        axes_view = alt.ViewConfig(strokeWidth=0)
-
     # Configure the legend
     if show_legend:
         legend = alt.Undefined
@@ -202,13 +236,30 @@ def shift_bars(
         # To show the legend, we overwrite that it's "undefined" according to Altair
         legend = None
 
-    # Configure the width and height. Altair does not allow these to be None or alt.Undefined.
-    # Instead, we have to unpack them from a dict (default is that they're not in the dictionary)
-    chart_size = dict()
-    if width is not None:
-        chart_size["width"] = width
-    if height is not None:
-        chart_size["height"] = height
+    # Configure the chart size. We always use `rank_axis.bar_width` to control the size of the bars,
+    # implicitly controlling the size of the whole rank axis. If the corresponding dimension param
+    # is passed, it is ignored
+    # For the configurable dimension, Altair does not allow them to be None or alt.Undefined, so we
+    # unpack them from a dict (default is that they're not in the dictionary).
+    chart_params = dict()
+    if vertical:
+        chart_params["height"] = alt.Step(rank_axis.bar_width)
+        if width is not None:
+            chart_params["width"] = width
+    else:
+        chart_params["width"] = alt.Step(rank_axis.bar_width)
+        if height is not None:
+            chart_params["height"] = height
+
+    # Configure the border
+    if isinstance(border, dict):
+        border = BorderConfig(**border)
+    elif border is None:
+        border = BorderConfig()
+
+    chart_params["view"] = alt.ViewConfig(
+        stroke=to_altair_optional(border.color), strokeWidth=border.width
+    )
 
     # Configure the rank axis tick values and labels
     if rank_axis.label_tick_values is not None:
@@ -257,20 +308,45 @@ def shift_bars(
         score_tick_label_expr = alt.Undefined
 
     # Create aspects of the plot
+    # translate=0 removes Altair's default half-pixel axis nudge so the axis ticks and gridlines
+    # align exactly with the bars and the zero line
     score_alt_axis = alt.Axis(
         title=to_altair_optional(score_axis.title),
+        titleColor=to_altair_optional(score_axis.title_color),
         titleFontSize=to_altair_optional(score_axis.title_fontsize),
+        labelColor=to_altair_optional(score_axis.label_color),
         labelFontSize=to_altair_optional(score_axis.label_fontsize),
-        grid=score_axis.grid,
         labelExpr=score_tick_label_expr,
+        grid=score_axis.grid,
+        gridColor=to_altair_optional(score_axis.grid_color),
+        domainColor=to_altair_optional(
+            score_axis.axis_color if score_axis.axis_color is not None else border.color
+        ),
+        tickColor=to_altair_optional(
+            score_axis.tick_color if score_axis.tick_color is not None else border.color
+        ),
+        translate=0,
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
+        titleColor=to_altair_optional(rank_axis.title_color),
         titleFontSize=to_altair_optional(rank_axis.title_fontsize),
+        labelColor=to_altair_optional(rank_axis.label_color),
         labelFontSize=to_altair_optional(rank_axis.label_fontsize),
+        values=rank_tick_values,
         labelAngle=rank_label_rotation,
         grid=rank_axis.grid,
-        values=rank_tick_values,
+        gridColor=to_altair_optional(rank_axis.grid_color),
+        domainColor=to_altair_optional(
+            rank_axis.axis_color if rank_axis.axis_color is not None else border.color
+        ),
+        tickColor=to_altair_optional(
+            rank_axis.tick_color if rank_axis.tick_color is not None else border.color
+        ),
+        translate=0,
+    )
+    rank_alt_scale = alt.Scale(
+        paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding
     )
 
     color = alt.Color(
@@ -282,9 +358,9 @@ def shift_bars(
     # Configure the orientation
     if vertical:
         x_axis = alt.X(score_col, axis=score_alt_axis)
-        y_axis = alt.Y(f"{rank_col}:O", axis=rank_alt_axis)
+        y_axis = alt.Y(f"{rank_col}:O", axis=rank_alt_axis, scale=rank_alt_scale)
     else:
-        x_axis = alt.X(f"{rank_col}:O", axis=rank_alt_axis)
+        x_axis = alt.X(f"{rank_col}:O", axis=rank_alt_axis, scale=rank_alt_scale)
         y_axis = alt.Y(score_col, axis=score_alt_axis)
 
     # Create chart layer
@@ -292,7 +368,7 @@ def shift_bars(
         alt.Chart(df)
         .mark_bar()
         .encode(x=x_axis, y=y_axis, color=color, order=score_type_orders)
-        .properties(**chart_size, view=axes_view)
+        .properties(**chart_params)
     )
 
     return bars_chart
