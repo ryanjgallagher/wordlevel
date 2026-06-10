@@ -5,7 +5,7 @@ import polars as pl
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import comp
 from wordlevel.api.catalog.plot import Plotter
-from wordlevel.configs import AlignmentBarConfig, BarConfig, ShiftBarConfig
+from wordlevel.configs import ScoreSignBarConfig, BarConfig, ShiftBarConfig
 from wordlevel.constants import (
     RANK_COL,
     SCORE_COL,
@@ -146,14 +146,14 @@ class TestBar:
     @pytest.mark.parametrize(
         "bar_config",
         [
-            AlignmentBarConfig(reinforce="#00ff00"),
+            ScoreSignBarConfig(reinforce="#00ff00"),
             {"reinforce": "#00ff00"},
         ],
     )
     def test_bar_config_accepts_alignment_object_or_dict(
-        self, catalog: Catalog, bar_config: AlignmentBarConfig | dict
+        self, catalog: Catalog, bar_config: ScoreSignBarConfig | dict
     ) -> None:
-        """For a score-sign measure, `bar_config` accepts an `AlignmentBarConfig` or matching dict."""
+        """For a score-sign measure, `bar_config` accepts an `ScoreSignBarConfig` or matching dict."""
         plotter = Plotter(catalog)
         chart = plotter.bar("entropy_comp", bar_config=bar_config)
 
@@ -172,7 +172,7 @@ class TestBar:
         "comparison,bad_config",
         [
             # Corpus-attributed measure given a sign-attribution config/keys
-            ("freq_comp", AlignmentBarConfig()),
+            ("freq_comp", ScoreSignBarConfig()),
             ("freq_comp", {"reinforce": "#ffffff"}),
             # Sign-attributed measure given a corpus-attribution config/keys
             ("entropy_comp", BarConfig()),

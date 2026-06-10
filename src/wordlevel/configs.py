@@ -30,7 +30,7 @@ class BarConfig:
 
 
 @dataclass
-class AlignmentBarConfig:
+class ScoreSignBarConfig:
     """
     Configuration for the bar colors of token contributions attributed by score sign.
 

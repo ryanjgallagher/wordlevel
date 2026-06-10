@@ -5,7 +5,7 @@ from typing_extensions import Self
 from dataclasses import asdict, dataclass
 
 from wordlevel.configs import (
-    AlignmentBarConfig,
+    ScoreSignBarConfig,
     BarConfig,
     BorderConfig,
     RankAxisConfig,
@@ -95,20 +95,20 @@ class InternalBarConfig:
     @classmethod
     def from_bar_config(
         cls,
-        config: BarConfig | AlignmentBarConfig | dict | None,
+        config: BarConfig | ScoreSignBarConfig | dict | None,
         attributed_by: ATTRIBUTION_TYPE,
     ) -> Self:
         """
-        Creates an InternalBarConfig from a BarConfig or AlignmentBarConfig.
+        Creates an InternalBarConfig from a BarConfig or ScoreSignBarConfig.
 
         The expected config class depends on how the comparison is attributed: corpus attribution
         (`"frequency"`, `"rank"`) uses a `BarConfig`; score-sign attribution uses an
-        `AlignmentBarConfig`. A dict keyed by the attribution labels is also accepted. A config or
+        `ScoreSignBarConfig`. A dict keyed by the attribution labels is also accepted. A config or
         dict that does not match the comparison's attribution raises a `ValueError`.
         """
-        expected_cls: type[BarConfig] | type[AlignmentBarConfig]
+        expected_cls: type[BarConfig] | type[ScoreSignBarConfig]
         if attributed_by == "score_sign":
-            expected_cls = AlignmentBarConfig
+            expected_cls = ScoreSignBarConfig
         else:
             expected_cls = BarConfig
 

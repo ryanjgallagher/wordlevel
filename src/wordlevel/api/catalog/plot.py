@@ -17,7 +17,7 @@ from wordlevel.constants import (
     REFERENCE_ATTRIBUTION,
 )
 from wordlevel.configs import (
-    AlignmentBarConfig,
+    ScoreSignBarConfig,
     BarConfig,
     BorderConfig,
     LabelConfig,
@@ -77,7 +77,7 @@ class Plotter:
         autoscale_axes: bool = True,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
-        bar_config: BarConfig | AlignmentBarConfig | dict | None = None,
+        bar_config: BarConfig | ScoreSignBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
         zero_line_config: ZeroLineConfig | dict | None = None,
@@ -146,7 +146,7 @@ class Plotter:
                 the same fields
             bar_config:
                 Configuration for the bars. Accepts a `BarConfig`for corpus-attributed measures or
-                an `AlignmentBarConfig`for sign-attributed measures. Also accepts a dict keyed by
+                an `ScoreSignBarConfig`for sign-attributed measures. Also accepts a dict keyed by
                 the same corresponding attribution labels
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
