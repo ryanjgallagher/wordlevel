@@ -288,7 +288,11 @@ def test_axis_config(
     """
     Test that configs for the rank axis are properly applied to the chart
     """
-    # Test that the config works whether given a formal config or a dictionary
+    # The parametrized `Config` selects the rank or score axis; exercise it both as a formal config
+    # object and as a plain dict of the same fields.
+    is_rank = issubclass(Config, RankAxisConfig)
+    axis = "y" if is_rank else "x"
+
     for constructor in [Config, dict]:
         config_params = {
             "title": title,
@@ -305,12 +309,8 @@ def test_axis_config(
             "score_type_col": score_type_col,
             "vertical": True,
         }
-        if isinstance(config, RankAxisConfig):
-            chart = shift_bars(**chart_params, rank_axis=config)
-            axis = "y"
-        elif isinstance(config, ScoreAxisConfig):
-            chart = shift_bars(**chart_params, score_axis=config)
-            axis = "x"
+        axis_kwargs = {"rank_axis": config} if is_rank else {"score_axis": config}
+        chart = shift_bars(**chart_params, **axis_kwargs)
 
         chart_json = chart.to_dict()
         chart_axis = chart_json["encoding"][axis]["axis"]

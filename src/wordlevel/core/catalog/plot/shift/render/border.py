@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import cast
 
 import altair as alt
 import polars as pl
@@ -163,4 +164,4 @@ def shift_borders(
         x="independent", y="independent"
     )
 
-    return chart_with_border
+    return cast(alt.LayerChart, chart_with_border)
