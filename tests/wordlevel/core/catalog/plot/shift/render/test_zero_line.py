@@ -1,6 +1,7 @@
 import pytest
 
 from wordlevel.configs import BorderConfig, ZeroLineConfig
+from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX
 from wordlevel.core.catalog.plot.shift.render.shift import shift, zero_line
 
 
@@ -17,6 +18,17 @@ def test_zero_line_orientation(vertical, channel):
 
     other = "y" if channel == "x" else "x"
     assert other not in spec["encoding"]
+
+
+@pytest.mark.parametrize("vertical, offset_key", [(True, "xOffset"), (False, "yOffset")])
+def test_zero_line_carries_score_translate_offset(vertical, offset_key):
+    """
+    The score axis (and its zero tick) is nudged a half pixel for crisp registration with the frame.
+    The zero line is a mark, not an axis, so it must carry the same offset to land on the zero tick.
+    """
+    mark = zero_line(ZeroLineConfig(width=1), vertical=vertical).to_dict()["mark"]
+
+    assert mark[offset_key] == _TRANSLATE_PX
 
 
 def test_zero_line_width_and_color():
@@ -63,7 +75,8 @@ def test_shift_appends_zero_line(make_mock_df, score_col, rank_col, token_col, s
         score_type_col=score_type_col,
         width=100,
     )
-    default_last = default_chart.layer[-1].to_dict()
+    # The zero line is the last of the base layers grouped in layer[0] (the border edges follow)
+    default_last = default_chart.layer[0].layer[-1].to_dict()
     assert default_last["mark"]["type"] == "rule"
     assert default_last["encoding"]["x"]["datum"] == 0
     assert default_last["mark"]["strokeWidth"] == 0
@@ -77,6 +90,6 @@ def test_shift_appends_zero_line(make_mock_df, score_col, rank_col, token_col, s
         width=100,
         zero_line_config=ZeroLineConfig(color="red", width=2),
     )
-    configured_last = configured_chart.layer[-1].to_dict()
+    configured_last = configured_chart.layer[0].layer[-1].to_dict()
     assert configured_last["mark"]["color"] == "red"
     assert configured_last["mark"]["strokeWidth"] == 2

@@ -152,6 +152,8 @@ class ScoreAxisConfig:
             Color of the grid lines
         axis_color:
             Color of the axis line. If not `None`, overrides `BorderConfig.color`
+        width:
+            Width of the axis, in pixels
     """
 
     title: str | None = DEFAULT_SCORE_AXIS_TITLE
@@ -163,6 +165,7 @@ class ScoreAxisConfig:
     grid: bool = False
     grid_color: str | None = None
     axis_color: str | None = None
+    width: float = 1
 
 
 @dataclass
@@ -214,6 +217,8 @@ class RankAxisConfig:
             Color of the grid lines
         axis_color:
             Color of the axis line. If not `None`, overrides `BorderConfig.color`
+        width:
+            Width of the axis, in pixels
     """
 
     bar_width: float = 14
@@ -231,6 +236,7 @@ class RankAxisConfig:
     grid: bool = True
     grid_color: str | None = None
     axis_color: str | None = None
+    width: float = 1
 
 
 @dataclass
@@ -278,14 +284,17 @@ class LabelConfig:
 @dataclass
 class BorderConfig:
     """
-    Configuration for the border of the entire chart, regardless of axis
+    Configuration for the border of the entire chart, regardless of axis.
 
     Attributes:
         color:
-            Color of the axes, tick marks, border, and zero line. Defaults to `"#888"` (Altair's
-            default axis grey)
+            Color of the border lines, tick marks, and zero line. `RankAxisConfig.axis_color`,
+            `ScoreAxisConfig.axis_color`, and `ZeroLineConfig.color` take priority if specified
         width:
-            Width of the border, in pixels. `0` draws no borders, but does not affect the main axes
+            Width of the border edges opposite the axes, in pixels. `width = 0` draws no border box
+            (only the rank and score axes remain); `width > 0` closes the box at that width. The
+            native rank and score axis widths are owned by `RankAxisConfig.width`  and
+            `ScoreAxisConfig.width`
     """
 
     color: str | None = "#888"

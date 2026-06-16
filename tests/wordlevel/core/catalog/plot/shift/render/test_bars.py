@@ -5,7 +5,6 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
-    BorderConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
@@ -19,6 +18,7 @@ from wordlevel.core.catalog.plot.shift.render.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
+from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig
 
 
 def test_returns_chart(make_mock_df, score_col, score_type_col, rank_col):
@@ -167,24 +167,21 @@ def test_score_dimension_absent_when_unset(
 
 
 @pytest.mark.parametrize(
-    "border, expected_color, expected_width",
+    "border, expected_color",
     [
-        # The default border color is Altair's axis grey, shared by the axes/ticks (and zero line)
-        (None, "#888", 0),
-        (BorderConfig(), "#888", 0),
+        # The default internal border is Altair's axis grey
+        (None, "#888"),
+        (InternalBorderConfig(), "#888"),
         # Explicitly opting out (color=None) defers to Altair's per-element defaults (keys absent)
-        (BorderConfig(color=None), None, 0),
-        (BorderConfig(color="black", width=1), "black", 1),  # black box and black axes/ticks
-        (BorderConfig(color="black"), "black", 0),  # colored axes/ticks, but no box (width 0)
-        ({"color": "red", "width": 2}, "red", 2),  # dict form is accepted
+        (InternalBorderConfig(color=None), None),
+        (InternalBorderConfig(color="black", width=2), "black"),
     ],
 )
-def test_border_config(
-    make_mock_df, score_col, score_type_col, rank_col, border, expected_color, expected_width
-):
+def test_border_config(make_mock_df, score_col, score_type_col, rank_col, border, expected_color):
     """
-    BorderConfig controls both the view-border stroke (color + width) and the shared axis line and
-    tick color. width=0 draws no box, but the color still applies to the axis domain and ticks.
+    shift_bars draws both the rank and score axis domains, colored by the border color (the fallback
+    for axes without their own axis_color). There is no view box; the opposite border edges are drawn
+    separately by shift_borders. The border color is also the fallback tick color on both axes.
     """
     chart = shift_bars(
         make_mock_df(),
@@ -197,23 +194,47 @@ def test_border_config(
 
     spec = chart.to_dict()
 
-    # The view border: width always set; stroke color only when a color is given
-    view = spec["view"]
-    assert view["strokeWidth"] == expected_width
-    if expected_color is None:
-        assert "stroke" not in view
-    else:
-        assert view["stroke"] == expected_color
+    # No view box is drawn — borders are axis-domain lines
+    assert "stroke" not in spec.get("view", {})
 
-    # The axis line and tick marks share the border color on both axes
+    # Both the rank (y) and score (x) axes draw their own domain, colored by the border color
     for axis_channel in ("x", "y"):
         axis = spec["encoding"][axis_channel]["axis"]
+        assert axis["domain"] is True
         if expected_color is None:
             assert "domainColor" not in axis
             assert "tickColor" not in axis
         else:
             assert axis["domainColor"] == expected_color
             assert axis["tickColor"] == expected_color
+
+
+@pytest.mark.parametrize(
+    "axis_config_cls, channel",
+    [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")],
+)
+def test_axis_width_owned_by_axis_config(
+    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+):
+    """
+    The native axis domain width is owned by the axis config's own `width`; it does not fall back to
+    `BorderConfig.width`, which governs only the opposite border edges.
+    """
+    config = axis_config_cls(width=3)
+    kwargs = {"rank_axis": config} if channel == "y" else {"score_axis": config}
+
+    chart = shift_bars(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        border=InternalBorderConfig(width=1),  # differs from the axis width; must not leak in
+        **kwargs,
+    )
+
+    axis = chart.to_dict()["encoding"][channel]["axis"]
+    assert axis["domainWidth"] == 3
 
 
 @pytest.mark.parametrize("filter_max_rank", [True, False])
@@ -442,11 +463,13 @@ def test_axis_color_overrides_and_fallback(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        border=BorderConfig(color=border_color),
+        border=InternalBorderConfig(color=border_color),
         **kwargs,
     )
 
     axis = chart.to_dict()["encoding"][channel]["axis"]
+
+    # Both the rank and score axes draw their domain, so domain and tick colors behave identically
     for key, expected in (("domainColor", expected_domain), ("tickColor", expected_tick)):
         if expected is None:
             assert key not in axis
@@ -467,13 +490,14 @@ def test_axis_colors_are_per_axis(make_mock_df, score_col, score_type_col, rank_
         vertical=True,
         rank_axis=RankAxisConfig(axis_color="red", tick_color="green"),
         score_axis=InternalScoreAxisConfig(axis_color="blue", tick_color="orange"),
-        border=BorderConfig(color="black"),
+        border=InternalBorderConfig(color="black"),
     )
 
     encoding = chart.to_dict()["encoding"]
     rank_axis = encoding["y"]["axis"]  # rank axis is y when vertical
     score_axis = encoding["x"]["axis"]
 
+    # Both axes draw their own domain and ticks, independently colored
     assert rank_axis["domainColor"] == "red"
     assert rank_axis["tickColor"] == "green"
     assert score_axis["domainColor"] == "blue"

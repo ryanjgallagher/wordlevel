@@ -74,7 +74,6 @@ class Plotter:
         vertical: bool = True,
         height: float | None = None,
         width: float | None = None,
-        autoscale_axes: bool = True,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
         bar_config: BarConfig | ScoreSignBarConfig | dict | None = None,
@@ -135,9 +134,6 @@ class Plotter:
                 The height of the chart, in pixels
             width:
                 The width of the chart, in pixels
-            autoscale_axes:
-                Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
-                axes may overlap with the labels
             rank_axis:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
@@ -158,8 +154,8 @@ class Plotter:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
             scale_factor:
-                Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
-                provides more space for the bar labels
+                Multiplier applied to the score axis when fitting it to the bar labels. Increasing
+                it provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
             split_nonnegative_by_corpus:
@@ -193,7 +189,6 @@ class Plotter:
             vertical=vertical,
             height=height,
             width=width,
-            autoscale_axes=autoscale_axes,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis,
@@ -215,7 +210,6 @@ class Plotter:
         vertical: bool = True,
         height: float | None = None,
         width: float | None = None,
-        autoscale_axes: bool = True,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
         bar_config: ShiftBarConfig | dict | None = None,
@@ -328,9 +322,6 @@ class Plotter:
             width:
                 The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
                 `RankAxisConfig.bar_width` to control the width
-            autoscale_axes:
-                Whether to autoscale the axes to fit the data and the bar labels. If `False`, the
-                axes may overlap with the labels
             rank_axis:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
@@ -350,8 +341,8 @@ class Plotter:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
             scale_factor:
-                Multiplier applied to the scale axis when `autoscale_axes` is `True`. Increasing it
-                provides more space for the bar labels
+                Multiplier applied to the score axis when fitting it to the bar labels. Increasing
+                it provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
             split_nonnegative_by_corpus:
@@ -391,7 +382,6 @@ class Plotter:
             vertical=vertical,
             height=height,
             width=width,
-            autoscale_axes=autoscale_axes,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis,
