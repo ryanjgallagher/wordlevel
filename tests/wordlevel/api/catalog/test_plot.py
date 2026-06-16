@@ -122,8 +122,9 @@ class TestBar:
         chart = plotter.bar("freq_comp")
 
         assert isinstance(chart, alt.LayerChart)
-        assert len(chart.layer) == 4  # bars, labels, scales, zero line
-        assert len(chart.layer[0].data) == df_mock.height * 2  # reference, comparison
+        # shift_borders groups the 4 base layers in chart.layer[0] and appends border edges
+        assert len(chart.layer[0].layer) == 4  # bars, labels, scales, zero line
+        assert len(chart.layer[0].layer[0].data) == df_mock.height * 2  # reference, comparison
 
     @pytest.mark.parametrize(
         "bar_config",
@@ -140,7 +141,7 @@ class TestBar:
         chart = plotter.bar("freq_comp", bar_config=bar_config)
 
         # The reference color override should propagate to the bars layer's color range
-        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
 
     @pytest.mark.parametrize(
@@ -157,7 +158,7 @@ class TestBar:
         plotter = Plotter(catalog)
         chart = plotter.bar("entropy_comp", bar_config=bar_config)
 
-        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#00ff00" in scale["range"]
 
     def test_default_score_sign_bar_uses_reinforce_offset_domain(self, catalog: Catalog) -> None:
@@ -165,7 +166,7 @@ class TestBar:
         plotter = Plotter(catalog)
         chart = plotter.bar("entropy_comp")
 
-        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert set(scale["domain"]) == {"reinforce", "offset"}
 
     @pytest.mark.parametrize(
@@ -202,8 +203,9 @@ class TestShift:
         chart = plotter.shift("entropy_comp")
 
         assert isinstance(chart, alt.LayerChart)
-        assert len(chart.layer) == 4  # bars, labels, scales, zero line
-        assert len(chart.layer[0].data) == df_mock.height * 12  # 12 shift types
+        # shift_borders groups the 4 base layers in chart.layer[0] and appends border edges
+        assert len(chart.layer[0].layer) == 4  # bars, labels, scales, zero line
+        assert len(chart.layer[0].layer[0].data) == df_mock.height * 12  # 12 shift types
 
     @pytest.mark.parametrize(
         "bar_config",
@@ -219,13 +221,13 @@ class TestShift:
         plotter = Plotter(catalog)
         chart = plotter.shift("entropy_comp", bar_config=bar_config)
 
-        scale = chart.layer[0].to_dict()["encoding"]["color"]["scale"]
+        scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
 
 
 def _score_axis_title(chart: alt.LayerChart) -> str:
     """Extracts the score (x) axis title from the bars layer of a rendered chart."""
-    return chart.layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
+    return chart.layer[0].layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
 
 
 class TestNormalizedPlot:

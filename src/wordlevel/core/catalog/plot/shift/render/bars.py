@@ -7,7 +7,6 @@ from dataclasses import asdict, dataclass
 from wordlevel.configs import (
     ScoreSignBarConfig,
     BarConfig,
-    BorderConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
@@ -15,6 +14,7 @@ from wordlevel.configs import (
     PERCENT_SCORE_AXIS_TITLE,
 )
 from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, _TRANSLATE_PX
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
 
 
@@ -159,7 +159,7 @@ def shift_bars(
     rank_axis: RankAxisConfig | dict | None = None,
     score_axis: InternalScoreAxisConfig | dict | None = None,
     bars: InternalBarConfig | None = None,
-    border: BorderConfig | dict | None = None,
+    border: InternalBorderConfig | None = None,
     show_legend: bool = False,
 ) -> alt.Chart:
     """
@@ -229,6 +229,9 @@ def shift_bars(
             orders=None,
         )
 
+    if border is None:
+        border = InternalBorderConfig()
+
     # Configure the legend
     if show_legend:
         legend = alt.Undefined
@@ -251,15 +254,8 @@ def shift_bars(
         if height is not None:
             chart_params["height"] = height
 
-    # Configure the border
-    if isinstance(border, dict):
-        border = BorderConfig(**border)
-    elif border is None:
-        border = BorderConfig()
-
-    chart_params["view"] = alt.ViewConfig(
-        stroke=to_altair_optional(border.color), strokeWidth=border.width
-    )
+    # Suppress the default "border" stroke. We draw borders as axis-domain lines instead
+    chart_params["view"] = alt.ViewConfig(strokeWidth=0)
 
     # Configure the rank axis tick values and labels
     if rank_axis.label_tick_values is not None:
@@ -308,8 +304,6 @@ def shift_bars(
         score_tick_label_expr = alt.Undefined
 
     # Create aspects of the plot
-    # translate=0 removes Altair's default half-pixel axis nudge so the axis ticks and gridlines
-    # align exactly with the bars and the zero line
     score_alt_axis = alt.Axis(
         title=to_altair_optional(score_axis.title),
         titleColor=to_altair_optional(score_axis.title_color),
@@ -319,13 +313,15 @@ def shift_bars(
         labelExpr=score_tick_label_expr,
         grid=score_axis.grid,
         gridColor=to_altair_optional(score_axis.grid_color),
+        domain=border.draw_score_axis,
         domainColor=to_altair_optional(
             score_axis.axis_color if score_axis.axis_color is not None else border.color
         ),
+        domainWidth=score_axis.width,
         tickColor=to_altair_optional(
             score_axis.tick_color if score_axis.tick_color is not None else border.color
         ),
-        translate=0,
+        translate=_TRANSLATE_PX,
     )
     rank_alt_axis = alt.Axis(
         title=to_altair_optional(rank_axis.title),
@@ -337,14 +333,19 @@ def shift_bars(
         labelAngle=rank_label_rotation,
         grid=rank_axis.grid,
         gridColor=to_altair_optional(rank_axis.grid_color),
+        domain=border.draw_rank_axis,
         domainColor=to_altair_optional(
             rank_axis.axis_color if rank_axis.axis_color is not None else border.color
         ),
+        domainWidth=rank_axis.width,
         tickColor=to_altair_optional(
             rank_axis.tick_color if rank_axis.tick_color is not None else border.color
         ),
-        translate=0,
+        translate=_TRANSLATE_PX,
     )
+
+    # `nice=False` is needed to align ticks correctly with the border
+    score_alt_scale = alt.Scale(nice=False)
     rank_alt_scale = alt.Scale(
         paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding
     )
@@ -357,11 +358,11 @@ def shift_bars(
 
     # Configure the orientation
     if vertical:
-        x_axis = alt.X(score_col, axis=score_alt_axis)
+        x_axis = alt.X(f"{score_col}:Q", axis=score_alt_axis, scale=score_alt_scale)
         y_axis = alt.Y(f"{rank_col}:O", axis=rank_alt_axis, scale=rank_alt_scale)
     else:
         x_axis = alt.X(f"{rank_col}:O", axis=rank_alt_axis, scale=rank_alt_scale)
-        y_axis = alt.Y(score_col, axis=score_alt_axis)
+        y_axis = alt.Y(f"{score_col}:Q", axis=score_alt_axis, scale=score_alt_scale)
 
     # Create chart layer
     bars_chart = (

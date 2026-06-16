@@ -20,37 +20,17 @@ def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, token_col,
         rank_col=rank_col,
         token_col=token_col,
         score_type_col=score_type_col,
-        width=100,  # Required for autoscale default
+        width=100,
     )
 
     assert isinstance(chart, alt.LayerChart)
-    # bars, labels, scales, zero line
-    assert len(chart.layer) == 4
-
-
-@pytest.mark.parametrize("autoscale, n_layers_expected", [(True, 4), (False, 3)])
-def test_shift_autoscale_toggle(
-    make_mock_df, score_col, rank_col, token_col, score_type_col, autoscale, n_layers_expected
-):
-    """
-    Check that autoscale_axes=False removes the scaling layer (the bars, labels, and zero-line
-    layers remain)
-    """
-    chart = shift(
-        make_mock_df(),
-        score_col=score_col,
-        rank_col=rank_col,
-        token_col=token_col,
-        score_type_col=score_type_col,
-        width=100,
-        autoscale_axes=autoscale,
-    )
-
-    assert len(chart.layer) == n_layers_expected
-
-    if autoscale:
-        # The scales layer (a LayerChart of 2 rules) sits at index 2, before the zero-line layer
-        assert isinstance(chart.layer[2], alt.LayerChart)
+    # shift_borders groups the base components (bars, labels, scales, zero line) into chart.layer[0]
+    # and appends the border-edge layers after it.
+    base = chart.layer[0]
+    assert isinstance(base, alt.LayerChart)
+    assert len(base.layer) == 4
+    # The scales layer (a LayerChart of 2 rules) sits at index 2 of the base group
+    assert isinstance(base.layer[2], alt.LayerChart)
 
 
 @pytest.mark.parametrize("vertical", [True, False])
@@ -153,13 +133,13 @@ def test_shift_max_rank_filter(
         score_type_col=score_type_col,
         max_rank=max_rank,
         width=100,
-        autoscale_axes=True,
     )
 
-    bars_data = chart.layer[0].data
+    base = chart.layer[0]
+    bars_data = base.layer[0].data
     assert bars_data[rank_col].max() == max_rank
 
-    labels_data = chart.layer[1].data
+    labels_data = base.layer[1].data
     assert labels_data[rank_col].max() == max_rank
     assert len(labels_data) == max_rank
 
@@ -199,10 +179,11 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
             label_config=label_config,
         )
 
-        layers = chart.to_dict()["layer"]
+        # The base components (bars, labels, ...) are grouped in layer[0]; borders follow
+        base_layers = chart.to_dict()["layer"][0]["layer"]
 
         # Check bars layer
-        bars_encoding = layers[0]["encoding"]
+        bars_encoding = base_layers[0]["encoding"]
 
         assert bars_encoding["y"]["axis"]["title"] == custom_rank_title
         assert bars_encoding["y"]["axis"]["grid"] is False
@@ -213,6 +194,6 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
         assert "magenta" in bars_encoding["color"]["scale"]["range"]
 
         # Check labels layer
-        label_layer = layers[1]
+        label_layer = base_layers[1]
 
         assert label_layer["mark"]["color"] == custom_label_color
