@@ -9,6 +9,8 @@ DEFAULT_LABEL_SIZE: float = 11
 DEFAULT_SCORE_AXIS_TITLE = "Contribution"
 PERCENT_SCORE_AXIS_TITLE = "Percent contribution"
 
+SYMBOL_SUFFIX = "_symbol"
+
 
 @dataclass
 class BarConfig:
@@ -23,10 +25,16 @@ class BarConfig:
             Color of bars attributed to the reference corpus
         comparison:
             Color of bars attributed to the comparison corpus
+        reference_symbol:
+            Symbol labeling the reference contribution in the totals panels
+        comparison_symbol:
+            Symbol labeling the comparison contribution in the totals panels
     """
 
     reference: str = "#FECC5D"
     comparison: str = "#2F7CCE"
+    reference_symbol: str = "Reference"
+    comparison_symbol: str = "Comparison"
 
 
 @dataclass
@@ -45,10 +53,16 @@ class ScoreSignBarConfig:
         offset:
             Color of bars where the token offsets the overall difference, making its magnitude
             smaller
+        reinforce_symbol:
+            Symbol labeling the reinforcing contribution in the totals panels
+        offset_symbol:
+            Symbol labeling the offsetting contribution in the totals panels
     """
 
     reinforce: str = "#2F7CCE"
     offset: str = "#FECC5D"
+    reinforce_symbol: str = "Reinforces"
+    offset_symbol: str = "Offsets"
 
 
 @dataclass
@@ -99,6 +113,18 @@ class ShiftBarConfig:
         less_of_negative_counteracted:
             Color of bars where the `less_of_negative` contribution is partially counteracted by
             other bar
+        more_of_negative_symbol:
+            Symbol labeling the `more_of_negative` contribution in the totals panels
+        more_of_positive_symbol:
+            Symbol labeling the `more_of_positive` contribution in the totals panels
+        less_of_positive_symbol:
+            Symbol labeling the `less_of_positive` contribution in the totals panels
+        less_of_negative_symbol:
+            Symbol labeling the `less_of_negative` contribution in the totals panels
+        lower_score_symbol:
+            Symbol labeling the `lower_score` contribution in the totals panels
+        higher_score_symbol:
+            Symbol labeling the `higher_score` contribution in the totals panels
     """
 
     more_of_negative: str = "#2F7CCE"
@@ -113,9 +139,17 @@ class ShiftBarConfig:
     more_of_positive_counteracted: str = "#ffffd4"
     less_of_positive_counteracted: str = "#fffff0"
     less_of_negative_counteracted: str = "#ebedff"
+    more_of_negative_symbol: str = "−↑"
+    more_of_positive_symbol: str = "+↑"
+    less_of_positive_symbol: str = "+↓"
+    less_of_negative_symbol: str = "−↓"
+    lower_score_symbol: str = "▽"
+    higher_score_symbol: str = "△"
 
 
-SHIFT_BAR_NAMES = SimpleNamespace(**{f.name: f.name for f in fields(ShiftBarConfig)})
+SHIFT_BAR_NAMES = SimpleNamespace(
+    **{f.name: f.name for f in fields(ShiftBarConfig) if not f.name.endswith(SYMBOL_SUFFIX)}
+)
 """
 Namespace of `ShiftBarConfig` field names as strings. Use this as the source of truth for shift type 
 name strings in code that lives outside `ShiftBarConfig` (e.g., score plan aliases,
@@ -319,3 +353,22 @@ class ZeroLineConfig:
 
     color: str | None = None
     width: float = 0
+
+
+@dataclass
+class TotalShiftConfig:
+    """
+    Configuration for the totals panels above a word shift plot.
+
+    The totals panels show one cumulative-contribution bar per contribution type, plus a grand
+    total bar summing them all. Per-type colors and symbols come from the bar config.
+
+    Attributes:
+        total_color:
+            Color of the grand total bar
+        total_symbol:
+            Symbol labeling the grand total bar in the totals panels
+    """
+
+    total_color: str = "#888"
+    total_symbol: str = "Σ"
