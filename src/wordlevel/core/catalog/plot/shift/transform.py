@@ -14,7 +14,7 @@ def bar_plot_df(
     contribution_alias: str,
     contribution_type_alias: str,
     attribution_labels: tuple[str, str],
-    max_rank: int = 50,
+    max_rank: int | None = 50,
     is_nonnegative: bool = False,
     split_nonnegative_by_corpus: bool = True,
     scale: float = 1.0,
@@ -26,6 +26,8 @@ def bar_plot_df(
     non-negative measure is split by corpus, the first bucket's contributions are directed to the
     opposing side of the axis; otherwise each bar follows the sign of its own contribution. Every
     contribution is multiplied by `scale` (e.g. `100` to display normalized scores as percentages).
+    
+    Passing `max_rank=None` keeps every token (no rank filter)
     """
     first_label, second_label = attribution_labels
 
@@ -34,9 +36,11 @@ def bar_plot_df(
     if is_nonnegative and split_nonnegative_by_corpus:
         first_score = -1 * first_score
 
+    if max_rank is not None:
+        lf = lf.filter(col(rank_col) <= max_rank)
+
     lf_plot = (
-        lf.filter(col(rank_col) <= max_rank)
-        .with_columns(
+        lf.with_columns(
             pl.when(col(attribution_col) == first_label)
             .then(first_score)
             .otherwise(0)
@@ -66,16 +70,21 @@ def shift_plot_df(
     contribution_alias: str,
     contribution_type_alias: str,
     reference_attribution: str = "reference",
-    max_rank: int = 50,
+    max_rank: int | None = 50,
     is_nonnegative: bool = False,
     split_nonnegative_by_corpus: bool = True,
     scale: float = 1.0,
 ) -> pl.DataFrame:
     """
     Every contribution is multiplied by `scale` (e.g. `100` to display normalized scores as
-    percentages).
+    percentages). 
+    
+    Passing `max_rank=None` keeps every token (no rank filter)
     """
-    lf_plot = df.filter(col(rank_col) <= max_rank)
+    if max_rank is not None:
+        df = df.filter(col(rank_col) <= max_rank)
+    
+    lf_plot = df
 
     if is_nonnegative and split_nonnegative_by_corpus:
         lf_plot = lf_plot.with_columns(
