@@ -364,11 +364,11 @@ class TotalShiftConfig:
     total bar summing them all. Per-type colors and symbols come from the bar config.
 
     Attributes:
-        total_color:
+        total:
             Color of the grand total bar
         total_symbol:
             Symbol labeling the grand total bar in the totals panels
     """
 
-    total_color: str = "#888"
+    total: str = "#888"
     total_symbol: str = "Σ"

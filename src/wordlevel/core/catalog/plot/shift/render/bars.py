@@ -2,7 +2,7 @@ import altair as alt
 import polars as pl
 
 from typing_extensions import Self
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 
 from wordlevel.configs import (
     ScoreSignBarConfig,
@@ -10,12 +10,14 @@ from wordlevel.configs import (
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftBarConfig,
+    TotalShiftConfig,
+    SYMBOL_SUFFIX,
     DEFAULT_SCORE_AXIS_TITLE,
     PERCENT_SCORE_AXIS_TITLE,
 )
 from wordlevel.core.catalog.plot.utils import to_altair_optional
 from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, _TRANSLATE_PX
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
+from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
 
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
@@ -79,7 +81,7 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
 @dataclass
 class InternalBarConfig:
     """
-    Internal configuration of bar colors and stacking orders.
+    Internal configuration of bar colors, stacking orders, and totals symbols.
 
     Attributes:
         colors:
@@ -87,10 +89,13 @@ class InternalBarConfig:
         orders:
             Mapping from score type name to stacking order. `None` when stacking order is not
             applicable (e.g., for a bar plot whose bars are not stacked)
+        symbols:
+            Mapping from score type name to symbol to use in the "totals" chart
     """
 
     colors: dict[str, str]
     orders: dict[str, int] | None
+    symbols: dict[str, str]
 
     @classmethod
     def from_bar_config(
@@ -101,37 +106,18 @@ class InternalBarConfig:
         """
         Creates an InternalBarConfig from a BarConfig or ScoreSignBarConfig.
 
-        The expected config class depends on how the comparison is attributed: corpus attribution
-        (`"frequency"`, `"rank"`) uses a `BarConfig`; score-sign attribution uses an
-        `ScoreSignBarConfig`. A dict keyed by the attribution labels is also accepted. A config or
-        dict that does not match the comparison's attribution raises a `ValueError`.
+        The expected config class depends on how the comparison is attributed
         """
-        expected_cls: type[BarConfig] | type[ScoreSignBarConfig]
+        expected_config: type[BarConfig] | type[ScoreSignBarConfig]
         if attributed_by == "score_sign":
-            expected_cls = ScoreSignBarConfig
+            expected_config = ScoreSignBarConfig
         else:
-            expected_cls = BarConfig
+            expected_config = BarConfig
 
-        labels = ATTRIBUTION_LABELS[attributed_by]
+        resolved_config = cls._resolve_config(config, expected_config)
+        colors, symbols = cls._get_colors_and_symbols(resolved_config)
 
-        if config is None:
-            config = expected_cls()
-        elif isinstance(config, dict):
-            invalid_keys = set(config) - set(labels)
-            if invalid_keys:
-                raise ValueError(
-                    f"Invalid bar color key(s) {sorted(invalid_keys)} for a comparison attributed "
-                    f"by {attributed_by!r}. Valid keys are {list(labels)} (or pass a "
-                    f"{expected_cls.__name__})."
-                )
-            config = expected_cls(**config)
-        elif not isinstance(config, expected_cls):
-            raise ValueError(
-                f"A comparison attributed by {attributed_by!r} expects a {expected_cls.__name__} "
-                f"or a dict keyed by {list(labels)}, but got a {type(config).__name__}."
-            )
-
-        return cls(colors=asdict(config), orders=None)
+        return cls(colors=colors, orders=None, symbols=symbols)
 
     @classmethod
     def from_shift_bar_config(cls, config: ShiftBarConfig | dict | None) -> Self:
@@ -139,11 +125,81 @@ class InternalBarConfig:
         Creats an InternalBarConfig from a ShiftBarConfig. The key different from `from_bar_config`
         is that it enforces the order of the different bar types
         """
+        resolved_config = cls._resolve_config(config, ShiftBarConfig)
+        colors, symbols = cls._get_colors_and_symbols(resolved_config)
+
+        return cls(colors=colors, orders=_SHIFT_TYPE_ORDERS, symbols=symbols)
+
+    @classmethod
+    def from_score_types(cls, score_types: list[str]) -> Self:
+        """
+        No config supplied — derive a uniform-color colors dict from whatever score types are
+        present in the data. Callers that want plot-type-specific defaults are expected to
+        construct an InternalBarConfig via from_bar_config / from_shift_bar_config.
+        """
+        # TODO: infer if the score types correspond to reference/comparison, reinforce/offset, or
+        #       the shift score types, and route to those constructors instead
+        return cls(
+            colors={st: "steelblue" for st in score_types},
+            orders=None,
+            symbols={st: st for st in score_types},
+        )
+
+    @classmethod
+    def from_total_shift_config(cls, config: TotalShiftConfig | dict | None) -> Self:
+        """
+        Builds the grand-total bar config from a `TotalShiftConfig`, using its `total` color and
+        `total_symbol` for the single `"total"` bar.
+        """
+        resolved_config = cls._resolve_config(config, TotalShiftConfig)
+        colors, symbols = cls._get_colors_and_symbols(resolved_config)
+
+        return cls(colors=colors, orders=None, symbols=symbols)
+
+    @staticmethod
+    def _resolve_config(
+        config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig | dict | None,
+        expected_config: (
+            type[BarConfig] | type[ScoreSignBarConfig] | type[ShiftBarConfig] | type[TotalShiftConfig]
+        ),
+    ) -> BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig:
+        """
+        Resolves a user-supplied config (which may be None or a dict) and resolves it into the
+        corresponding config data class
+        """
         if config is None:
-            config = ShiftBarConfig()
-        elif isinstance(config, dict):
-            config = ShiftBarConfig(**config)
-        return cls(colors=asdict(config), orders=_SHIFT_TYPE_ORDERS)
+            return expected_config()
+        if isinstance(config, dict):
+            valid_keys = {f.name for f in fields(expected_config)}
+            invalid_keys = set(config) - valid_keys
+            if invalid_keys:
+                raise ValueError(
+                    f"Invalid {expected_config.__name__} key(s) {sorted(invalid_keys)}. Valid keys "
+                    f"are {sorted(valid_keys)} (or pass a {expected_config.__name__})."
+                )
+            return expected_config(**config)
+        if not isinstance(config, expected_config):
+            raise ValueError(
+                f"Expected a {expected_config.__name__} or a dict of its fields, but got a "
+                f"{type(config).__name__}."
+            )
+        return config
+
+    @staticmethod
+    def _get_colors_and_symbols(
+        config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig,
+    ) -> tuple[dict[str, str], dict[str, str]]:
+        """
+        Resolves a config dataclass into its color and symbol mappings (as dicts)
+        """
+        data = asdict(config)
+
+        colors = {k: v for k, v in data.items() if not k.endswith(SYMBOL_SUFFIX)}
+        symbols = {
+            k.removesuffix(SYMBOL_SUFFIX): v for k, v in data.items() if k.endswith(SYMBOL_SUFFIX)
+        }
+
+        return colors, symbols
 
 
 def shift_bars(
@@ -221,13 +277,8 @@ def shift_bars(
         score_axis = InternalScoreAxisConfig()
 
     if bars is None:
-        # No config supplied — derive a uniform-color colors dict from whatever score types are
-        # present in the data. Callers that want plot-type-specific defaults are expected to
-        # construct an InternalBarConfig via from_bar_config / from_shift_bar_config.
-        bars = InternalBarConfig(
-            colors={st: "steelblue" for st in df[score_type_col].unique().to_list()},
-            orders=None,
-        )
+        score_types = df[score_type_col].unique().to_list()
+        bars = InternalBarConfig.from_score_types(score_types)
 
     if border is None:
         border = InternalBorderConfig()
