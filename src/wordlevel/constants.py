@@ -22,3 +22,5 @@ COUNTERACTED_SUFFIX = "_counteracted"
 
 TOKEN = "token"
 NORMALIZATION_SUFFIX = "__wl_normed"
+
+DEFAULT_SCORE_AXIS_PIXEL_SIZE = 400
