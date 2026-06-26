@@ -14,6 +14,7 @@ def shift_labels(
     score_col: str,
     rank_col: str,
     token_col: str,
+    alignment_col: str | None = None,
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
@@ -21,18 +22,32 @@ def shift_labels(
 ) -> alt.Chart:
     """
     Assumes a dataframe which has one row per word per type of contribution. There should be columns
-    for the contribution, contribution type, and rank
+    for the contribution, contribution type, and rank.
+
+    `alignment_col` is the column whose sign decides which side of the bar end each label is anchored
+    on. It defaults to `score_col`, so a label sits on the side its bar points. This is useful if a
+    label needs to be pointed a certain way when the score is zero
     """
     if filter_max_rank:
         df = df.filter(col(rank_col) <= max_rank)
-
-    df = get_label_positions(df, token_col=token_col, rank_col=rank_col, score_col=score_col)
 
     # Set default label configurations
     if isinstance(config, dict):
         config = LabelConfig(**config)
     elif config is None:
         config = LabelConfig()
+
+    label_align_col = alignment_col if alignment_col is not None else score_col
+    passthrough_cols = [] if label_align_col == score_col else [label_align_col]
+    
+    # Get a new dataframe with just one row per token and rank (deduping score types)
+    df = get_label_positions(
+        df, 
+        token_col=token_col, 
+        rank_col=rank_col, 
+        score_col=score_col, 
+        passthrough_cols=passthrough_cols
+    )
 
     # Set angle defaults
     if vertical:
@@ -83,19 +98,23 @@ def shift_labels(
             color=config.color,
             fontSize=to_altair_optional(config.size),
             fontWeight=config.weight,  # type: ignore[arg-type]
-            align=to_conditional_expr(score_col, "align", pos_position_params, neg_position_params),
-            baseline=to_conditional_expr(
-                score_col, "baseline", pos_position_params, neg_position_params
+            align=to_conditional_expr(
+                label_align_col, "align", pos_position_params, neg_position_params
             ),
-            dx=to_conditional_expr(score_col, "dx", pos_position_params, neg_position_params),
-            dy=to_conditional_expr(score_col, "dy", pos_position_params, neg_position_params),
+            baseline=to_conditional_expr(
+                label_align_col, "baseline", pos_position_params, neg_position_params
+            ),
+            dx=to_conditional_expr(label_align_col, "dx", pos_position_params, neg_position_params),
+            dy=to_conditional_expr(label_align_col, "dy", pos_position_params, neg_position_params),
         )
         .encode(
             x=x_axis,
             y=y_axis,
             text=token_col,
             angle=alt.condition(
-                f"datum['{score_col}'] >= 0", alt.value(pos_text_angle), alt.value(neg_text_angle)
+                f"datum['{label_align_col}'] >= 0",
+                alt.value(pos_text_angle),
+                alt.value(neg_text_angle),
             ),
         )
     )
@@ -104,16 +123,26 @@ def shift_labels(
 
 
 def get_label_positions(
-    df: pl.DataFrame, score_col: str, rank_col: str, token_col: str
+    df: pl.DataFrame,
+    score_col: str,
+    rank_col: str,
+    token_col: str,
+    passthrough_cols: list[str] | None = None,
 ) -> pl.DataFrame:
     """
-    Get positions for labels, assuming long dataframe. Positions are still in score col
+    Get positions for labels, assuming long dataframe.
+    
+    For any `passthrough_cols`, the first value per token is taken
     """
+    if passthrough_cols is None:
+        passthrough_cols = []
+
     df = (
         df.group_by([token_col, rank_col])
         .agg(
             col(score_col).filter(pl.col(score_col) >= 0).sum().fill_null(0.0).alias("positives"),
             col(score_col).filter(pl.col(score_col) < 0).sum().fill_null(0.0).alias("negatives"),
+            *[col(c).first() for c in passthrough_cols],
         )
         .with_columns(
             pl.when(col("positives") > col("negatives").abs())

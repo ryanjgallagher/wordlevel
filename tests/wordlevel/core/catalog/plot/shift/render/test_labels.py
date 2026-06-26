@@ -169,6 +169,47 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, token_col):
         assert re.search(conditional_pattern, mark[conditional_field]["expr"])
 
 
+def test_alignment_col_and_label_placement(score_col, rank_col, token_col):
+    """
+    When `alignment_col` is given, the label-placement predicates (the angle condition and the
+    mark's align/baseline/dx/dy) branch on the alignment column. This is what lets a zero-score
+    token still be anchored to a chosen side
+    """
+    alignment_col = "alignment"
+    df = pl.DataFrame(
+        {
+            token_col: ["a", "b", "c"],
+            rank_col: [1, 2, 3],
+            # "a" has a zero score but is anchored negative purely via the alignment column
+            score_col: [0.0, 5.0, -5.0],
+            alignment_col: [-1.0, 1.0, 1.0],
+        }
+    )
+
+    chart = shift_labels(
+        df,
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        alignment_col=alignment_col,
+    )
+    chart_json = chart.to_dict()
+
+    # The angle condition and the mark's conditional fields branch on the alignment column, not score
+    assert chart_json["encoding"]["angle"]["condition"]["test"] == f"datum['{alignment_col}'] >= 0"
+
+    mark = chart_json["mark"]
+    conditional_pattern = rf"datum\['{re.escape(alignment_col)}'\]\s*>=\s*0\s*\?\s*.+\s*:\s*.+"
+    for conditional_field in ["align", "baseline", "dx", "dy"]:
+        assert "expr" in mark[conditional_field]
+        assert re.search(conditional_pattern, mark[conditional_field]["expr"])
+
+    # The alignment column is carried through into the data so the predicates can read it
+    df_chart = pl.DataFrame(chart.data)
+    assert alignment_col in df_chart.columns
+    assert df_chart.filter(pl.col(token_col) == "a")[alignment_col].item() == -1.0
+
+
 @pytest.mark.parametrize("vertical", [True, False])
 def test_chart_orientation(make_mock_df, score_col, rank_col, token_col, vertical):
     """
