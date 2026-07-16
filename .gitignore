@@ -216,4 +216,7 @@ lexicons/*/data/
 /docs/documentation/api/
 /zensical-build.toml
 
+# Local drafting/scratch data
+drafting/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,macos

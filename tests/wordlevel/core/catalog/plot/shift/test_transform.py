@@ -35,6 +35,33 @@ class TestBarPlotDf:
         assert len(df_result) == 6
         assert set(df_result.columns) == {"word", "rank", "my_contribution", "my_type"}
 
+    def test_max_rank_none_keeps_every_token(self) -> None:
+        """max_rank=None applies no rank filter, so every token is kept."""
+        lf = pl.DataFrame(
+            {
+                "word": ["hello", "world", "foo", "bar"],
+                "rank": [1, 2, 3, 51],
+                "attribution": ["reference", "comparison", "reference", "comparison"],
+                "score": [0.3, 0.5, -0.2, 0.1],
+            }
+        ).lazy()
+
+        df_result = bar_plot_df(
+            lf,
+            token_col="word",
+            score_col="score",
+            rank_col="rank",
+            attribution_col="attribution",
+            contribution_alias="my_contribution",
+            contribution_type_alias="my_type",
+            attribution_labels=("reference", "comparison"),
+            max_rank=None,
+        )
+
+        # No filtering: all 4 rows kept * 2 attribution types = 8
+        assert set(df_result["word"].to_list()) == {"hello", "world", "foo", "bar"}
+        assert len(df_result) == 8
+
     @pytest.mark.parametrize(
         "is_nonnegative, split_nonnegative_by_corpus, expected_ref_contribution",
         [
@@ -116,6 +143,31 @@ class TestShiftPlotDf:
         assert len(df_result) == 24
         assert set(df_result.columns) == {"word", "rank", "my_contribution", "my_type"}
         assert set(df_result["my_type"].to_list()) == set(SHIFT_SCORE_TYPES)
+
+    def test_max_rank_none_keeps_every_token(self) -> None:
+        """max_rank=None applies no rank filter, so every token is kept."""
+        lf = pl.DataFrame(
+            {
+                "word": ["hello", "world", "foo"],
+                "rank": [1, 2, 51],
+                "attribution": ["reference", "comparison", "reference"],
+                **{shift_type: [0.1, 0.1, 0.1] for shift_type in SHIFT_SCORE_TYPES},
+            }
+        ).lazy()
+
+        df_result = shift_plot_df(
+            lf,
+            token_col="word",
+            rank_col="rank",
+            attribution_col="attribution",
+            contribution_alias="my_contribution",
+            contribution_type_alias="my_type",
+            max_rank=None,
+        )
+
+        # No filtering: all 3 rows kept * 12 SHIFT_SCORE_TYPES = 36
+        assert set(df_result["word"].to_list()) == {"hello", "world", "foo"}
+        assert len(df_result) == 36
 
     @pytest.mark.parametrize(
         "is_nonnegative, split_nonnegative_by_corpus, expected_ref_contribution",

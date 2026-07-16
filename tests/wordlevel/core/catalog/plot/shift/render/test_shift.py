@@ -1,11 +1,12 @@
+from typing import cast
+
 import pytest
 import altair as alt
+import polars as pl
 
 from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftBarConfig
-from wordlevel.core.catalog.plot.shift.render.shift import (
-    shift,
-    DEFAULT_SCORE_AXIS_PIXEL_SIZE,
-)
+from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE
+from wordlevel.core.catalog.plot.shift.render.shift import shift
 from wordlevel.core.catalog.plot.shift.render.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
@@ -136,10 +137,10 @@ def test_shift_max_rank_filter(
     )
 
     base = chart.layer[0]
-    bars_data = base.layer[0].data
+    bars_data = cast(pl.DataFrame, base.layer[0].data)
     assert bars_data[rank_col].max() == max_rank
 
-    labels_data = base.layer[1].data
+    labels_data = cast(pl.DataFrame, base.layer[1].data)
     assert labels_data[rank_col].max() == max_rank
     assert len(labels_data) == max_rank
 
@@ -154,16 +155,16 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
     custom_label_color = "cyan"
 
     for config_style in ["config", "dict"]:
-        rank_config = {"title": custom_rank_title, "grid": False}
-        score_config = {"title": custom_score_title, "grid": True}
-        shift_bar_config = custom_bar_colors
-        label_config = {"color": custom_label_color}
-
         if config_style == "config":
-            rank_config = RankAxisConfig(**rank_config)
-            score_config = InternalScoreAxisConfig(**score_config)
-            shift_bar_config = ShiftBarConfig(**shift_bar_config)
-            label_config = LabelConfig(**label_config)
+            rank_config = RankAxisConfig(title=custom_rank_title, grid=False)
+            score_config = InternalScoreAxisConfig(title=custom_score_title, grid=True)
+            shift_bar_config = ShiftBarConfig(**custom_bar_colors)
+            label_config = LabelConfig(color=custom_label_color)
+        else:
+            rank_config = {"title": custom_rank_title, "grid": False}
+            score_config = {"title": custom_score_title, "grid": True}
+            shift_bar_config = custom_bar_colors
+            label_config = {"color": custom_label_color}
 
         chart = shift(
             make_mock_df(),

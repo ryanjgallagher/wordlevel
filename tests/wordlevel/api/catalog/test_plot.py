@@ -1,10 +1,12 @@
+from typing import cast
+
 import pytest
 import altair as alt
 import polars as pl
 
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import comp
-from wordlevel.api.catalog.plot import Plotter
+from wordlevel.api.catalog.plot import Plotter, PlotCacheKey, PlotType
 from wordlevel.configs import ScoreSignBarConfig, BarConfig, ShiftBarConfig
 from wordlevel.constants import (
     RANK_COL,
@@ -38,7 +40,7 @@ def catalog(df_mock) -> Catalog:
 
 class TestGetPlotDf:
     @pytest.mark.parametrize("plot_type", ["bar", "shift"])
-    def test_output_columns(self, catalog: Catalog, plot_type: str) -> None:
+    def test_output_columns(self, catalog: Catalog, plot_type: PlotType) -> None:
         """Output DataFrame has exactly the four expected columns regardless of plot type."""
         plotter = Plotter(catalog)
 
@@ -114,6 +116,49 @@ class TestGetPlotDf:
         assert df_split is not df_nosplit
         assert len(plotter._plot_dfs) == 2
 
+    def test_show_totals_fetches_full_vocab_and_caches_separately(self, catalog: Catalog) -> None:
+        """`show_totals` keeps the full vocabulary (so totals sum over every token) and is cached
+        under a separate key from the top-`max_rank` (totals-hidden) df."""
+        plotter = Plotter(catalog)
+        comp_result = catalog.comparisons["entropy_comp"]
+
+        df_top2 = plotter._get_plot_df(
+            comparison=comp_result, plot_type="shift", max_rank=2, show_totals=False
+        )
+        df_totals = plotter._get_plot_df(
+            comparison=comp_result, plot_type="shift", max_rank=None, show_totals=True
+        )
+
+        # The catalog has 5 tokens: the totals df keeps all of them; the display df is the top 2.
+        assert df_totals["word"].n_unique() == 5
+        assert df_top2["word"].n_unique() == 2
+
+        # Separate cache entries; the totals entry is unfiltered (`max_rank` is None).
+        assert len(plotter._plot_dfs) == 2
+        totals_key = PlotCacheKey(
+            alias=comp_result.alias,
+            plot_type="shift",
+            split_nonnegative_by_corpus=True,
+            show_totals=True,
+        )
+        assert plotter._plot_dfs[totals_key].max_rank is None
+
+    def test_caching_serves_concrete_from_full_df(self, catalog: Catalog) -> None:
+        """A concrete max_rank request is served (filtered) from a cached full (`None`) df without
+        recomputing or overwriting the cache entry."""
+        plotter = Plotter(catalog)
+        comp_result = catalog.comparisons["entropy_comp"]
+
+        df_full = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=None)
+        df_top2 = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=2)
+
+        assert df_top2["word"].n_unique() == 2
+        assert df_top2.height < df_full.height
+        assert len(plotter._plot_dfs) == 1
+
+        cached = list(plotter._plot_dfs.values())[0]
+        assert cached.max_rank is None  # the full-df entry is unchanged
+
 
 class TestBar:
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
@@ -124,7 +169,9 @@ class TestBar:
         assert isinstance(chart, alt.LayerChart)
         # shift_borders groups the 4 base layers in chart.layer[0] and appends border edges
         assert len(chart.layer[0].layer) == 4  # bars, labels, scales, zero line
-        assert len(chart.layer[0].layer[0].data) == df_mock.height * 2  # reference, comparison
+        assert (
+            len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 2
+        )  # reference, comparison
 
     @pytest.mark.parametrize(
         "bar_config",
@@ -181,12 +228,29 @@ class TestBar:
         ],
     )
     def test_bar_config_mismatch_raises(
-        self, catalog: Catalog, comparison: str, bad_config: object
+        self, catalog: Catalog, comparison: str, bad_config: BarConfig | ScoreSignBarConfig | dict
     ) -> None:
         """A config or dict that doesn't match the comparison's attribution raises a ValueError."""
         plotter = Plotter(catalog)
         with pytest.raises(ValueError):
             plotter.bar(comparison, bar_config=bad_config)
+
+    def test_show_totals_totals_span_full_vocab(
+        self, df_mock: pl.DataFrame, catalog: Catalog
+    ) -> None:
+        """With totals shown, bar() fetches the full-vocabulary df (so the totals sum over every
+        token), even when only the top `max_rank` are displayed."""
+        plotter = Plotter(catalog)
+        plotter.bar("freq_comp", max_rank=2, show_totals=True)
+
+        totals_entries = [
+            cached
+            for key, cached in plotter._plot_dfs.items()
+            if key.plot_type == "bar" and key.show_totals
+        ]
+        assert len(totals_entries) == 1
+        assert totals_entries[0].max_rank is None
+        assert totals_entries[0].df["word"].n_unique() == df_mock.height  # all 5 tokens, not top 2
 
 
 class TestShift:
@@ -205,7 +269,26 @@ class TestShift:
         assert isinstance(chart, alt.LayerChart)
         # shift_borders groups the 4 base layers in chart.layer[0] and appends border edges
         assert len(chart.layer[0].layer) == 4  # bars, labels, scales, zero line
-        assert len(chart.layer[0].layer[0].data) == df_mock.height * 12  # 12 shift types
+        assert (
+            len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 12
+        )  # 12 shift types
+
+    def test_show_totals_totals_span_full_vocab(
+        self, df_mock: pl.DataFrame, catalog: Catalog
+    ) -> None:
+        """With totals shown, shift() fetches the full-vocabulary df (so the totals sum over every
+        token), even when only the top `max_rank` are displayed."""
+        plotter = Plotter(catalog)
+        plotter.shift("entropy_comp", max_rank=2, show_totals=True)
+
+        totals_entries = [
+            cached
+            for key, cached in plotter._plot_dfs.items()
+            if key.plot_type == "shift" and key.show_totals
+        ]
+        assert len(totals_entries) == 1
+        assert totals_entries[0].max_rank is None
+        assert totals_entries[0].df["word"].n_unique() == df_mock.height  # all 5 tokens, not top 2
 
     @pytest.mark.parametrize(
         "bar_config",
@@ -225,9 +308,9 @@ class TestShift:
         assert "#ff0000" in scale["range"]
 
 
-def _score_axis_title(chart: alt.LayerChart) -> str:
+def _score_axis_title(chart: alt.TopLevelMixin) -> str:
     """Extracts the score (x) axis title from the bars layer of a rendered chart."""
-    return chart.layer[0].layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
+    return cast(alt.LayerChart, chart).layer[0].layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
 
 
 class TestNormalizedPlot:
@@ -248,7 +331,7 @@ class TestNormalizedPlot:
             comparison=result, plot_type="bar", max_rank=50
         )
 
-        expected = 100 * result.df[SCORE_COL].abs().max()
+        expected = 100 * cast(float, result.df[SCORE_COL].abs().max())
         assert df_plot[PLOT_CONTRIBUTION_COL].abs().max() == pytest.approx(expected)
 
     def test_axis_title_reflects_normalization(self, normalized_catalog: Catalog) -> None:

@@ -5,9 +5,12 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
+    ScoreSignBarConfig,
     ShiftBarConfig,
+    TotalShiftConfig,
     DEFAULT_SCORE_AXIS_TITLE,
     PERCENT_SCORE_AXIS_TITLE,
 )
@@ -668,8 +671,7 @@ def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank
     scale = chart_json["encoding"]["color"]["scale"]
 
     default_colors = {
-        f.name: getattr(ShiftBarConfig(), f.name)
-        for f in ShiftBarConfig.__dataclass_fields__.values()
+        score_type: getattr(ShiftBarConfig(), score_type) for score_type in SHIFT_SCORE_TYPES
     }
 
     assert set(scale["domain"]) == set(default_colors.keys())
@@ -682,26 +684,30 @@ def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank
     assert chart_json["encoding"]["order"]["field"] == "stacked_bar_order"
 
 
-def test_shift_bar_configs_custom_colors(make_mock_df, score_col, score_type_col, rank_col):
+@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
+def test_shift_bar_configs_custom_colors(
+    make_mock_df, score_col, score_type_col, rank_col, as_dict
+):
     """
-    Test that a custom ShiftBarConfig overrides individual colors while keeping the rest at default
+    Test that a custom ShiftBarConfig overrides individual colors while keeping the rest at default,
+    whether passed as a ShiftBarConfig object or as a dict of the same fields
     """
     custom_overrides = {"lower_score": "#000000", "more_of_positive": "#999999"}
+    config = custom_overrides if as_dict else ShiftBarConfig(**custom_overrides)
 
     chart = shift_bars(
         make_mock_df(),
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bars=InternalBarConfig.from_shift_bar_config(ShiftBarConfig(**custom_overrides)),
+        bars=InternalBarConfig.from_shift_bar_config(config),
     )
 
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
     default_colors = {
-        f.name: getattr(ShiftBarConfig(), f.name)
-        for f in ShiftBarConfig.__dataclass_fields__.values()
+        score_type: getattr(ShiftBarConfig(), score_type) for score_type in SHIFT_SCORE_TYPES
     }
     color_mapping = dict(zip(scale["domain"], scale["range"]))
     for score_type, default_color in default_colors.items():
@@ -722,8 +728,195 @@ def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, 
             rank_col=rank_col,
             score_col=score_col,
             score_type_col=score_type_col,
-            bars=InternalBarConfig(colors={"lower_score": "red"}, orders=None),
+            bars=InternalBarConfig(colors={"lower_score": "red"}, orders=None, symbols={}),
         )
+
+
+# from_bar_config picks its config class from `attributed_by`: BarConfig (reference/comparison) for
+# frequency-attributed bars, ScoreSignBarConfig (reinforce/offset) for score-sign-attributed bars.
+@pytest.mark.parametrize(
+    "config_cls, attributed_by, attribution_fields",
+    [
+        (BarConfig, "frequency", ("reference", "comparison")),
+        (ScoreSignBarConfig, "score_sign", ("reinforce", "offset")),
+    ],
+)
+def test_bar_config_default_colors(
+    token_col, score_col, score_type_col, rank_col, config_cls, attributed_by, attribution_fields
+):
+    """
+    `InternalBarConfig.from_bar_config` colors the bars with the config's defaults and, since bar
+    plots don't stack, enforces no stacking order
+    """
+    first, second = attribution_fields
+    df = pl.DataFrame(
+        {
+            token_col: ["a", "b"],
+            rank_col: [1, 2],
+            score_type_col: [first, second],
+            score_col: [1.0, -1.0],
+        }
+    )
+
+    chart = shift_bars(
+        df,
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bars=InternalBarConfig.from_bar_config(None, attributed_by=attributed_by),
+    )
+
+    chart_json = chart.to_dict()
+    scale = chart_json["encoding"]["color"]["scale"]
+
+    color_mapping = dict(zip(scale["domain"], scale["range"]))
+    assert color_mapping == {field: getattr(config_cls(), field) for field in attribution_fields}
+    assert "order" not in chart_json["encoding"]
+
+
+@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
+@pytest.mark.parametrize(
+    "config_cls, attributed_by, attribution_fields",
+    [
+        (BarConfig, "frequency", ("reference", "comparison")),
+        (ScoreSignBarConfig, "score_sign", ("reinforce", "offset")),
+    ],
+)
+def test_bar_config_custom_colors(
+    token_col,
+    score_col,
+    score_type_col,
+    rank_col,
+    config_cls,
+    attributed_by,
+    attribution_fields,
+    as_dict,
+):
+    """
+    A custom config overrides the first bar's color while keeping the second at default, whether
+    passed as a config object or as a dict of the same fields
+    """
+    first, second = attribution_fields
+
+    overrides = {first: "#000000"}
+    config = overrides if as_dict else config_cls(**overrides)
+
+    df = pl.DataFrame(
+        {
+            token_col: ["a", "b"],
+            rank_col: [1, 2],
+            score_type_col: [first, second],
+            score_col: [1.0, -1.0],
+        }
+    )
+
+    chart = shift_bars(
+        df,
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bars=InternalBarConfig.from_bar_config(config, attributed_by=attributed_by),
+    )
+
+    scale = chart.to_dict()["encoding"]["color"]["scale"]
+    color_mapping = dict(zip(scale["domain"], scale["range"]))
+    assert color_mapping == {first: "#000000", second: getattr(config_cls(), second)}
+
+
+def test_total_shift_config_default_color(token_col, score_col, score_type_col, rank_col):
+    """
+    `InternalBarConfig.from_total_shift_config` colors the single grand-total bar with the
+    TotalShiftConfig's default `total` color
+    """
+    df = pl.DataFrame(
+        {
+            token_col: ["a"],
+            rank_col: [1],
+            score_type_col: ["total"],
+            score_col: [1.0],
+        }
+    )
+
+    chart = shift_bars(
+        df,
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bars=InternalBarConfig.from_total_shift_config(None),
+    )
+
+    chart_json = chart.to_dict()
+    scale = chart_json["encoding"]["color"]["scale"]
+
+    color_mapping = dict(zip(scale["domain"], scale["range"]))
+    assert color_mapping == {"total": TotalShiftConfig().total}
+    assert "order" not in chart_json["encoding"]
+
+
+@pytest.mark.parametrize("as_dict", [False, True])
+def test_total_shift_config_custom_color(token_col, score_col, score_type_col, rank_col, as_dict):
+    """
+    A custom config overrides the grand-total bar's `total` color, whether passed as a
+    TotalShiftConfig object or as a dict of the same fields
+    """
+    config = {"total": "#000000"} if as_dict else TotalShiftConfig(total="#000000")
+    df = pl.DataFrame(
+        {
+            token_col: ["a"],
+            rank_col: [1],
+            score_type_col: ["total"],
+            score_col: [1.0],
+        }
+    )
+
+    chart = shift_bars(
+        df,
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bars=InternalBarConfig.from_total_shift_config(config),
+    )
+
+    scale = chart.to_dict()["encoding"]["color"]["scale"]
+    color_mapping = dict(zip(scale["domain"], scale["range"]))
+    assert color_mapping == {"total": "#000000"}
+
+
+@pytest.mark.parametrize(
+    "make_internal_bar_config",
+    [
+        lambda config: InternalBarConfig.from_bar_config(config, attributed_by="frequency"),
+        lambda config: InternalBarConfig.from_shift_bar_config(config),
+        lambda config: InternalBarConfig.from_total_shift_config(config),
+    ],
+    ids=["from_bar_config", "from_shift_bar_config", "from_total_shift_config"],
+)
+def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
+    """
+    Passing a dict with field names the config doesn't have raises the `_resolve_config` ValueError
+    """
+    with pytest.raises(ValueError, match="Invalid .* key"):
+        make_internal_bar_config({"not_a_field": "red", "also_bad": "blue"})
+
+
+@pytest.mark.parametrize(
+    "make_internal_bar_config, wrong_config",
+    [
+        (
+            lambda config: InternalBarConfig.from_bar_config(config, attributed_by="frequency"),
+            ShiftBarConfig(),
+        ),
+        (lambda config: InternalBarConfig.from_shift_bar_config(config), BarConfig()),
+        (lambda config: InternalBarConfig.from_total_shift_config(config), BarConfig()),
+    ],
+    ids=["from_bar_config", "from_shift_bar_config", "from_total_shift_config"],
+)
+def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_config):
+    """
+    Passing a config of the wrong class raises the `_resolve_config` ValueError
+    """
+    with pytest.raises(ValueError, match="Expected a .* or a dict of its fields"):
+        make_internal_bar_config(wrong_config)
 
 
 def test_internal_bar_config_from_bar_config_has_no_orders():
