@@ -46,6 +46,33 @@ def _border_edges(panel: dict) -> set[tuple]:
     return edges
 
 
+def _score_side_line_counts(panel: dict, score_col: str, vertical: bool) -> dict[str, int]:
+    """Counts frame lines on each side of a panel along the score-axis direction, keyed by side
+    ('left'/'right' when horizontal, 'top'/'bottom' when vertical).
+
+    A side gets a line from the panel's native score-axis domain and/or an opposite-score border
+    edge; counting both catches a missing seam (count 0) and a doubled edge (count 2).
+    """
+    score_channel = "y" if not vertical else "x"
+    default_orient = "left" if not vertical else "bottom"
+    counts: dict[str, int] = {}
+
+    # Native score-axis domain (drawn on `orient`, which may be flipped to the opposite side)
+    score_axis = panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
+    if score_axis.get("domain"):
+        side = score_axis.get("orient", default_orient)
+        counts[side] = counts.get(side, 0) + 1
+
+    # Opposite-score border edges (the frame layers encoding the score field)
+    for layer in panel["layer"][1:]:
+        pos = layer["encoding"].get("x") or layer["encoding"].get("y")
+        if pos["field"].startswith(score_col):
+            side = pos["axis"]["orient"]
+            counts[side] = counts.get(side, 0) + 1
+
+    return counts
+
+
 def _zero_line_mark(panel: dict) -> dict:
     """The zero-line rule mark (the 4th base component) of a panel spec."""
     return panel["layer"][0]["layer"][3]["mark"]
@@ -198,8 +225,9 @@ class TestShowTotals:
 
 
 class TestFrameConsistency:
+    @pytest.mark.parametrize("vertical", [True, False])
     def test_borders_same_color_and_width_across_panels(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
     ):
         """Every border edge on every panel shares one color and width, so the stacked frame reads
         as a single continuous border rather than mismatched per-panel edges."""
@@ -210,14 +238,16 @@ class TestFrameConsistency:
             token_col=token_col,
             score_type_col=score_type_col,
             show_totals=True,
+            vertical=vertical,
             border_config=BorderConfig(color="red", width=2),
         )
 
         edges = set().union(*(_border_edges(panel) for panel in _panels(chart)))
         assert edges == {("red", 2)}
 
+    @pytest.mark.parametrize("vertical", [True, False])
     def test_zero_line_same_color_and_width_across_panels(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
     ):
         """The zero line is drawn identically (color and width) on the main chart and both totals
         panels."""
@@ -228,8 +258,39 @@ class TestFrameConsistency:
             token_col=token_col,
             score_type_col=score_type_col,
             show_totals=True,
+            vertical=vertical,
             zero_line_config=ZeroLineConfig(color="blue", width=3),
         )
 
         marks = [_zero_line_mark(panel) for panel in _panels(chart)]
         assert {(mark["color"], mark["strokeWidth"]) for mark in marks} == {("blue", 3)}
+
+    @pytest.mark.parametrize("vertical", [True, False])
+    def test_every_score_direction_boundary_drawn_once(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+    ):
+        """Along the score-axis direction (where the panels are stacked), each outer edge and each
+        inter-panel seam is drawn exactly once — catching both a missing divider and a doubled
+        edge — in either orientation."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+            vertical=vertical,
+            border_config=BorderConfig(color="red", width=2),
+        )
+
+        panels = _panels(chart)
+        counts = [_score_side_line_counts(panel, score_col, vertical) for panel in panels]
+        # Panels stack near -> far along the score axis (top->bottom vertical, left->right horizontal)
+        near, far = ("top", "bottom") if vertical else ("left", "right")
+
+        # The two outer edges of the stack
+        assert counts[0].get(near, 0) == 1
+        assert counts[-1].get(far, 0) == 1
+        # Each flush seam between adjacent panels is drawn by exactly one of the two
+        for upper, lower in zip(counts, counts[1:]):
+            assert upper.get(far, 0) + lower.get(near, 0) == 1

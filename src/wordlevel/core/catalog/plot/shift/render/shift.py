@@ -134,11 +134,16 @@ def shift(
 
     border_is_visible = border_config.width > 0
 
+    # For horizontal totals (`vertical=False` and `show_totals=True`), the main chart's score axis 
+    # is moved to the far side, so its native score-axis domain draws that outer edge. The 
+    # grand-total panel draws the seam between them instead
+    score_axis_on_far_side = show_totals and not vertical
+
     main_border = InternalBorderConfig.from_config(
         border_config,
         draw_score_axis=True,
         draw_rank_axis=True,
-        draw_border_opposite_score_axis=border_is_visible,
+        draw_border_opposite_score_axis=border_is_visible and not score_axis_on_far_side,
         draw_border_opposite_rank_axis=border_is_visible,
     )
 
@@ -155,7 +160,7 @@ def shift(
         bars=bar_config,
         border=main_border,
         show_legend=show_legend,
-        score_axis_opposite=show_totals and not vertical,
+        score_axis_opposite=score_axis_on_far_side,
         **size_param,
     )
     labels = shift_labels(
@@ -207,7 +212,7 @@ def shift(
                 border_config,
                 draw_score_axis=False,
                 draw_rank_axis=True,
-                draw_border_opposite_score_axis=False,
+                draw_border_opposite_score_axis=border_is_visible and score_axis_on_far_side,
                 draw_border_opposite_rank_axis=border_is_visible
             ),
             total_shift_config=total_shift_config,
