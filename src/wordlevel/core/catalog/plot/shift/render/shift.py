@@ -155,6 +155,7 @@ def shift(
         bars=bar_config,
         border=main_border,
         show_legend=show_legend,
+        score_axis_opposite=show_totals and not vertical,
         **size_param,
     )
     labels = shift_labels(

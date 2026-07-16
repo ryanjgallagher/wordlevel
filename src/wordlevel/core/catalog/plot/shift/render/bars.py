@@ -217,6 +217,7 @@ def shift_bars(
     bars: InternalBarConfig | None = None,
     border: InternalBorderConfig | None = None,
     show_legend: bool = False,
+    score_axis_opposite: bool = False,
 ) -> alt.Chart:
     """
     Makes the bar chart layer of a word shift plot
@@ -257,6 +258,9 @@ def shift_bars(
             Configuration for the axes and border
         show_legend:
             Whether to show the chart legend
+        score_axis_opposite:
+            Whether to place the score axis (labels, ticks, title) on the side opposite its default.
+            Ignored if `vertical` is True
 
     Returns:
         An Altair chart of the bar graph layer
@@ -362,6 +366,7 @@ def shift_bars(
         labelColor=to_altair_optional(score_axis.label_color),
         labelFontSize=to_altair_optional(score_axis.label_fontsize),
         labelExpr=score_tick_label_expr,
+        orient="right" if (score_axis_opposite and not vertical) else alt.Undefined,
         grid=score_axis.grid,
         gridColor=to_altair_optional(score_axis.grid_color),
         domain=border.draw_score_axis,

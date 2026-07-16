@@ -168,6 +168,34 @@ class TestShowTotals:
         grand_bars = _panel_bars_data(cast(alt.VConcatChart, chart).vconcat[1])
         assert grand_bars[_LABEL_COL][0] == "Ω"
 
+    @pytest.mark.parametrize("vertical, expected_orient", [(False, "right"), (True, None)])
+    def test_totals_move_score_axis_opposite_only_when_horizontal(
+        self,
+        make_mock_df,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
+        expected_orient,
+    ):
+        """With totals, the main chart's score axis is moved to the far (right) side only when
+        horizontal, so it clears the totals panels placed to its left."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+            vertical=vertical,
+        )
+
+        main_panel = _panels(chart)[-1]  # the main chart is the last panel
+        score_channel = "x" if vertical else "y"
+        axis = main_panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
+        assert axis.get("orient") == expected_orient
+
 
 class TestFrameConsistency:
     def test_borders_same_color_and_width_across_panels(
