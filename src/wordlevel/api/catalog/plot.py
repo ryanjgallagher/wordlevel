@@ -45,12 +45,13 @@ class PlotCacheKey:
     alias: str
     plot_type: PlotType
     split_nonnegative_by_corpus: bool
+    show_totals: bool = False
 
 
 @dataclass
 class PlotCachedDataFrame:
     df: pl.DataFrame
-    max_rank: int
+    max_rank: int | None
 
 
 class Plotter:
@@ -74,6 +75,7 @@ class Plotter:
         vertical: bool = True,
         height: float | None = None,
         width: float | None = None,
+        show_totals: bool = False,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
         bar_config: BarConfig | ScoreSignBarConfig | dict | None = None,
@@ -83,7 +85,7 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
         split_nonnegative_by_corpus: bool = True,
-    ) -> alt.LayerChart:
+    ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
         """
         Makes a bar chart of the top contributing tokens distinguishing two compared corpora.
 
@@ -134,6 +136,9 @@ class Plotter:
                 The height of the chart, in pixels
             width:
                 The width of the chart, in pixels
+            show_totals:
+                Whether to show the overall total contributions of each score type and overall as an
+                additional chart appended to the main chart
             rank_axis:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
@@ -175,8 +180,9 @@ class Plotter:
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="bar",
-            max_rank=max_rank,
+            max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+            show_totals=show_totals
         )
 
         return shift(
@@ -189,6 +195,7 @@ class Plotter:
             vertical=vertical,
             height=height,
             width=width,
+            show_totals=show_totals,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis,
@@ -210,6 +217,7 @@ class Plotter:
         vertical: bool = True,
         height: float | None = None,
         width: float | None = None,
+        show_totals: bool = False,
         rank_axis: RankAxisConfig | dict | None = None,
         score_axis: ScoreAxisConfig | dict | None = None,
         bar_config: ShiftBarConfig | dict | None = None,
@@ -219,7 +227,7 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
         split_nonnegative_by_corpus: bool = True,
-    ) -> alt.LayerChart:
+    ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
         r"""
         Makes a word shift plot (a stacked bar chart) of the top contributing tokens distinguishing
         two compared corpora.
@@ -322,6 +330,9 @@ class Plotter:
             width:
                 The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
                 `RankAxisConfig.bar_width` to control the width
+            show_totals:
+                Whether to show the overall total contributions of each score type and overall as an
+                additional chart appended to the main chart
             rank_axis:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
@@ -368,8 +379,9 @@ class Plotter:
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="shift",
-            max_rank=max_rank,
+            max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+            show_totals=show_totals,
         )
 
         return shift(
@@ -382,6 +394,7 @@ class Plotter:
             vertical=vertical,
             height=height,
             width=width,
+            show_totals=show_totals,
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis,
@@ -400,8 +413,9 @@ class Plotter:
         self,
         comparison: ComparisonResult,
         plot_type: PlotType,
-        max_rank: int = 50,
+        max_rank: int | None = 50,
         split_nonnegative_by_corpus: bool = True,
+        show_totals: bool = False,
     ) -> pl.DataFrame:
         """
         For the given `plot_type`, gets the dataframe needed for plotting from `comparison.df`
@@ -412,13 +426,18 @@ class Plotter:
             plot_type:
                 The type of plot to make
             max_rank:
-                The number of top-contributing tokens to display
+                The number of top-contributing tokens to display, or `None` to keep the full
+                vocabulary (e.g. so totals can be summed over every token)
             split_nonnegative_by_corpus:
                 When the scoring measure is inherently non-negative, whether to direct bar
                 contributions in the positive and negative directions based on which corpus they are
                 attributed to (the reference or comparison). The score axis is updated to reflect
                 that all token-level scores are still positive. If `False`, attributions can still
                 be distinguished per corpus by bar color. Ignored for measures that can be negative
+            show_totals:
+                Whether the plot shows total contributions per score type. Used to key the cache, so 
+                a full-vocabulary df (totals shown) and a top-`max_rank` df (totals hidden) are 
+                cached separately
 
         Returns:
             The properly formatted dataframe needed for plotting
@@ -430,14 +449,28 @@ class Plotter:
             alias=comparison.alias,
             plot_type=plot_type,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+            show_totals=show_totals,
         )
 
         # Check cache for a previously computed version of the dataframe
         if cache_key in self._plot_dfs:
-            if max_rank == self._plot_dfs[cache_key].max_rank:
-                return self._plot_dfs[cache_key].df
-            elif max_rank < self._plot_dfs[cache_key].max_rank:
-                return self._plot_dfs[cache_key].df.filter(col(RANK_COL) <= max_rank)
+            cached_data = self._plot_dfs[cache_key]
+
+            # The exact same data has already been cached
+            if max_rank == cached_data.max_rank:
+                return cached_data.df
+            
+            # The cached data can be used if the full dataframe has already been realized, or a 
+            # version of it with a higher max rank has been
+            is_full_df = cached_data.max_rank is None
+            is_higher_max_rank = (
+                max_rank is not None
+                and cached_data.max_rank is not None
+                and max_rank < cached_data.max_rank
+            )
+            can_use_cached_data = is_full_df or is_higher_max_rank
+            if max_rank is not None and can_use_cached_data:
+                return cached_data.df.filter(col(RANK_COL) <= max_rank)
 
         # Normalized contributions are displayed as percentages.
         if comparison.normalized:
