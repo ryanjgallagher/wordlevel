@@ -182,7 +182,7 @@ class Plotter:
             plot_type="bar",
             max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,
-            show_totals=show_totals
+            show_totals=show_totals,
         )
 
         return shift(
@@ -435,8 +435,8 @@ class Plotter:
                 that all token-level scores are still positive. If `False`, attributions can still
                 be distinguished per corpus by bar color. Ignored for measures that can be negative
             show_totals:
-                Whether the plot shows total contributions per score type. Used to key the cache, so 
-                a full-vocabulary df (totals shown) and a top-`max_rank` df (totals hidden) are 
+                Whether the plot shows total contributions per score type. Used to key the cache, so
+                a full-vocabulary df (totals shown) and a top-`max_rank` df (totals hidden) are
                 cached separately
 
         Returns:
@@ -459,8 +459,8 @@ class Plotter:
             # The exact same data has already been cached
             if max_rank == cached_data.max_rank:
                 return cached_data.df
-            
-            # The cached data can be used if the full dataframe has already been realized, or a 
+
+            # The cached data can be used if the full dataframe has already been realized, or a
             # version of it with a higher max rank has been
             is_full_df = cached_data.max_rank is None
             is_higher_max_rank = (

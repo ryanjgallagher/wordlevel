@@ -54,7 +54,7 @@ class TestStructure:
         )
 
         assert isinstance(chart, alt.LayerChart)
-        
+
         base = chart.layer[0]
         assert isinstance(base, alt.LayerChart)
         assert len(base.layer) == 4
@@ -88,7 +88,7 @@ class TestGrandTotal:
 
         data = _bars_data(chart)
         assert data.height == 1
-        
+
         row = data.to_dicts()[0]
         assert row[score_col] == pytest.approx(sum(scores))
         assert row[_POSITION_COL] == 1

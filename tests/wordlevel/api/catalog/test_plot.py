@@ -169,7 +169,9 @@ class TestBar:
         assert isinstance(chart, alt.LayerChart)
         # shift_borders groups the 4 base layers in chart.layer[0] and appends border edges
         assert len(chart.layer[0].layer) == 4  # bars, labels, scales, zero line
-        assert len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 2  # reference, comparison
+        assert (
+            len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 2
+        )  # reference, comparison
 
     @pytest.mark.parametrize(
         "bar_config",
@@ -267,9 +269,13 @@ class TestShift:
         assert isinstance(chart, alt.LayerChart)
         # shift_borders groups the 4 base layers in chart.layer[0] and appends border edges
         assert len(chart.layer[0].layer) == 4  # bars, labels, scales, zero line
-        assert len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 12  # 12 shift types
+        assert (
+            len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 12
+        )  # 12 shift types
 
-    def test_show_totals_totals_span_full_vocab(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
+    def test_show_totals_totals_span_full_vocab(
+        self, df_mock: pl.DataFrame, catalog: Catalog
+    ) -> None:
         """With totals shown, shift() fetches the full-vocabulary df (so the totals sum over every
         token), even when only the top `max_rank` are displayed."""
         plotter = Plotter(catalog)

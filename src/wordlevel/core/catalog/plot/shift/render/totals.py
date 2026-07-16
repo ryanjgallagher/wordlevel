@@ -28,7 +28,7 @@ from wordlevel.core.catalog.plot.shift.render.scales import shift_scales
 from wordlevel.core.catalog.plot.shift.render.zero_line import zero_line
 
 
-_SCORE_TYPE_COL = "score_type" 
+_SCORE_TYPE_COL = "score_type"
 _POSITION_COL = "position"  # analogous to `rank_col`
 _LABEL_COL = "label"  # analogous to `token_col`
 _ALIGNMENT_COL = "alignment"
@@ -46,11 +46,11 @@ _SHIFT_SUMMARY_DROP_IF_EMPTY: frozenset[str] = frozenset({"higher_score", "lower
 
 
 def _get_total(
-    df: pl.DataFrame | pl.LazyFrame, score_col: str, label: str    
+    df: pl.DataFrame | pl.LazyFrame, score_col: str, label: str
 ) -> pl.DataFrame | pl.LazyFrame:
-    """ 
-    Takes a long dataframe of one row per token per score type and transforms it into a dataframe 
-    with a single row representing the total across all tokens and contributions. The `label` is the 
+    """
+    Takes a long dataframe of one row per token per score type and transforms it into a dataframe
+    with a single row representing the total across all tokens and contributions. The `label` is the
     annotation plotted next to the bar
     """
     return df.select(
@@ -62,9 +62,12 @@ def _get_total(
 
 
 def _get_score_type_totals(
-    df: pl.DataFrame | pl.LazyFrame, score_col: str, score_type_col: str, labels: dict[str, str],    
+    df: pl.DataFrame | pl.LazyFrame,
+    score_col: str,
+    score_type_col: str,
+    labels: dict[str, str],
 ) -> pl.DataFrame | pl.LazyFrame:
-    """ 
+    """
     Takes a long dataframe of one row per token per score type and transforms it into a dataframe
     with one row per score type and its total across all tokens. The `labels` are the annotations
     plotted next to each type of score type bar. Assumes this mapping matches the score types that
@@ -91,7 +94,7 @@ def _get_score_type_totals(
         .group_by(score_type_col)
         .agg(col(score_col).sum())
         .with_columns(
-            pos_expr.alias(_POSITION_COL), 
+            pos_expr.alias(_POSITION_COL),
             label_expr.alias(_LABEL_COL),
         )
         .rename({score_type_col: _SCORE_TYPE_COL})
@@ -109,24 +112,19 @@ def _get_score_type_totals(
         .drop("score_for_dropping")
     )
     # 3. Make sure that labels don't overlap in the case that a component sums to zero
-    df_totals = (
-        df_totals.sort(_POSITION_COL, _LABEL_COL)
-        .with_columns(
-            # If the bar's sign isn't zero, then point the label in that direction
-            pl.when(col(score_col).sign() != 0)
-            .then(col(score_col).sign())
-            # If the bar's sign is zero, but the other bar's sign is not, then take the opposite 
-            # sign of the nonzero bar. Note, we group "pairs" of bars by `POSITION_COL`
-            .when(col(score_col).sign().sum().over(_POSITION_COL) != 0)
-            .then(-1 * col(score_col).sign().sum().over(_POSITION_COL))
-            # Otherwise, place the first label we see at the positive position, other at negative
-            .otherwise(
-                pl.when(col(_LABEL_COL).cum_count().over(_POSITION_COL) == 1)
-                .then(1.0)
-                .otherwise(-1.0)
-            )
-            .alias(_ALIGNMENT_COL)
+    df_totals = df_totals.sort(_POSITION_COL, _LABEL_COL).with_columns(
+        # If the bar's sign isn't zero, then point the label in that direction
+        pl.when(col(score_col).sign() != 0)
+        .then(col(score_col).sign())
+        # If the bar's sign is zero, but the other bar's sign is not, then take the opposite
+        # sign of the nonzero bar. Note, we group "pairs" of bars by `POSITION_COL`
+        .when(col(score_col).sign().sum().over(_POSITION_COL) != 0)
+        .then(-1 * col(score_col).sign().sum().over(_POSITION_COL))
+        # Otherwise, place the first label we see at the positive position, other at negative
+        .otherwise(
+            pl.when(col(_LABEL_COL).cum_count().over(_POSITION_COL) == 1).then(1.0).otherwise(-1.0)
         )
+        .alias(_ALIGNMENT_COL)
     )
 
     return df_totals
@@ -149,7 +147,7 @@ def shift_total(
     zero_line_config: ZeroLineConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
-    """ 
+    """
     Makes a bar chart representing word shift contribution totals, which can either be per score
     type or overall (the "grand total").
 
@@ -220,9 +218,7 @@ def shift_total(
     elif bar_config is None:
         # TODO: these raw score types keep the `_counteracted` suffix that `_get_score_type_totals`
         #       strips, so the fallback labels/colors won't match; strip before `from_score_types`
-        score_types = (
-            df.lazy().select(col(score_type_col).unique()).collect().to_series().to_list()
-        )
+        score_types = df.lazy().select(col(score_type_col).unique()).collect().to_series().to_list()
         type_bar_config = InternalBarConfig.from_score_types(score_types)
     else:
         type_bar_config = bar_config
@@ -249,24 +245,28 @@ def shift_total(
             size_param["height"] = height
 
     # Get the various totals. Note, both are needed to make sure they use a common scale
-    df_grand_total, df_score_type_totals = pl.collect_all([
-        _get_total(
-            df=df, 
-            score_col=score_col, 
-            label=total_shift_config.total_symbol,
-        ).lazy(),
-        _get_score_type_totals(
-            df=df, 
-            score_col=score_col, 
-            score_type_col=score_type_col, 
-            labels=type_bar_config.symbols,
-        ).lazy(), 
-    ])
+    df_grand_total, df_score_type_totals = pl.collect_all(
+        [
+            _get_total(
+                df=df,
+                score_col=score_col,
+                label=total_shift_config.total_symbol,
+            ).lazy(),
+            _get_score_type_totals(
+                df=df,
+                score_col=score_col,
+                score_type_col=score_type_col,
+                labels=type_bar_config.symbols,
+            ).lazy(),
+        ]
+    )
 
-    df_all_totals = pl.concat([
-        df_grand_total.select(score_col, _POSITION_COL, _LABEL_COL),
-        df_score_type_totals.select(score_col, _POSITION_COL, _LABEL_COL)
-    ])
+    df_all_totals = pl.concat(
+        [
+            df_grand_total.select(score_col, _POSITION_COL, _LABEL_COL),
+            df_score_type_totals.select(score_col, _POSITION_COL, _LABEL_COL),
+        ]
+    )
 
     if grand_total:
         df_total = df_grand_total
@@ -329,7 +329,7 @@ def shift_total(
         grid=False,
         translate=_TRANSLATE_PX,
     ).scale(nice=False)
-    
+
     modified_rank_axis = rank_channel.axis(
         domain=border_config.draw_rank_axis,
         domainWidth=rank_axis.width,

@@ -39,14 +39,14 @@ def shift_labels(
 
     label_align_col = alignment_col if alignment_col is not None else score_col
     passthrough_cols = [] if label_align_col == score_col else [label_align_col]
-    
+
     # Get a new dataframe with just one row per token and rank (deduping score types)
     df = get_label_positions(
-        df, 
-        token_col=token_col, 
-        rank_col=rank_col, 
-        score_col=score_col, 
-        passthrough_cols=passthrough_cols
+        df,
+        token_col=token_col,
+        rank_col=rank_col,
+        score_col=score_col,
+        passthrough_cols=passthrough_cols,
     )
 
     # Set angle defaults
@@ -131,7 +131,7 @@ def get_label_positions(
 ) -> pl.DataFrame:
     """
     Get positions for labels, assuming long dataframe.
-    
+
     For any `passthrough_cols`, the first value per token is taken
     """
     if passthrough_cols is None:

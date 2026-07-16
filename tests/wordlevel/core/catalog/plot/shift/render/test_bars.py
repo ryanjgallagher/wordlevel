@@ -685,7 +685,9 @@ def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank
 
 
 @pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
-def test_shift_bar_configs_custom_colors(make_mock_df, score_col, score_type_col, rank_col, as_dict):
+def test_shift_bar_configs_custom_colors(
+    make_mock_df, score_col, score_type_col, rank_col, as_dict
+):
     """
     Test that a custom ShiftBarConfig overrides individual colors while keeping the rest at default,
     whether passed as a ShiftBarConfig object or as a dict of the same fields
@@ -795,10 +797,10 @@ def test_bar_config_custom_colors(
     passed as a config object or as a dict of the same fields
     """
     first, second = attribution_fields
-    
+
     overrides = {first: "#000000"}
     config = overrides if as_dict else config_cls(**overrides)
-    
+
     df = pl.DataFrame(
         {
             token_col: ["a", "b"],

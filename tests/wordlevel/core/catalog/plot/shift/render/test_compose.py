@@ -42,7 +42,7 @@ def _border_edges(panel: dict) -> set[tuple]:
         encoding = layer["encoding"]
         axis = (encoding.get("x") or encoding.get("y"))["axis"]
         edges.add((axis["domainColor"], axis["domainWidth"]))
-    
+
     return edges
 
 

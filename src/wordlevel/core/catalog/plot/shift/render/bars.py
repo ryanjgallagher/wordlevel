@@ -160,7 +160,10 @@ class InternalBarConfig:
     def _resolve_config(
         config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig | dict | None,
         expected_config: (
-            type[BarConfig] | type[ScoreSignBarConfig] | type[ShiftBarConfig] | type[TotalShiftConfig]
+            type[BarConfig]
+            | type[ScoreSignBarConfig]
+            | type[ShiftBarConfig]
+            | type[TotalShiftConfig]
         ),
     ) -> BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig:
         """
