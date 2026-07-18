@@ -1,15 +1,31 @@
+# Build
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/wordlevel/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wordlevel"]
+
+# General metadata and requirements
 [project]
 name = "wordlevel"
-description = "A Python package for word-level analysis of text"
-readme = "README.md"
 authors = [
   {name = "Ryan J. Gallagher"}
 ]
-version = "0.0.1"
+dynamic = ["version"]
+
+description = "A Python package for word-level analysis of text"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+
 requires-python = ">= 3.10"
 dependencies = [
   "altair>=5.5.0",
@@ -17,6 +33,13 @@ dependencies = [
   "polars",
 ]
 
+[project.urls]
+#Homepage = ""
+#Documentation = ""
+Repository = "https://github.com/ryanjgallagher/wordlevel"
+
+
+# Development
 [dependency-groups]
 dev = [
   "pytest",
@@ -31,9 +54,6 @@ docs = [
   "zensical>=0.0.40",
   "tomlkit>=0.13.0",
 ]
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
