@@ -1,5 +1,4 @@
 import polars as pl
-import polars.selectors as cs
 from polars import col
 
 from wordlevel.constants import SHIFT_SCORE_TYPES
@@ -66,13 +65,9 @@ def shift_plot_df(
     df: pl.LazyFrame,
     token_col: str,
     rank_col: str,
-    attribution_col: str,
     contribution_alias: str,
     contribution_type_alias: str,
-    reference_attribution: str = "reference",
     max_rank: int | None = 50,
-    is_nonnegative: bool = False,
-    split_nonnegative_by_corpus: bool = True,
     scale: float = 1.0,
 ) -> pl.DataFrame:
     """
@@ -84,16 +79,7 @@ def shift_plot_df(
     if max_rank is not None:
         df = df.filter(col(rank_col) <= max_rank)
 
-    lf_plot = df
-
-    if is_nonnegative and split_nonnegative_by_corpus:
-        lf_plot = lf_plot.with_columns(
-            pl.when(col(attribution_col) == reference_attribution)
-            .then(cs.by_name(SHIFT_SCORE_TYPES) * pl.lit(-1))
-            .otherwise(cs.by_name(SHIFT_SCORE_TYPES))
-        )
-
-    lf_plot = lf_plot.unpivot(
+    lf_plot = df.unpivot(
         on=SHIFT_SCORE_TYPES,
         index=[token_col, rank_col],
         value_name=contribution_alias,
