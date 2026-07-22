@@ -132,7 +132,6 @@ class TestShiftPlotDf:
             lf,
             token_col="word",
             rank_col="rank",
-            attribution_col="attribution",
             contribution_alias="my_contribution",
             contribution_type_alias="my_type",
             max_rank=50,
@@ -159,7 +158,6 @@ class TestShiftPlotDf:
             lf,
             token_col="word",
             rank_col="rank",
-            attribution_col="attribution",
             contribution_alias="my_contribution",
             contribution_type_alias="my_type",
             max_rank=None,
@@ -168,54 +166,3 @@ class TestShiftPlotDf:
         # No filtering: all 3 rows kept * 12 SHIFT_SCORE_TYPES = 36
         assert set(df_result["word"].to_list()) == {"hello", "world", "foo"}
         assert len(df_result) == 36
-
-    @pytest.mark.parametrize(
-        "is_nonnegative, split_nonnegative_by_corpus, expected_ref_contribution",
-        [
-            # Default: no negation
-            (False, True, 0.1),
-            # split_nonnegative_by_corpus=False: no negation even when is_nonnegative=True
-            (True, False, 0.1),
-            # Both flags True: all shift scores for reference-attributed rows are negated
-            (True, True, -0.1),
-        ],
-    )
-    def test_nonnegative_negation(
-        self,
-        is_nonnegative: bool,
-        split_nonnegative_by_corpus: bool,
-        expected_ref_contribution: float,
-    ) -> None:
-        """All shift scores for reference-attributed rows are negated only when
-        is_nonnegative=True and split_nonnegative_by_corpus=True."""
-        lf = pl.DataFrame(
-            {
-                "word": ["hello", "world"],
-                "rank": [1, 2],
-                "attribution": ["reference", "comparison"],
-                **{shift_type: [0.1, 0.1] for shift_type in SHIFT_SCORE_TYPES},
-            }
-        ).lazy()
-
-        df_result = shift_plot_df(
-            lf,
-            token_col="word",
-            rank_col="rank",
-            attribution_col="attribution",
-            contribution_alias="contribution",
-            contribution_type_alias="contribution_type",
-            max_rank=50,
-            is_nonnegative=is_nonnegative,
-            split_nonnegative_by_corpus=split_nonnegative_by_corpus,
-        )
-
-        df_expected = pl.DataFrame(
-            {
-                "word": ["hello"] * 12 + ["world"] * 12,
-                "rank": [1] * 12 + [2] * 12,
-                "contribution_type": SHIFT_SCORE_TYPES * 2,
-                "contribution": [expected_ref_contribution] * 12 + [0.1] * 12,
-            }
-        )
-
-        assert_frame_equal(df_result, df_expected, check_row_order=False, check_column_order=False)
