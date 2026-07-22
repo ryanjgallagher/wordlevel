@@ -1,4 +1,5 @@
 from random import randint, sample
+from typing import LiteralString
 
 import pytest
 import polars as pl
@@ -9,6 +10,7 @@ from wordlevel.constants import TOKEN, NORMALIZATION_SUFFIX
 from wordlevel.api.catalog.constructors import CatalogData
 from wordlevel.api.catalog.constructors import _normalize_frequency_columns
 from wordlevel.api.comparison.comparison import ComparisonResult
+from wordlevel.datasets.dataset import Dataset
 
 
 @pytest.fixture
@@ -27,7 +29,7 @@ def freq_cols() -> list[str]:
 
 
 @pytest.fixture
-def words(freq_cols) -> list[str]:
+def words(freq_cols) -> list[LiteralString]:
     return "a b c d e f g h i j k l m n o p q r s t u v w x y z".split()
 
 
@@ -275,6 +277,41 @@ class TestConstructors:
         null_counts = catalog._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dataset])
+    @pytest.mark.parametrize("corpora", [None, ["Lyndon B. Johnson", "George W. Bush"]])
+    def test_from_wl_dataset(self, constructor, corpora):
+        """Test initialization from a WordLevel Dataset"""
+        dataset = Dataset("presidental_speeches")
+        token_col = dataset._token_col
+        all_corpora = [c for c in dataset.as_df().columns if c != token_col]
+        expected_corpora = corpora if corpora is not None else all_corpora
+
+        catalog = constructor(dataset, corpora=corpora)
+
+        assert isinstance(catalog, Catalog)
+        assert isinstance(catalog._comparisons, dict)
+        assert len(catalog._comparisons) == 0
+
+        # Token column is inherited from the dataset
+        assert catalog._token_col == token_col
+
+        # Frequency columns are the selected corpora (or all corpora when None)
+        assert catalog._freq_cols == set(expected_corpora)
+
+        # Tokens from the dataset are preserved
+        assert catalog.df.height > 0
+
+        # Normalization is always applied for the dataset constructor
+        assert catalog._normalization_suffix == NORMALIZATION_SUFFIX
+        normed_freq_cols = [f"{corpus}{NORMALIZATION_SUFFIX}" for corpus in expected_corpora]
+        for normed_freq_col in normed_freq_cols:
+            assert normed_freq_col in catalog._df.collect_schema()
+
+        # Check no nulls in any frequency or normed frequency columns
+        cols_to_check = list(expected_corpora) + normed_freq_cols
+        null_counts = catalog._df.select(pl.col(*cols_to_check).is_null().any()).collect().row(0)
+        assert not any(null_counts)
+
 
 class TestConstructorValidation:
     def test_from_polars_duplicate_freq_cols(self, df_mock, freq_cols, token_col):
@@ -389,7 +426,7 @@ def test_normalize_frequency_columns(normalization_suffix):
     )
 
     df_actual = _normalize_frequency_columns(
-        df_input, freq_cols=["freqs1", "freqs2"], normalization_suffix=normalization_suffix
-    )
+        df_input.lazy(), freq_cols=["freqs1", "freqs2"], normalization_suffix=normalization_suffix
+    ).collect()
 
     assert_frame_equal(df_actual, df_expected, check_column_order=False, check_row_order=False)
