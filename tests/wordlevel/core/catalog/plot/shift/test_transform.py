@@ -123,7 +123,6 @@ class TestShiftPlotDf:
             {
                 "word": ["hello", "world", "foo"],
                 "rank": [1, 2, 51],
-                "attribution": ["reference", "comparison", "reference"],
                 **{shift_type: [0.1, 0.1, 0.1] for shift_type in SHIFT_SCORE_TYPES},
             }
         ).lazy()
@@ -149,7 +148,6 @@ class TestShiftPlotDf:
             {
                 "word": ["hello", "world", "foo"],
                 "rank": [1, 2, 51],
-                "attribution": ["reference", "comparison", "reference"],
                 **{shift_type: [0.1, 0.1, 0.1] for shift_type in SHIFT_SCORE_TYPES},
             }
         ).lazy()

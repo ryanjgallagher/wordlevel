@@ -79,9 +79,7 @@ def shift_plot_df(
     if max_rank is not None:
         df = df.filter(col(rank_col) <= max_rank)
 
-    lf_plot = df
-
-    lf_plot = lf_plot.unpivot(
+    lf_plot = df.unpivot(
         on=SHIFT_SCORE_TYPES,
         index=[token_col, rank_col],
         value_name=contribution_alias,
