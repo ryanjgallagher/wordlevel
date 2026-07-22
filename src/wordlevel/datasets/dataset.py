@@ -14,6 +14,7 @@ class Dataset:
         """
         data_f = Path(__file__).parent / "data" / f"{name}.parquet"
         self._df = pl.read_parquet(data_f)
+        self._token_col = "token"
 
     def as_df(self, corpora: Collection[str] | None = None) -> pl.DataFrame:
         """
@@ -25,7 +26,7 @@ class Dataset:
         """
         df = self._df
         if corpora is not None:
-            df = df.select("token", *corpora)
+            df = df.select(self._token_col, *corpora)
 
         return df
 
@@ -39,7 +40,7 @@ class Dataset:
         df = self.as_df(corpora=corpora)
 
         col2values = df.to_dict(as_series=False)
-        tokens = col2values.pop("token")
+        tokens = col2values.pop(self._token_col)
 
         corpus2token2freq = {
             corpus: dict(zip(tokens, freqs)) for corpus, freqs in col2values.items()
@@ -60,7 +61,7 @@ class Dataset:
         df = self.as_df(corpora=corpora)
 
         col2values = df.to_dict(as_series=False)
-        tokens = col2values.pop("token")
+        tokens = col2values.pop(self._token_col)
 
         corpus_names = []
         corpus_freqs = []
