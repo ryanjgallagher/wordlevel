@@ -14,7 +14,6 @@ from wordlevel.constants import (
     PLOT_CONTRIBUTION_TYPE_COL,
     RANK_COL,
     SCORE_COL,
-    REFERENCE_ATTRIBUTION,
 )
 from wordlevel.configs import (
     ScoreSignBarConfig,
@@ -226,7 +225,6 @@ class Plotter:
         zero_line_config: ZeroLineConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
-        split_nonnegative_by_corpus: bool = True,
     ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
         r"""
         Makes a word shift plot (a stacked bar chart) of the top contributing tokens distinguishing
@@ -356,12 +354,6 @@ class Plotter:
                 it provides more space for the bar labels
             show_legend:
                 Whether to show the chart legend
-            split_nonnegative_by_corpus:
-                When the scoring measure is inherently non-negative, whether to direct bar
-                contributions in the positive and negative directions based on which corpus they are
-                attributed to (the reference or comparison). The score axis is updated to reflect
-                that all token-level scores are still positive. If `False`, attributions can still
-                be distinguished per corpus by bar color. Ignored for measures that can be negative
 
         Returns:
             An Altair chart of the word shift plot
@@ -380,7 +372,7 @@ class Plotter:
             comparison=comp,
             plot_type="shift",
             max_rank=None if show_totals else max_rank,
-            split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+            split_nonnegative_by_corpus=False,
             show_totals=show_totals,
         )
 
@@ -398,7 +390,7 @@ class Plotter:
             rank_axis=rank_axis,
             score_axis=InternalScoreAxisConfig.from_config(
                 score_axis,
-                all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative,
+                all_positive_labels=False,
                 percent=comp.normalized,
             ),
             bar_config=InternalBarConfig.from_shift_bar_config(bar_config),
@@ -499,13 +491,9 @@ class Plotter:
                 df=comparison._lf,
                 token_col=self._catalog._token_col,
                 rank_col=RANK_COL,
-                attribution_col=ATTRIBUTION_COL,
                 contribution_alias=PLOT_CONTRIBUTION_COL,
                 contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
-                reference_attribution=REFERENCE_ATTRIBUTION,
                 max_rank=max_rank,
-                is_nonnegative=comparison.is_nonnegative,
-                split_nonnegative_by_corpus=split_nonnegative_by_corpus,
                 scale=scale,
             )
         else:
