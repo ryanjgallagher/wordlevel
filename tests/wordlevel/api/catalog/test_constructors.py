@@ -1,5 +1,4 @@
 from random import randint, sample
-from typing import LiteralString
 
 import pytest
 import polars as pl
@@ -29,8 +28,10 @@ def freq_cols() -> list[str]:
 
 
 @pytest.fixture
-def words(freq_cols) -> list[LiteralString]:
-    return "a b c d e f g h i j k l m n o p q r s t u v w x y z".split()
+def words(freq_cols) -> list[str]:
+    # Build a-z via chr so elements type as `str`; a string-literal `.split()` types as
+    # `list[LiteralString]`, which is not assignable to `list[str]` (list is invariant).
+    return [chr(code) for code in range(ord("a"), ord("z") + 1)]
 
 
 @pytest.fixture
