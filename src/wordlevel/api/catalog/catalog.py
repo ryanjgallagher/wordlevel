@@ -48,7 +48,13 @@ class Catalog:
 
     def __init__(
         self,
-        data: pl.DataFrame | pl.LazyFrame | Catalog | CatalogData | DictOfFreqs | ListOfFreqs,
+        data: pl.DataFrame
+        | pl.LazyFrame
+        | Catalog
+        | CatalogData
+        | DictOfFreqs
+        | ListOfFreqs
+        | Dataset,
         token_col: str | None = None,
         corpora: Sequence[str] | None = None,
     ) -> None:

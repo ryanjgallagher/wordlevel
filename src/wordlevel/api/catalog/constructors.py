@@ -134,12 +134,12 @@ def from_polars(
     if token_col not in cols:
         raise KeyError(f"Token column not in provided dataframe: {token_col}")
 
-    if len(deduped_freq_cols) < 2:
-        raise ValueError("At least two frequency columns must be provided via `freq_cols`")
-
     for freq_col in deduped_freq_cols:
         if freq_col not in cols:
             raise KeyError(f"Frequency column not in provided dataframe: {freq_col}")
+
+    if len(deduped_freq_cols) < 2:
+        raise ValueError("At least two frequency columns must be provided via `freq_cols`")
 
     # Do necessary transformations
     lf = df.clone().lazy()
@@ -181,10 +181,14 @@ def from_wl_dataset(data: Dataset, corpora: Collection[str] | None = None) -> Ca
         KeyError: If any corpus in `corpora` is not a valid specifier
         ValueError: If fewer than two `corpora` are provided
     """
-    df = data.as_df(corpora=corpora)
-    loaded_corpora = df.select(pl.all().exclude(data._token_col)).columns
+    df = data.as_df()
 
-    return from_polars(df=data.as_df(), token_col=data._token_col, freq_cols=loaded_corpora)
+    if corpora is None:
+        freq_cols = df.select(pl.all().exclude(data._token_col)).columns
+    else:
+        freq_cols = corpora
+
+    return from_polars(df=df, token_col=data._token_col, freq_cols=freq_cols)
 
 
 def from_list_of_freqs(
