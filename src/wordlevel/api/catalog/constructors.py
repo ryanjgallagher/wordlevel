@@ -9,6 +9,7 @@ from polars import col
 
 from wordlevel.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.core.utils import normalize_freqs
+from wordlevel.datasets.dataset import Dataset
 
 
 if TYPE_CHECKING:
@@ -161,6 +162,29 @@ def from_polars(
         normalization_suffix=normalization_suffix,
         comparisons=dict(),
     )
+
+
+def from_wl_dataset(data: Dataset, corpora: Collection[str] | None = None) -> CatalogData:
+    """
+    Creates the data for a new catalog from a wl.Dataset
+
+    Args:
+        data:
+            A WordLevel dataset
+        corpora:
+            The names of the corpora to include
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+
+    Raises:
+        KeyError: If any corpus in `corpora` is not a valid specifier
+        ValueError: If fewer than two `corpora` are provided
+    """
+    df = data.as_df(corpora=corpora)
+    loaded_corpora = df.select(pl.all().exclude(data._token_col)).columns
+
+    return from_polars(df=data.as_df(), token_col=data._token_col, freq_cols=loaded_corpora)
 
 
 def from_list_of_freqs(
