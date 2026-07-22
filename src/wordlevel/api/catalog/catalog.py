@@ -8,6 +8,7 @@ import polars as pl
 
 from wordlevel.api.catalog.constructors import (
     from_catalog,
+    from_wl_dataset,
     from_polars,
     from_dict_of_freqs,
     from_list_of_freqs,
@@ -15,6 +16,7 @@ from wordlevel.api.catalog.constructors import (
 from wordlevel.api.catalog.plot import Plotter
 from wordlevel.api.catalog.constructors import CatalogData, DictOfFreqs, ListOfFreqs
 from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
+from wordlevel.datasets.dataset import Dataset
 
 
 class Catalog:
@@ -46,7 +48,13 @@ class Catalog:
 
     def __init__(
         self,
-        data: pl.DataFrame | pl.LazyFrame | Catalog | CatalogData | DictOfFreqs | ListOfFreqs,
+        data: pl.DataFrame
+        | pl.LazyFrame
+        | Catalog
+        | CatalogData
+        | DictOfFreqs
+        | ListOfFreqs
+        | Dataset,
         token_col: str | None = None,
         corpora: Sequence[str] | None = None,
     ) -> None:
@@ -54,6 +62,8 @@ class Catalog:
             init_data = data
         elif isinstance(data, Catalog):
             init_data = from_catalog(data)
+        elif isinstance(data, Dataset):
+            init_data = from_wl_dataset(data=data, corpora=corpora)
         elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
             if token_col is None:
                 raise ValueError("`token_col` must be specified if providing a DataFrame")
@@ -208,6 +218,28 @@ class Catalog:
             ValueError: If any corpus in `freqs` has no token frequencies.
         """
         init_data = from_dict_of_freqs(freqs=freqs)
+
+        return cls(data=init_data)
+
+    @classmethod
+    def from_dataset(cls, data: Dataset, corpora: Collection[str] | None = None) -> Catalog:
+        """
+        Creates a `Catalog` from a WordLevel pre-made dataset.
+
+        Args:
+            data:
+                A WordLevel dataset
+            corpora:
+                The names of the corpora to include from the dataset
+
+        Returns:
+            A `Catalog` of corpora representing the provided WordLevel dataset
+
+        Raises:
+            KeyError: If any corpus in `corpora` is not a valid specifier
+            ValueError: If fewer than two `corpora` are provided
+        """
+        init_data = from_wl_dataset(data=data, corpora=corpora)
 
         return cls(data=init_data)
 

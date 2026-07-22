@@ -9,6 +9,7 @@ from polars import col
 
 from wordlevel.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.core.utils import normalize_freqs
+from wordlevel.datasets.dataset import Dataset
 
 
 if TYPE_CHECKING:
@@ -133,12 +134,12 @@ def from_polars(
     if token_col not in cols:
         raise KeyError(f"Token column not in provided dataframe: {token_col}")
 
-    if len(deduped_freq_cols) < 2:
-        raise ValueError("At least two frequency columns must be provided via `freq_cols`")
-
     for freq_col in deduped_freq_cols:
         if freq_col not in cols:
             raise KeyError(f"Frequency column not in provided dataframe: {freq_col}")
+
+    if len(deduped_freq_cols) < 2:
+        raise ValueError("At least two frequency columns must be provided via `freq_cols`")
 
     # Do necessary transformations
     lf = df.clone().lazy()
@@ -161,6 +162,33 @@ def from_polars(
         normalization_suffix=normalization_suffix,
         comparisons=dict(),
     )
+
+
+def from_wl_dataset(data: Dataset, corpora: Collection[str] | None = None) -> CatalogData:
+    """
+    Creates the data for a new catalog from a wl.Dataset
+
+    Args:
+        data:
+            A WordLevel dataset
+        corpora:
+            The names of the corpora to include
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+
+    Raises:
+        KeyError: If any corpus in `corpora` is not a valid specifier
+        ValueError: If fewer than two `corpora` are provided
+    """
+    df = data.as_df()
+
+    if corpora is None:
+        freq_cols = df.select(pl.all().exclude(data._token_col)).columns
+    else:
+        freq_cols = corpora
+
+    return from_polars(df=df, token_col=data._token_col, freq_cols=freq_cols)
 
 
 def from_list_of_freqs(
