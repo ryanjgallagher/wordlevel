@@ -8,6 +8,10 @@ from polars import col
 from wordlevel.configs import DEFAULT_LABEL_SIZE, LabelConfig
 from wordlevel.core.catalog.plot.shift.render.labels import get_label_positions
 
+# Minimum fraction of the score axis reserved for a bar when its label is too wide to fit. Floors the
+# available bar pixels so a pathologically long label overflows instead of blowing up the domain
+MIN_BAR_PX_FRACTION = 0.1
+
 
 def shift_scales(
     df: pl.DataFrame,
@@ -105,43 +109,70 @@ def get_scale_limits(
     pad: float = 5,
     font_width_to_height_ratio: float = 0.6,
     scale_factor: float = 1.0,
-):
+) -> pl.DataFrame:
     """ """
     df_bar_lengths = get_bar_lengths(
         df, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
 
-    # Get how long the entire score axis is
-    len_score_axis = df_bar_lengths.select(col("bar_length").max() * 2).item()
-    # Get how many units along the score axis per a single pixel
-    units_per_pixel = len_score_axis / size
-    # Estimate the average number of pixels wide each character is
-    avg_char_size_px = fontsize * font_width_to_height_ratio
-    # Estimate the number of units covered by the average character
-    label_scaling_factor = avg_char_size_px * units_per_pixel
+    # The maximum available number of pixels for a bar and its label is all pixels if all scores are
+    # positive. Otherwise, a bar can take up half that many pixels
+    any_negative_scores = df_bar_lengths.select((col(score_col) < 0).max()).item()
+    if any_negative_scores:
+        max_available_px = size / 2
+    else:
+        max_available_px = size
 
-    # With the scaling information, make the limits symmetric and long enough to account for labels
-    df_lims = df_bar_lengths.with_columns(
-        (col(token_col).str.len_chars() * label_scaling_factor).alias("label_width")
+    # Estimated label width = # chars * fontsize * width-to-height-ratio
+    # This is because fontsize = height of characters in pixels
+    label_width_px_i = (
+        col(token_col).str.len_chars().cast(pl.Int64) * font_width_to_height_ratio * fontsize
+    ).alias("label_width")
+
+    # A label only extends the domain when it sits at the bar tip. When it sits at the zero line
+    # (on_bar_ends=False) it is pixel-fixed at the center, so it does not affect our estimate of the
+    # limit L (see below)
+    if on_bar_ends:
+        label_reservation_px = col("label_width")
+    else:
+        label_reservation_px = pl.lit(0)
+
+    # A token's bar, label, and padding must fit within the maximum available number of pixels
+    #   b_i_px + l_i_px + 2 * pad <= max_available_px
+    # available_bar_px_i is the pixels left for the bar after accounting for its label and padding.
+    #   available_bar_px_i = max_available_px - l_i_px - 2 * pad
+    # A label wider than the axis drives this <= 0 (unsolvable), so floor it: that token keeps a
+    # minimum bar and its label overflows the axis
+    available_bar_px_i = pl.max_horizontal(
+        max_available_px - label_reservation_px - 2 * pad,
+        MIN_BAR_PX_FRACTION * max_available_px,
+    )
+    # Note, b_i_px = (b_i / L) * max_available_px, where b_i is the length of the bar in data units
+    # and L is the scale maximum in data units. L is the quantity that we need to determine.
+    # Substituting b_i_px and solving for L gives number of pixels need for each token:
+    #   L_i >= (b_i * max_available_px) / available_bar_px_i
+    total_width_px_i = (col("bar_length") * max_available_px / available_bar_px_i).alias(
+        "total_width"
     )
 
-    if on_bar_ends:
-        estimated_width = col("bar_length") + col("label_width")
-    else:
-        estimated_width = pl.max_horizontal(col("bar_length"), col("label_width"))
+    # We can determine L by taking the largest L_i
+    positive_limit = col("total_width").max().alias("positive_limit")
 
-    any_are_negative = df_lims.select((col(score_col) < 0).max()).item()
-    if any_are_negative:
-        min_limit = -1 * scale_factor * col("estimated_width").max()
+    # If there are any any negative scores, then the domain is [-L, L]. Otherwise, it's [0, L]
+    if any_negative_scores:
+        negative_limit = (-1 * positive_limit).alias("negative_limit")
     else:
-        min_limit = pl.lit(0)
+        negative_limit = pl.lit(0).alias("negative_limit")
 
-    df_lims = df_lims.with_columns(
-        (estimated_width + units_per_pixel * pad).alias("estimated_width")
-    ).select(
-        pl.lit(1).alias(rank_col),
-        (scale_factor * col("estimated_width").max()).alias("positive_limit"),
-        min_limit.alias("negative_limit"),
+    # Bring it all together, and add a dummy "rank" column for plotting
+    df_lims = (
+        df_bar_lengths.with_columns(label_width_px_i)
+        .with_columns(total_width_px_i)
+        .select(
+            pl.lit(1).alias(rank_col),
+            positive_limit * scale_factor,
+            negative_limit * scale_factor,
+        )
     )
 
     return df_lims
