@@ -8,8 +8,8 @@ from polars import col
 from wordlevel.configs import DEFAULT_LABEL_SIZE, LabelConfig
 from wordlevel.core.catalog.plot.shift.render.labels import get_label_positions
 
-# Minimum fraction of the score axis reserved for a bar when its label is too wide to fit. Floors the
-# available bar pixels so a pathologically long label overflows instead of blowing up the domain
+# Minimum fraction of the score axis reserved for a bar when its label is too wide to fit. Floors
+# the available bar pixels so a pathologically long label overflows instead of blowing up the domain
 MIN_BAR_PX_FRACTION = 0.1
 
 
@@ -27,8 +27,11 @@ def shift_scales(
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
     """
-    Assumes a dataframe which has one row per word per type of contribution. There should be columns
-    for the contribution, contribution type, and rank
+    Creates a (mostly invisible) Altair chart that adjusts the score axis scale of a shift plot such
+    that the limits accomodate bars, labels, and padding, such that they fit within the borders/axes
+    of the plot.
+
+    Assumes a dataframe which has one row per word per type of contribution
     """
     if isinstance(config, dict):
         config = LabelConfig(**config)
@@ -90,7 +93,10 @@ def shift_scales(
 def get_bar_lengths(
     df: pl.DataFrame, score_col: str, rank_col: str, token_col: str
 ) -> pl.DataFrame:
-    """ """
+    """
+    Gets each token's positiion, and takes the absolute value to get the magnitude of each token's
+    bar
+    """
     df_positions = get_label_positions(
         df, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
@@ -110,7 +116,31 @@ def get_scale_limits(
     font_width_to_height_ratio: float = 0.6,
     scale_factor: float = 1.0,
 ) -> pl.DataFrame:
-    """ """
+    """
+    Creates a dataframe with one row, which indicates the limits that should be set for the score
+    axis to accomodate all bars, labels, and padding. The dataframe has three columns: `rank_col`
+    (the position for plotting the limits), "positive_limit", and "negative_limit". If there are
+    positive and negative scores, then the limits will be symmetric in the domain [-L, L]. If all
+    scores are positive, then the domain will be [0, L]
+
+    This function estimates the limit L that needs to be set.
+
+    To do, note that the user passes the size, in pixels. If all scores are positive, the
+    maximum_available_px for bars, labels, and pads is the same as the size. Otherwise,
+    maximum_available_px = size / 2.
+
+    A token's bar, label, and padding must fit within the maximum available number of pixels
+        b_i_px + l_i_px + 2 * pad <= max_available_px
+
+    Note, b_i_px = (b_i / L) * max_available_px, where b_i is the length of the bar in data units
+
+    Therefore, by substituting for b_i_px and solving for L (as a function of i), we get
+        L_i >= (b_i * max_available_px) / (max_available_px - l_i_px - 2 * pad)
+
+    Then, L = max_i L_i
+
+    We also do some edge case handling if l_i_px > max_available_px, and if on_bar_ends=False
+    """
     df_bar_lengths = get_bar_lengths(
         df, score_col=score_col, rank_col=rank_col, token_col=token_col
     )
