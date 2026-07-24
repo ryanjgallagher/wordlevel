@@ -44,7 +44,7 @@ Repository = "https://github.com/ryanjgallagher/wordlevel"
 dev = [
   "pytest",
   "altair[all]>=5.5.0",
-  "ruff>=0.12.8",
+  "ruff==0.15.0",
   "pre-commit>=4.3.0",
   "huggingface-hub>=1.10.1",
   "pyright>=1.1.409",
@@ -65,6 +65,10 @@ line-length = 100
 show-fixes = true
 force-exclude = true
 extend-exclude = ["docs/snippets"]
+
+[tool.ruff.lint]
+# D419 (empty docstring)
+ignore = ["D419"]
 
 [tool.pyright]
 include = ["src", "lexicons"]
