@@ -146,8 +146,10 @@ def get_scale_limits(
     )
 
     # The maximum available number of pixels for a bar and its label is all pixels if all scores are
-    # positive. Otherwise, a bar can take up half that many pixels
-    any_negative_scores = df_bar_lengths.select((col(score_col) < 0).max()).item()
+    # positive. Otherwise, a bar can take up half that many pixels.
+    # Note, we use `df` because `df_bar_lengths` can return the wrong answer if all contributions
+    # are net positive, but have negative counteracted components
+    any_negative_scores = df.select((col(score_col) < 0).max()).item()
     if any_negative_scores:
         max_available_px = size / 2
     else:
