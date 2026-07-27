@@ -4,7 +4,7 @@ import polars.testing
 from polars import col
 from polars.testing import assert_series_equal, assert_series_not_equal
 
-from wordlevel.constants import SHIFT_SCORE_TYPES
+from wordlevel.constants import IS_BORROWED_COL, SHIFT_SCORE_TYPES
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS
 from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL
 from wordlevel.core.comparison.score.plan import (
@@ -504,7 +504,7 @@ class TestLexiconJoinPlan:
             assert fish_row["score_cmp"].item() is None
 
         def test_borrow_fills_missing_score_from_other_corpus(self) -> None:
-            """With impute='borrow', a null in one column is filled from the other."""
+            """With impute='borrow', a null in one column is filled from the other and flagged."""
             df = pl.DataFrame({_TOKEN_COL: ["the", "dog", "fish"], "freq": [100, 25, 10]})
             lexicon_ref = {"the": 1.0, "fish": 9.0}  # missing "dog"
             lexicon_cmp = {"the": 2.0, "dog": 5.0}  # missing "fish"
@@ -526,16 +526,19 @@ class TestLexiconJoinPlan:
             dog_row = result.filter(col(_TOKEN_COL) == "dog")
             assert dog_row["score_ref"].item() == 5.0
             assert dog_row["score_cmp"].item() == 5.0
+            assert dog_row[IS_BORROWED_COL].item()
 
             # "fish" missing from cmp, borrowed from ref
             fish_row = result.filter(col(_TOKEN_COL) == "fish")
             assert fish_row["score_ref"].item() == 9.0
             assert fish_row["score_cmp"].item() == 9.0
+            assert fish_row[IS_BORROWED_COL].item()
 
-            # "the" present in both lexicons - each keeps its own value
+            # "the" present in both lexicons - each keeps its own value, nothing is borrowed
             the_row = result.filter(col(_TOKEN_COL) == "the")
             assert the_row["score_ref"].item() == 1.0
             assert the_row["score_cmp"].item() == 2.0
+            assert not the_row[IS_BORROWED_COL].item()
 
         def test_borrow_with_drop_null_scores_removes_words_missing_from_both_lexicons(
             self,

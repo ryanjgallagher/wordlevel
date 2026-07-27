@@ -4,6 +4,7 @@ import polars as pl
 
 from polars import col
 
+from wordlevel.constants import IS_BORROWED_COL
 from wordlevel.core.comparison.score.attribution import attribute_scores, ATTRIBUTION_TYPE
 from wordlevel.core.comparison.score.components import (
     get_shift_components,
@@ -251,6 +252,10 @@ def lexicon_join_plan(
     ).rename({score_col_to_rename: score_alias_cmp})
 
     if isinstance(impute, str) and impute == "borrow":
+        is_borrowed = (col(score_alias_ref).is_null() & col(score_alias_cmp).is_not_null()) | (
+            col(score_alias_cmp).is_null() & col(score_alias_ref).is_not_null()
+        )
+
         df = df.with_columns(
             pl.when(col(score_alias_ref).is_null())
             .then(col(score_alias_cmp))
@@ -260,6 +265,7 @@ def lexicon_join_plan(
             .then(col(score_alias_ref))
             .otherwise(col(score_alias_cmp))
             .alias(score_alias_cmp),
+            is_borrowed.alias(IS_BORROWED_COL),
         )
 
     if drop_null_scores:
