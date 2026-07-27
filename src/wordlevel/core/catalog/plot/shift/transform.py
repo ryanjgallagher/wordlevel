@@ -101,3 +101,22 @@ def shift_plot_df(
     ).with_columns(col(contribution_alias) * scale)
 
     return lf_plot.collect()
+
+
+def append_borrow_symbol_to_tokens(
+    df: pl.DataFrame, token_col: str, borrow_col: str, borrow_symbol: str | None = None
+) -> pl.DataFrame:
+    """
+    Given a symbol indicating that a token has "borrowed" a score across corpora, appends it to each
+    token's label. If the `borrow_symbol` is None or the `borrow_col` is not in the dataframe, then
+    the dataframe is not modified
+    """
+    if (borrow_symbol is None) or (borrow_col not in df.columns):
+        return df
+    else:
+        return df.with_columns(
+            pl.when(col(borrow_col))
+            .then(col(token_col) + pl.lit(borrow_symbol))
+            .otherwise(col(token_col))
+            .alias(token_col),
+        )

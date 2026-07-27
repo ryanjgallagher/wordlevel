@@ -160,6 +160,79 @@ class TestGetPlotDf:
         assert cached.max_rank is None  # the full-df entry is unchanged
 
 
+class TestBorrowSymbol:
+    @pytest.fixture
+    def borrow_catalog(self, df_mock: pl.DataFrame) -> Catalog:
+        """Catalog whose lexicon comparison borrows scores for "ran" and "fast"."""
+        borrowed = (
+            comp("freq1", "freq2")
+            .score.lexicon(
+                lexicon_reference={"the": 1.0, "cat": 5.0, "dog": 3.0, "ran": 2.0},  # no "fast"
+                lexicon_comparison={"the": 2.0, "cat": 4.0, "dog": 1.0, "fast": 8.0},  # no "ran"
+                impute="borrow",
+            )
+            .alias("borrow_comp")
+        )
+
+        base = Catalog(df_mock, token_col="word", corpora=["freq1", "freq2"])
+
+        return base.with_comparisons(borrowed)
+
+    def test_symbol_appended_to_borrowed_tokens_only(self, borrow_catalog: Catalog) -> None:
+        """Tokens with a borrowed score end in the symbol; tokens in both lexicons are unchanged."""
+        plotter = Plotter(borrow_catalog)
+
+        df_result = plotter._get_plot_df(
+            comparison=borrow_catalog.comparisons["borrow_comp"],
+            plot_type="bar",
+            max_rank=50,
+            borrow_symbol="*",
+        )
+
+        assert set(df_result["word"].to_list()) == {"the", "cat", "dog", "ran*", "fast*"}
+
+    def test_no_symbol_appended_when_symbol_is_none(self, borrow_catalog: Catalog) -> None:
+        """Without a symbol, borrowed tokens keep their original labels."""
+        plotter = Plotter(borrow_catalog)
+
+        df_result = plotter._get_plot_df(
+            comparison=borrow_catalog.comparisons["borrow_comp"],
+            plot_type="bar",
+            max_rank=50,
+            borrow_symbol=None,
+        )
+
+        assert set(df_result["word"].to_list()) == {"the", "cat", "dog", "ran", "fast"}
+
+    def test_symbol_is_not_cached_with_the_plot_df(self, borrow_catalog: Catalog) -> None:
+        """A later call re-labels from the cached, unsuffixed tokens rather than the labelled ones."""
+        plotter = Plotter(borrow_catalog)
+        comp_result = borrow_catalog.comparisons["borrow_comp"]
+
+        plotter._get_plot_df(
+            comparison=comp_result, plot_type="bar", max_rank=50, borrow_symbol="*"
+        )
+        df_result = plotter._get_plot_df(
+            comparison=comp_result, plot_type="bar", max_rank=50, borrow_symbol="#"
+        )
+
+        # A stale cache would give "ran*"; a suffix applied to a suffixed label would give "ran*#"
+        assert set(df_result["word"].to_list()) == {"the", "cat", "dog", "ran#", "fast#"}
+
+    def test_symbol_ignored_when_the_comparison_cannot_borrow(self, catalog: Catalog) -> None:
+        """A symbol is a no-op for a measure that never borrows scores, rather than an error."""
+        plotter = Plotter(catalog)
+
+        df_result = plotter._get_plot_df(
+            comparison=catalog.comparisons["entropy_comp"],
+            plot_type="bar",
+            max_rank=50,
+            borrow_symbol="*",
+        )
+
+        assert set(df_result["word"].to_list()) == {"the", "cat", "dog", "ran", "fast"}
+
+
 class TestBar:
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """bar() returns a LayerChart with 4 layers and the correct number of data rows."""

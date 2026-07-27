@@ -26,7 +26,11 @@ from wordlevel.configs import (
     ShiftBarConfig,
     ZeroLineConfig,
 )
-from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
+from wordlevel.core.catalog.plot.shift.transform import (
+    bar_plot_df,
+    shift_plot_df,
+    append_borrow_symbol_to_tokens,
+)
 from wordlevel.core.catalog.plot.shift.render.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
@@ -409,6 +413,7 @@ class Plotter:
         max_rank: int | None = 50,
         split_nonnegative_by_corpus: bool = True,
         show_totals: bool = False,
+        borrow_symbol: str | None = None,
     ) -> pl.DataFrame:
         """
         For the given `plot_type`, gets the dataframe needed for plotting from `comparison.df`
@@ -493,7 +498,13 @@ class Plotter:
 
             self._plot_dfs[cache_key] = PlotCachedDataFrame(df=df_plot, max_rank=max_rank)
 
-        # Here: add function for appending borrowing symbol to labels
+        # Append symbols after caching, so the cache can still be used even if the symbols change
+        df_plot = append_borrow_symbol_to_tokens(
+            df=df_plot,
+            token_col=self._catalog._token_col,
+            borrow_col=IS_BORROWED_COL,
+            borrow_symbol=borrow_symbol,
+        )
 
         return df_plot
 
