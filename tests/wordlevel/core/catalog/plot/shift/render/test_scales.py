@@ -80,6 +80,25 @@ def test_domain_is_symmetric_when_signs_mixed(score_col, rank_col, token_col):
     assert negative == -positive
 
 
+def test_domain_is_symmetric_when_bars_negative_but_net_positive(score_col, rank_col, token_col):
+    """A token can have all net positive contributions while still having a negative bar component
+    (e.g. counteracted components in a JSD shift). Those negative bars still need room, so the
+    domain must be symmetric even though every token's collapsed net is positive."""
+    df = pl.DataFrame(
+        {
+            token_col: ["w1", "w1", "w2", "w2"],
+            rank_col: [1, 1, 2, 2],
+            score_col: [10, -3, 8, -2],
+        }
+    )
+
+    positive, negative = _limits(
+        df, score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
+    )
+
+    assert negative == -positive
+
+
 def test_domain_is_one_sided_when_all_positive(score_col, rank_col, token_col):
     """All-positive contributions produce a one-sided [0, L] domain."""
     df = pl.DataFrame({token_col: ["w1", "w2"], rank_col: [1, 2], score_col: [5, 4]})
