@@ -4,7 +4,7 @@ import polars.testing
 from polars import col
 from polars.testing import assert_series_equal, assert_series_not_equal
 
-from wordlevel.constants import SHIFT_SCORE_TYPES
+from wordlevel.constants import IS_BORROWED_COL, SHIFT_SCORE_TYPES
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS
 from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL
 from wordlevel.core.comparison.score.plan import (
@@ -249,6 +249,34 @@ class TestWeightedAverageScorePlan:
         assert "clean_score_cmp" not in cols
         assert "raw_score_ref" not in cols
         assert "raw_score_cmp" not in cols
+
+    def test_passthrough_cols_survive_the_score_column_select(self) -> None:
+        """Only the input columns named in `passthrough_cols` are carried into the output."""
+        df = pl.DataFrame(
+            {
+                "token": ["a", "b"],
+                "freqs_ref": [0.4, 0.6],
+                "freqs_cmp": [0.3, 0.7],
+                "keep_me": [True, False],
+                "drop_me": [1, 2],
+            }
+        )
+
+        df_result = weighted_average_score_plan(
+            df,
+            score_freqs_ref=col("freqs_ref"),
+            score_freqs_cmp=col("freqs_cmp"),
+            component_freqs_ref=col("freqs_ref"),
+            component_freqs_cmp=col("freqs_cmp"),
+            token=col("token"),
+            score_func=simple_dual_score_func,
+            clean_score_func=simple_clean_score_func,
+            attribute_by="frequency",
+            passthrough_cols=["keep_me"],
+        )
+
+        assert "keep_me" in df_result.columns
+        assert "drop_me" not in df_result.columns
 
     @pytest.mark.parametrize(
         "attribute_by, expected_attribution",
@@ -504,7 +532,7 @@ class TestLexiconJoinPlan:
             assert fish_row["score_cmp"].item() is None
 
         def test_borrow_fills_missing_score_from_other_corpus(self) -> None:
-            """With impute='borrow', a null in one column is filled from the other."""
+            """With impute='borrow', a null in one column is filled from the other and flagged."""
             df = pl.DataFrame({_TOKEN_COL: ["the", "dog", "fish"], "freq": [100, 25, 10]})
             lexicon_ref = {"the": 1.0, "fish": 9.0}  # missing "dog"
             lexicon_cmp = {"the": 2.0, "dog": 5.0}  # missing "fish"
@@ -526,16 +554,19 @@ class TestLexiconJoinPlan:
             dog_row = result.filter(col(_TOKEN_COL) == "dog")
             assert dog_row["score_ref"].item() == 5.0
             assert dog_row["score_cmp"].item() == 5.0
+            assert dog_row[IS_BORROWED_COL].item()
 
             # "fish" missing from cmp, borrowed from ref
             fish_row = result.filter(col(_TOKEN_COL) == "fish")
             assert fish_row["score_ref"].item() == 9.0
             assert fish_row["score_cmp"].item() == 9.0
+            assert fish_row[IS_BORROWED_COL].item()
 
-            # "the" present in both lexicons - each keeps its own value
+            # "the" present in both lexicons - each keeps its own value, nothing is borrowed
             the_row = result.filter(col(_TOKEN_COL) == "the")
             assert the_row["score_ref"].item() == 1.0
             assert the_row["score_cmp"].item() == 2.0
+            assert not the_row[IS_BORROWED_COL].item()
 
         def test_borrow_with_drop_null_scores_removes_words_missing_from_both_lexicons(
             self,

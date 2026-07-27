@@ -4,6 +4,7 @@ import polars as pl
 
 from polars import col
 
+from wordlevel.constants import IS_BORROWED_COL
 from wordlevel.core.comparison.score.attribution import attribute_scores, ATTRIBUTION_TYPE
 from wordlevel.core.comparison.score.components import (
     get_shift_components,
@@ -91,6 +92,7 @@ def weighted_average_score_plan(
     clean_score_func: DualCleanScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
     reference_score: float | Literal["mean"] | pl.Expr = 0,
+    passthrough_cols: list[str] | None = None,
     score_alias: str = "comparison_score",
     rank_alias: str = "rank",
     attribution_alias: str = "attribution",
@@ -120,6 +122,9 @@ def weighted_average_score_plan(
         if name not in seen_names:
             score_cols_to_select.append(expr)
             seen_names.add(name)
+
+    if passthrough_cols is not None:
+        score_cols_to_select.extend([col(c) for c in passthrough_cols])
 
     df_plan = (
         df.select(
@@ -251,6 +256,10 @@ def lexicon_join_plan(
     ).rename({score_col_to_rename: score_alias_cmp})
 
     if isinstance(impute, str) and impute == "borrow":
+        is_borrowed = (col(score_alias_ref).is_null() & col(score_alias_cmp).is_not_null()) | (
+            col(score_alias_cmp).is_null() & col(score_alias_ref).is_not_null()
+        )
+
         df = df.with_columns(
             pl.when(col(score_alias_ref).is_null())
             .then(col(score_alias_cmp))
@@ -260,6 +269,7 @@ def lexicon_join_plan(
             .then(col(score_alias_ref))
             .otherwise(col(score_alias_cmp))
             .alias(score_alias_cmp),
+            is_borrowed.alias(IS_BORROWED_COL),
         )
 
     if drop_null_scores:

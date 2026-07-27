@@ -14,6 +14,7 @@ from wordlevel.constants import (
     PLOT_CONTRIBUTION_TYPE_COL,
     RANK_COL,
     SCORE_COL,
+    IS_BORROWED_COL,
 )
 from wordlevel.configs import (
     ScoreSignBarConfig,
@@ -25,7 +26,11 @@ from wordlevel.configs import (
     ShiftBarConfig,
     ZeroLineConfig,
 )
-from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
+from wordlevel.core.catalog.plot.shift.transform import (
+    bar_plot_df,
+    shift_plot_df,
+    append_borrow_symbol_to_tokens,
+)
 from wordlevel.core.catalog.plot.shift.render.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
@@ -176,12 +181,19 @@ class Plotter:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
         """
         comp = self._catalog.comparisons[comparison]
+
+        if label_config is None:
+            label_config = LabelConfig()
+        elif isinstance(label_config, dict):
+            label_config = LabelConfig(**label_config)
+
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="bar",
             max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,
             show_totals=show_totals,
+            borrow_symbol=label_config.borrow_symbol,
         )
 
         return shift(
@@ -368,12 +380,18 @@ class Plotter:
                 "Cannot make a word shift plot for measures that are not weighted averages"
             )
 
+        if label_config is None:
+            label_config = LabelConfig()
+        elif isinstance(label_config, dict):
+            label_config = LabelConfig(**label_config)
+
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="shift",
             max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=False,
             show_totals=show_totals,
+            borrow_symbol=label_config.borrow_symbol,
         )
 
         return shift(
@@ -408,6 +426,7 @@ class Plotter:
         max_rank: int | None = 50,
         split_nonnegative_by_corpus: bool = True,
         show_totals: bool = False,
+        borrow_symbol: str | None = None,
     ) -> pl.DataFrame:
         """
         For the given `plot_type`, gets the dataframe needed for plotting from `comparison.df`
@@ -444,7 +463,71 @@ class Plotter:
             show_totals=show_totals,
         )
 
-        # Check cache for a previously computed version of the dataframe
+        df_plot = self._get_cached_plot_df(cache_key=cache_key, max_rank=max_rank)
+
+        # Compute the dataframe if not seen in the cache
+        if df_plot is None:
+            # If the scores have been normalized, they're plotted as percentages (x 100)
+            if comparison.normalized:
+                scale = 100.0
+            else:
+                scale = 1.0
+
+            # If the scores have been borrowed, that indicator needs to be in the plotting dataframe
+            if IS_BORROWED_COL in comparison._lf.collect_schema().names():
+                unpivot_passthrough_cols = [IS_BORROWED_COL]
+            else:
+                unpivot_passthrough_cols = None
+
+            if plot_type == "bar":
+                df_plot = bar_plot_df(
+                    lf=comparison._lf,
+                    token_col=self._catalog._token_col,
+                    score_col=SCORE_COL,
+                    rank_col=RANK_COL,
+                    attribution_col=ATTRIBUTION_COL,
+                    contribution_alias=PLOT_CONTRIBUTION_COL,
+                    contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
+                    attribution_labels=comparison.attribution_labels,
+                    max_rank=max_rank,
+                    is_nonnegative=comparison.is_nonnegative,
+                    split_nonnegative_by_corpus=split_nonnegative_by_corpus,
+                    passthrough_cols=unpivot_passthrough_cols,
+                    scale=scale,
+                )
+            elif plot_type == "shift":
+                df_plot = shift_plot_df(
+                    df=comparison._lf,
+                    token_col=self._catalog._token_col,
+                    rank_col=RANK_COL,
+                    contribution_alias=PLOT_CONTRIBUTION_COL,
+                    contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
+                    max_rank=max_rank,
+                    passthrough_cols=unpivot_passthrough_cols,
+                    scale=scale,
+                )
+            else:
+                raise ValueError(f"The `plot_type` is not a valid value: {plot_type}")
+
+            self._plot_dfs[cache_key] = PlotCachedDataFrame(df=df_plot, max_rank=max_rank)
+
+        # Append symbols after caching, so the cache can still be used even if the symbols change
+        df_plot = append_borrow_symbol_to_tokens(
+            df=df_plot,
+            token_col=self._catalog._token_col,
+            borrow_col=IS_BORROWED_COL,
+            borrow_symbol=borrow_symbol,
+        )
+
+        return df_plot
+
+    def _get_cached_plot_df(
+        self, cache_key: PlotCacheKey, max_rank: int | None
+    ) -> pl.DataFrame | None:
+        """
+        Returns a plot dataframe if it has already been calculated and cached. Returns None if the
+        dataframe has not been cached
+        """
         if cache_key in self._plot_dfs:
             cached_data = self._plot_dfs[cache_key]
 
@@ -464,41 +547,4 @@ class Plotter:
             if max_rank is not None and can_use_cached_data:
                 return cached_data.df.filter(col(RANK_COL) <= max_rank)
 
-        # Normalized contributions are displayed as percentages.
-        if comparison.normalized:
-            scale = 100.0
-        else:
-            scale = 1.0
-
-        # Compute the dataframe if not seen in the cache
-        if plot_type == "bar":
-            df_plot = bar_plot_df(
-                lf=comparison._lf,
-                token_col=self._catalog._token_col,
-                score_col=SCORE_COL,
-                rank_col=RANK_COL,
-                attribution_col=ATTRIBUTION_COL,
-                contribution_alias=PLOT_CONTRIBUTION_COL,
-                contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
-                attribution_labels=comparison.attribution_labels,
-                max_rank=max_rank,
-                is_nonnegative=comparison.is_nonnegative,
-                split_nonnegative_by_corpus=split_nonnegative_by_corpus,
-                scale=scale,
-            )
-        elif plot_type == "shift":
-            df_plot = shift_plot_df(
-                df=comparison._lf,
-                token_col=self._catalog._token_col,
-                rank_col=RANK_COL,
-                contribution_alias=PLOT_CONTRIBUTION_COL,
-                contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
-                max_rank=max_rank,
-                scale=scale,
-            )
-        else:
-            raise ValueError(f"The `plot_type` is not a valid value: {plot_type}")
-
-        self._plot_dfs[cache_key] = PlotCachedDataFrame(df=df_plot, max_rank=max_rank)
-
-        return df_plot
+        return None

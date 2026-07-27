@@ -303,6 +303,11 @@ class LabelConfig:
         font_width_to_height_ratio:
             Assumed ratio of character width to character height for the label font. Used by
             autoscaling to estimate label widths from font size
+        borrow_symbol:
+            A symbol appended to the end of a token's label indicating that it "borrowed" a score
+            across corpora. If `None`, no symbol is appended. For detail on borrowing, see the
+            imputation documentation for
+            [lexicon scoring][wordlevel.api.comparison.score.Scorer.lexicon]
     """
 
     pad: float = 5
@@ -313,6 +318,7 @@ class LabelConfig:
     mirror_rotation: bool = True
     on_bar_ends: bool = True
     font_width_to_height_ratio: float = 0.8
+    borrow_symbol: str | None = "*"
 
 
 @dataclass

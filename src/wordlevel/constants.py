@@ -23,4 +23,6 @@ COUNTERACTED_SUFFIX = "_counteracted"
 TOKEN = "token"
 NORMALIZATION_SUFFIX = "__wl_normed"
 
+IS_BORROWED_COL = "is_borrowed"
+
 DEFAULT_SCORE_AXIS_PIXEL_SIZE = 400

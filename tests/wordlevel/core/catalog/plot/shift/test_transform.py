@@ -115,6 +115,33 @@ class TestBarPlotDf:
 
         assert_frame_equal(df_result, df_expected, check_row_order=False, check_column_order=False)
 
+    def test_passthrough_cols_survive_the_unpivot(self) -> None:
+        """A passthrough column is repeated onto every row a token unpivots into."""
+        lf = pl.DataFrame(
+            {
+                "word": ["hello", "world"],
+                "rank": [1, 2],
+                "attribution": ["reference", "comparison"],
+                "score": [0.3, 0.5],
+                "is_borrowed": [True, False],
+            }
+        ).lazy()
+
+        df_result = bar_plot_df(
+            lf,
+            token_col="word",
+            score_col="score",
+            rank_col="rank",
+            attribution_col="attribution",
+            contribution_alias="contribution",
+            contribution_type_alias="contribution_type",
+            attribution_labels=("reference", "comparison"),
+            passthrough_cols=["is_borrowed"],
+        )
+
+        # "hello" unpivots into one row per attribution type, each carrying its flag
+        assert df_result.filter(pl.col("is_borrowed"))["word"].to_list() == ["hello", "hello"]
+
 
 class TestShiftPlotDf:
     def test_output_structure(self) -> None:
@@ -164,3 +191,27 @@ class TestShiftPlotDf:
         # No filtering: all 3 rows kept * 12 SHIFT_SCORE_TYPES = 36
         assert set(df_result["word"].to_list()) == {"hello", "world", "foo"}
         assert len(df_result) == 36
+
+    def test_passthrough_cols_survive_the_unpivot(self) -> None:
+        """A passthrough column is repeated onto every row a token unpivots into."""
+        lf = pl.DataFrame(
+            {
+                "word": ["hello", "world"],
+                "rank": [1, 2],
+                "is_borrowed": [True, False],
+                **{shift_type: [0.1, 0.1] for shift_type in SHIFT_SCORE_TYPES},
+            }
+        ).lazy()
+
+        df_result = shift_plot_df(
+            lf,
+            token_col="word",
+            rank_col="rank",
+            contribution_alias="contribution",
+            contribution_type_alias="contribution_type",
+            passthrough_cols=["is_borrowed"],
+        )
+
+        # "hello" unpivots into one row per shift score type, each carrying its flag
+        borrowed_words = df_result.filter(pl.col("is_borrowed"))["word"].to_list()
+        assert borrowed_words == ["hello"] * len(SHIFT_SCORE_TYPES)
