@@ -250,6 +250,34 @@ class TestWeightedAverageScorePlan:
         assert "raw_score_ref" not in cols
         assert "raw_score_cmp" not in cols
 
+    def test_passthrough_cols_survive_the_score_column_select(self) -> None:
+        """Only the input columns named in `passthrough_cols` are carried into the output."""
+        df = pl.DataFrame(
+            {
+                "token": ["a", "b"],
+                "freqs_ref": [0.4, 0.6],
+                "freqs_cmp": [0.3, 0.7],
+                "keep_me": [True, False],
+                "drop_me": [1, 2],
+            }
+        )
+
+        df_result = weighted_average_score_plan(
+            df,
+            score_freqs_ref=col("freqs_ref"),
+            score_freqs_cmp=col("freqs_cmp"),
+            component_freqs_ref=col("freqs_ref"),
+            component_freqs_cmp=col("freqs_cmp"),
+            token=col("token"),
+            score_func=simple_dual_score_func,
+            clean_score_func=simple_clean_score_func,
+            attribute_by="frequency",
+            passthrough_cols=["keep_me"],
+        )
+
+        assert "keep_me" in df_result.columns
+        assert "drop_me" not in df_result.columns
+
     @pytest.mark.parametrize(
         "attribute_by, expected_attribution",
         [

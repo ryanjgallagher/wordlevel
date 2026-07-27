@@ -7,6 +7,7 @@ from wordlevel.constants import (
     REFERENCE_ATTRIBUTION,
     COMPARISON_ATTRIBUTION,
     REINFORCE_ATTRIBUTION,
+    IS_BORROWED_COL,
     SCORE_COL,
 )
 from wordlevel.api.comparison.comparison import Comparison
@@ -562,3 +563,24 @@ class TestLexiconScorer:
         # With single-lexicon borrow + drop_null_scores=True, "dog" is dropped.
         # With impute=0.0, "dog" is kept with score 0. Heights differ.
         assert df_borrow.height != df_zero.height
+
+    def test_borrowed_flag_survives_scoring(self, df_mock) -> None:
+        """`is_borrowed` is passed through the weighted-average plan into the scored dataframe."""
+        comparison = Comparison("ref", "cmp")
+        df_result = comparison.score.lexicon(
+            lexicon_reference={"the": 1.0, "cat": 5.0},  # missing "dog"
+            lexicon_comparison={"the": 2.0, "dog": -3.0},  # missing "cat"
+            impute="borrow",
+        )._plan(df_mock, "word", "__wl_normed")
+
+        borrowed = df_result.filter(col(IS_BORROWED_COL))["word"].to_list()
+        assert set(borrowed) == {"cat", "dog"}
+
+    def test_no_borrowed_flag_for_other_impute_strategies(self, df_mock) -> None:
+        """The `is_borrowed` column is only added when imputing by borrowing."""
+        comparison = Comparison("ref", "cmp")
+        df_result = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 5.0}, impute=0.0)._plan(
+            df_mock, "word", "__wl_normed"
+        )
+
+        assert IS_BORROWED_COL not in df_result.columns

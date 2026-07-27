@@ -92,6 +92,7 @@ def weighted_average_score_plan(
     clean_score_func: DualCleanScoreFunc,
     attribute_by: ATTRIBUTION_TYPE,
     reference_score: float | Literal["mean"] | pl.Expr = 0,
+    passthrough_cols: list[str] | None = None,
     score_alias: str = "comparison_score",
     rank_alias: str = "rank",
     attribution_alias: str = "attribution",
@@ -121,6 +122,9 @@ def weighted_average_score_plan(
         if name not in seen_names:
             score_cols_to_select.append(expr)
             seen_names.add(name)
+
+    if passthrough_cols is not None:
+        score_cols_to_select.extend([col(c) for c in passthrough_cols])
 
     df_plan = (
         df.select(

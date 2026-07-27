@@ -11,6 +11,7 @@ from wordlevel.constants import (
     RANK_COL,
     ATTRIBUTION_COL,
     COUNTERACTED_SUFFIX,
+    IS_BORROWED_COL,
 )
 from wordlevel.core.comparison.score.plan import (
     ScoreFunc,
@@ -132,6 +133,7 @@ class Scorer:
         reference_score: float | Literal["mean"] | pl.Expr = 0,
         requires_normed_freqs: bool = True,
         share_component_freqs_by: Literal["reference", "comparison"] | None = None,
+        passthrough_cols: list[str] | None = None,
     ) -> ScorePlan:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
@@ -168,6 +170,7 @@ class Scorer:
                 clean_score_func=clean_score_func,
                 attribute_by=attribute_by,
                 reference_score=reference_score,
+                passthrough_cols=passthrough_cols,
                 score_alias=SCORE_COL,
                 rank_alias=RANK_COL,
                 more_of_positive_alias=SHIFT_BAR_NAMES.more_of_positive,
@@ -497,12 +500,17 @@ class Scorer:
                     "pre-defined lexicon was not provided"
                 )
 
+        passthrough_cols = None
+        if isinstance(impute, str) and impute == "borrow":
+            passthrough_cols = [IS_BORROWED_COL]
+
         score_plan = self._make_weighted_avg_score_plan(
             score_func=_fixed_dual_score_func(col(score_alias_ref), col(score_alias_cmp)),
             clean_score_func=_passthrough_clean_score_func,
             attribute_by="score_sign",
             reference_score=reference_score,
             requires_normed_freqs=True,
+            passthrough_cols=passthrough_cols,
         )
 
         def plan(
