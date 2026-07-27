@@ -181,12 +181,19 @@ class Plotter:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
         """
         comp = self._catalog.comparisons[comparison]
+
+        if label_config is None:
+            label_config = LabelConfig()
+        elif isinstance(label_config, dict):
+            label_config = LabelConfig(**label_config)
+
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="bar",
             max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=split_nonnegative_by_corpus,
             show_totals=show_totals,
+            borrow_symbol=label_config.borrow_symbol,
         )
 
         return shift(
@@ -373,12 +380,18 @@ class Plotter:
                 "Cannot make a word shift plot for measures that are not weighted averages"
             )
 
+        if label_config is None:
+            label_config = LabelConfig()
+        elif isinstance(label_config, dict):
+            label_config = LabelConfig(**label_config)
+
         df_plot = self._get_plot_df(
             comparison=comp,
             plot_type="shift",
             max_rank=None if show_totals else max_rank,
             split_nonnegative_by_corpus=False,
             show_totals=show_totals,
+            borrow_symbol=label_config.borrow_symbol,
         )
 
         return shift(
