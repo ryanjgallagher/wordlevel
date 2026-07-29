@@ -85,9 +85,9 @@ class Scorer:
 
     def _get_default_alias(self, method: str) -> str:
         """ """
-        return (
-            f"reference:{self._comparison._ref}_comparison:{self._comparison._cmp}_method:{method}"
-        )
+        state = self._comparison._state
+
+        return f"reference:{state.reference}_comparison:{state.comparison}_method:{method}"
 
     def _make_basic_score_plan(
         self,
@@ -98,8 +98,8 @@ class Scorer:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
         """
-        ref = self._comparison._ref
-        cmp = self._comparison._cmp
+        ref = self._comparison._state.reference
+        cmp = self._comparison._state.comparison
 
         def plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
@@ -139,8 +139,8 @@ class Scorer:
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
         """
-        ref = self._comparison._ref
-        cmp = self._comparison._cmp
+        ref = self._comparison._state.reference
+        cmp = self._comparison._state.comparison
 
         def plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
@@ -195,14 +195,14 @@ class Scorer:
         attributed_by: ATTRIBUTION_TYPE,
     ) -> Comparison:
         """ """
-        if self._comparison._alias is None:
+        state = self._comparison._state
+
+        if state.alias is None:
             alias = self._get_default_alias(method)
         else:
-            alias = self._comparison._alias
+            alias = state.alias
 
-        return type(self._comparison)._with_state(
-            reference=self._comparison._ref,
-            comparison=self._comparison._cmp,
+        return self._comparison._update_state(
             alias=alias,
             method=method,
             parameters=parameters,
@@ -210,6 +210,9 @@ class Scorer:
             is_nonnegative=is_nonnegative,
             attributed_by=attributed_by,
             plan=plan,
+            # Normalization is applied by wrapping the plan, so replacing the plan here discards it.
+            # Once normalization becomes its own pipeline stage, it will survive re-scoring instead
+            normalized_by=None,
         )
 
     def frequency(self) -> Comparison:
@@ -828,8 +831,8 @@ class Scorer:
             share_component_freqs_by="comparison",
         )
 
-        ref = self._comparison._ref
-        cmp = self._comparison._cmp
+        ref = self._comparison._state.reference
+        cmp = self._comparison._state.comparison
 
         def validated_plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str

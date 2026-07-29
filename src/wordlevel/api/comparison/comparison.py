@@ -17,7 +17,7 @@ from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTR
 @dataclass(frozen=True)
 class ComparisonState:
     """
-    The state of a [`Comparison`][wordlevel.api.comparison.comparison.Comparison], indicating the 
+    The state of a [`Comparison`][wordlevel.api.comparison.comparison.Comparison], indicating the
     corpora it compares, the metadata describing how they are scored, and the plan that scores them.
 
     A `Comparison` is immutable, so each of its operations returns a new state rather than
