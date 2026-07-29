@@ -354,8 +354,8 @@ class ComparisonResult:
             or state.attributed_by is None
         ):
             raise ValueError(
-                "Missing comparison metadata: `method`, `parameters`, `is_weighted_avg`, "
-                "`is_nonnegative`, or `attributed_by` is None"
+                "Missing comparison metadata: `method`, `is_weighted_avg`, `is_nonnegative`, or "
+                "`attributed_by` is None"
             )
 
         return cls(
