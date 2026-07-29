@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from functools import cached_property
-from typing import get_args
+from typing import Any, get_args
 from typing_extensions import Self
 
 import polars as pl
@@ -12,6 +12,59 @@ from wordlevel.api.comparison.normalization import make_normalized_plan
 from wordlevel.constants import NORMALIZATION_CONSTANT_COL
 from wordlevel.core.comparison.normalization import NORMALIZE_BY
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
+
+
+@dataclass(frozen=True)
+class ComparisonState:
+    """
+    The state of a [`Comparison`][wordlevel.api.comparison.comparison.Comparison], indicating the 
+    corpora it compares, the metadata describing how they are scored, and the plan that scores them.
+
+    A `Comparison` is immutable, so each of its operations returns a new state rather than
+    modifying the existing one.
+
+    Attributes:
+        reference:
+            Name of the reference corpus
+        comparison:
+            Name of the comparison corpus
+        alias:
+            The name of the comparison
+        method:
+            The name of a scoring method
+        is_weighted_avg:
+            Whether the scoring method can be interpreted as a weighted average or difference in
+            weighted averages
+        is_nonnegative:
+            Whether the scoring method is inherently non-negative, i.e. all token-level
+            contributions are non-negative
+        attributed_by:
+            The attribution type used to split token contributions between the two bars of a bar
+            plot (`"frequency"` and `"rank"` attribute by corpus; `"score_sign"` attributes by
+            whether a token reinforces or offsets the overall difference)
+        parameters:
+            Any parameters specific to the scoring method when making the comparison
+        normalized_by:
+            The normalization applied to token contributions, or `None` if they are not normalized
+        plan:
+            The "scoring plan" describing how to compare the reference and comparison corpora
+            according to the scoring method
+    """
+
+    reference: str
+    comparison: str
+    alias: str | None = None
+    method: str | None = None
+    is_weighted_avg: bool | None = None
+    is_nonnegative: bool | None = None
+    attributed_by: ATTRIBUTION_TYPE | None = None
+    parameters: dict[str, Any] = field(default_factory=dict)
+    normalized_by: NORMALIZE_BY | None = None
+    plan: ScorePlan | None = None
+
+    def __post_init__(self) -> None:
+        # Copy the parameters so a caller mutating the mapping they passed does not affect the state
+        object.__setattr__(self, "parameters", dict(self.parameters))
 
 
 class Comparison:
@@ -26,70 +79,21 @@ class Comparison:
     """
 
     def __init__(self, reference: str, comparison: str):
-        self._ref = reference
-        self._cmp = comparison
-        self._alias: str | None = None
-        self._method: str | None = None
-        self._is_weighted_avg: bool | None = None
-        self._is_nonnegative: bool | None = None
-        self._attributed_by: ATTRIBUTION_TYPE | None = None
-        self._plan: ScorePlan | None = None
-        self._parameters: dict = {}
-        self._normalized_by: str | None = None
+        self._state = ComparisonState(reference=reference, comparison=comparison)
 
-    @classmethod
-    def _with_state(
-        cls,
-        reference: str,
-        comparison: str,
-        *,
-        alias: str | None = None,
-        method: str | None = None,
-        is_weighted_avg: bool | None = None,
-        is_nonnegative: bool | None = None,
-        attributed_by: ATTRIBUTION_TYPE | None = None,
-        plan: ScorePlan | None = None,
-        parameters: dict | None = None,
-        normalized_by: str | None = None,
-    ) -> Comparison:
+    def _update_state(self, **changes: Any) -> Comparison:
         """
-        Constructs a `Comparison` with parameters related to its state.
+        Returns a new `Comparison` with the given state fields replaced.
 
         Args:
-            alias:
-                The name of the comparison
-            method:
-                The name of a scoring method
-            is_weighted_avg
-                Whether the scoring method can be interpreted as a weighted average or difference in
-                weighted averages
-            is_nonnegative
-                Whether the scoring method is inherently non-negative, i.e. all token-level
-                contributionso are non-negative
-            attributed_by:
-                The attribution type used to split token contributions between the two bars of a bar
-                plot (`"frequency"` and `"rank"` attribute by corpus; `"score_sign"` attributes by
-                whether a token reinforces or offsets the overall difference)
-            plan:
-                The "scoring plan" describing how to compare the reference and comparison corpora
-                according to thes scoring method
-            parameters:
-                Any parameters specfic to the scoring method when making the comparison
-            normalized_by:
-                The normalization applied to token contributions, or `None` if they are not
-                normalized
+            changes:
+                The [`ComparisonState`][wordlevel.api.comparison.comparison.ComparisonState] fields
+                to replace, and the values to replace them with
         """
-        instance = cls(reference, comparison)
-        instance._alias = alias
-        instance._method = method
-        instance._is_weighted_avg = is_weighted_avg
-        instance._is_nonnegative = is_nonnegative
-        instance._attributed_by = attributed_by
-        instance._plan = plan
-        instance._parameters = (parameters or {}).copy()
-        instance._normalized_by = normalized_by
+        comparison = self.__class__(self._state.reference, self._state.comparison)
+        comparison._state = replace(self._state, **changes)
 
-        return instance
+        return comparison
 
     @cached_property
     def score(self) -> Scorer:
@@ -115,18 +119,7 @@ class Comparison:
         Returns:
             A new `Comparison` with the given alias
         """
-        return self._with_state(
-            reference=self._ref,
-            comparison=self._cmp,
-            alias=name,
-            method=self._method,
-            is_weighted_avg=self._is_weighted_avg,
-            is_nonnegative=self._is_nonnegative,
-            attributed_by=self._attributed_by,
-            plan=self._plan,
-            parameters=self._parameters,
-            normalized_by=self._normalized_by,
-        )
+        return self._update_state(alias=name)
 
     def normalize(self, by: NORMALIZE_BY) -> Comparison:
         r"""
@@ -172,34 +165,26 @@ class Comparison:
                 If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
                 zero by construction, so the absolute sum is always zero.
         """
-        if self._plan is None:
+        if self._state.plan is None:
             raise ValueError("Cannot normalize a comparison before it has been scored")
         if by not in get_args(NORMALIZE_BY):
             raise ValueError(f"`by` must be one of {get_args(NORMALIZE_BY)}, got {by!r}")
-        if self._normalized_by is not None:
-            if self._normalized_by == by:
+        if self._state.normalized_by is not None:
+            if self._state.normalized_by == by:
                 return self
             raise ValueError(
-                f"Comparison is already normalized by {self._normalized_by!r}; cannot also "
+                f"Comparison is already normalized by {self._state.normalized_by!r}; cannot also "
                 f"normalize by {by!r}."
             )
-        if by == "abs_sum" and self._method == "proportion":
+        if by == "abs_sum" and self._state.method == "proportion":
             raise ValueError(
                 "Cannot normalize a 'proportion' comparison by 'abs_sum': proportions sum to one "
                 "in each corpus, so the net difference is zero by construction. Use 'sum_abs' "
                 "instead."
             )
 
-        return self._with_state(
-            reference=self._ref,
-            comparison=self._cmp,
-            alias=self._alias,
-            method=self._method,
-            is_weighted_avg=self._is_weighted_avg,
-            is_nonnegative=self._is_nonnegative,
-            attributed_by=self._attributed_by,
-            plan=make_normalized_plan(self._plan, by),
-            parameters=self._parameters,
+        return self._update_state(
+            plan=make_normalized_plan(self._state.plan, by),
             normalized_by=by,
         )
 
@@ -356,16 +341,17 @@ class ComparisonResult:
             ValueError: If the comparison has no alias.
             ValueError: If any of the comparison's scoring metadata is missing.
         """
-        if comparison._plan is None:
+        state = comparison._state
+
+        if state.plan is None:
             raise ValueError("Cannot construct a comparison result without a plan")
-        if comparison._alias is None:
+        if state.alias is None:
             raise ValueError("Cannot construct a comparison result without an alias")
         if (
-            comparison._method is None
-            or comparison._is_weighted_avg is None
-            or comparison._is_nonnegative is None
-            or comparison._attributed_by is None
-            or comparison._parameters is None
+            state.method is None
+            or state.is_weighted_avg is None
+            or state.is_nonnegative is None
+            or state.attributed_by is None
         ):
             raise ValueError(
                 "Missing comparison metadata: `method`, `parameters`, `is_weighted_avg`, "
@@ -373,14 +359,14 @@ class ComparisonResult:
             )
 
         return cls(
-            _lf=comparison._plan(df, token_col, normalization_suffix).lazy(),
-            reference=comparison._ref,
-            comparison=comparison._cmp,
-            alias=comparison._alias,
-            method=comparison._method,
-            is_weighted_avg=comparison._is_weighted_avg,
-            is_nonnegative=comparison._is_nonnegative,
-            attributed_by=comparison._attributed_by,
-            parameters=comparison._parameters.copy(),
-            normalized_by=comparison._normalized_by,
+            _lf=state.plan(df, token_col, normalization_suffix).lazy(),
+            reference=state.reference,
+            comparison=state.comparison,
+            alias=state.alias,
+            method=state.method,
+            is_weighted_avg=state.is_weighted_avg,
+            is_nonnegative=state.is_nonnegative,
+            attributed_by=state.attributed_by,
+            parameters=dict(state.parameters),
+            normalized_by=state.normalized_by,
         )
