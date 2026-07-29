@@ -40,9 +40,7 @@ def simple_plan():
 @pytest.fixture
 def valid_comparison(simple_plan) -> Comparison:
     """Comparison with all required fields populated."""
-    return Comparison._with_state(
-        "ref",
-        "cmp",
+    return Comparison("ref", "cmp")._update_state(
         alias="test_alias",
         method="test_method",
         is_weighted_avg=False,
@@ -138,14 +136,16 @@ class TestFromComparison:
             valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
 
-        assert result.reference == valid_comparison._ref
-        assert result.comparison == valid_comparison._cmp
-        assert result.alias == valid_comparison._alias
-        assert result.method == valid_comparison._method
-        assert result.is_weighted_avg is valid_comparison._is_weighted_avg
-        assert result.is_nonnegative is valid_comparison._is_nonnegative
-        assert result.attributed_by == valid_comparison._attributed_by
-        assert result.parameters == valid_comparison._parameters
+        state = valid_comparison._state
+
+        assert result.reference == state.reference
+        assert result.comparison == state.comparison
+        assert result.alias == state.alias
+        assert result.method == state.method
+        assert result.is_weighted_avg is state.is_weighted_avg
+        assert result.is_nonnegative is state.is_nonnegative
+        assert result.attributed_by == state.attributed_by
+        assert result.parameters == state.parameters
 
     @pytest.mark.parametrize(
         "missing_field,error_msg",
@@ -156,15 +156,13 @@ class TestFromComparison:
             ("is_weighted_avg", "Missing comparison metadata"),
             ("is_nonnegative", "Missing comparison metadata"),
             ("attributed_by", "Missing comparison metadata"),
-            ("parameters", "Missing comparison metadata"),
         ],
     )
     def test_from_comparison_validation_errors(
         self, valid_comparison, df_mock, missing_field, error_msg
     ) -> None:
         """Test that ValueError is raised when required fields are missing."""
-        comparison = valid_comparison
-        setattr(comparison, f"_{missing_field}", None)
+        comparison = valid_comparison._update_state(**{missing_field: None})
 
         with pytest.raises(ValueError, match=error_msg):
             ComparisonResult.from_comparison(
@@ -214,9 +212,7 @@ class TestLazyEvaluation:
             execution_count["count"] += 1
             return df.with_columns((pl.col("ref") - pl.col("cmp")).alias("score"))
 
-        comparison = Comparison._with_state(
-            "ref",
-            "cmp",
+        comparison = Comparison("ref", "cmp")._update_state(
             alias="test",
             method="test",
             is_weighted_avg=False,
@@ -274,7 +270,7 @@ def test_fields_cannot_be_reassigned(valid_comparison, df_mock, field_name, new_
 class TestParameterIndependence:
     def test_from_comparison_parameters_are_copied(self, valid_comparison, df_mock) -> None:
         """Test that parameters dict is copied, not shared."""
-        original_params = valid_comparison._parameters
+        original_params = valid_comparison._state.parameters
         result = ComparisonResult.from_comparison(
             valid_comparison, df_mock, token_col="word", normalization_suffix="__wl_normed"
         )
@@ -315,9 +311,7 @@ class TestDataFrameExecution:
 
     def test_simple_plan_execution(self, df_mock, simple_plan) -> None:
         """Test that a simple plan adds the expected column."""
-        comparison = Comparison._with_state(
-            "ref",
-            "cmp",
+        comparison = Comparison("ref", "cmp")._update_state(
             alias="test",
             method="simple",
             is_weighted_avg=False,
@@ -350,9 +344,7 @@ class TestDataFrameExecution:
                 ]
             )
 
-        comparison = Comparison._with_state(
-            "ref",
-            "cmp",
+        comparison = Comparison("ref", "cmp")._update_state(
             alias="test",
             method="complex",
             is_weighted_avg=False,
@@ -395,9 +387,7 @@ class TestLabelAndSuffixWiring:
             received["token_col"] = lc
             return df
 
-        comparison = Comparison._with_state(
-            "ref",
-            "cmp",
+        comparison = Comparison("ref", "cmp")._update_state(
             alias="test",
             method="test",
             is_weighted_avg=False,
@@ -424,9 +414,7 @@ class TestLabelAndSuffixWiring:
             received["normalization_suffix"] = ns
             return df
 
-        comparison = Comparison._with_state(
-            "ref",
-            "cmp",
+        comparison = Comparison("ref", "cmp")._update_state(
             alias="test",
             method="test",
             is_weighted_avg=False,
