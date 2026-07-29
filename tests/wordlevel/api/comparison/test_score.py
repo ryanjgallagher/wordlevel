@@ -588,3 +588,15 @@ class TestLexiconScorer:
         )._state.plan(df_mock, "word", "__wl_normed")
 
         assert IS_BORROWED_COL not in df_result.columns
+
+    def test_tokens_without_lexicon_scores_are_dropped(self, df_mock) -> None:
+        """
+        A token the lexicon does not score has no score to weight, so it cannot contribute to the
+        weighted average and is dropped from the comparison.
+        """
+        comparison = Comparison("ref", "cmp")
+        df_result = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 5.0})._state.plan(
+            df_mock, "word", "__wl_normed"
+        )
+
+        assert df_result["word"].to_list() == ["the", "cat"]
