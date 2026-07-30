@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import partial
-from typing import Any, Literal, Mapping, Protocol, TYPE_CHECKING
+from typing import Any, Literal, Mapping, TYPE_CHECKING
 
 import polars as pl
 from polars import col
@@ -41,16 +41,7 @@ from wordlevel.core.comparison.score.plan import (
 from wordlevel.core.lexicons.load import Lexicon
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.comparison import Comparison
-
-
-class ScorePlan(Protocol):
-    def __call__(
-        self,
-        df: pl.DataFrame | pl.LazyFrame,
-        token_col: str,
-        normalization_suffix: str,
-    ) -> pl.DataFrame | pl.LazyFrame: ...
+    from wordlevel.api.comparison.comparison import Comparison, PlanStage
 
 
 def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
@@ -94,7 +85,7 @@ class Scorer:
         score_func: ScoreFunc,
         attribute_by: ATTRIBUTION_TYPE,
         requires_normed_freqs: bool = True,
-    ) -> ScorePlan:
+    ) -> PlanStage:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
         """
@@ -134,7 +125,7 @@ class Scorer:
         requires_normed_freqs: bool = True,
         share_component_freqs_by: Literal["reference", "comparison"] | None = None,
         passthrough_cols: list[str] | None = None,
-    ) -> ScorePlan:
+    ) -> PlanStage:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
@@ -187,12 +178,13 @@ class Scorer:
 
     def _return_comparison(
         self,
-        plan: ScorePlan,
+        score_plan: PlanStage,
         method: str,
         parameters: dict[str, Any],
         is_weighted_avg: bool,
         is_nonnegative: bool,
         attributed_by: ATTRIBUTION_TYPE,
+        lexicon_join_plan: PlanStage | None = None,
     ) -> Comparison:
         """ """
         state = self._comparison._state
@@ -209,10 +201,8 @@ class Scorer:
             is_weighted_avg=is_weighted_avg,
             is_nonnegative=is_nonnegative,
             attributed_by=attributed_by,
-            plan=plan,
-            # Normalization is applied by wrapping the plan, so replacing the plan here discards it.
-            # Once normalization becomes its own pipeline stage, it will survive re-scoring instead
-            normalized_by=None,
+            lexicon_join_plan=lexicon_join_plan,
+            score_plan=score_plan,
         )
 
     def frequency(self) -> Comparison:

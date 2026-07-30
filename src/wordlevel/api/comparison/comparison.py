@@ -129,9 +129,13 @@ class ComparisonState:
 
         Raises:
             ValueError: If the comparison has not been scored, so there is no plan to resolve.
+            ValueError: If the normalization is not valid for the scoring method.
         """
         if self.score_plan is None:
             raise ValueError("Cannot resolve the plan of a comparison that has not been scored")
+
+        if self.normalized_by is not None:
+            self.validate_normalization(self.normalized_by)
 
         plans = [
             plan
