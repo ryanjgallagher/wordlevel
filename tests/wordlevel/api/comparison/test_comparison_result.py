@@ -46,7 +46,7 @@ def valid_comparison(simple_plan) -> Comparison:
         is_weighted_avg=False,
         is_nonnegative=False,
         attributed_by="frequency",
-        plan=simple_plan,
+        score_plan=simple_plan,
         parameters={"alpha": 1.0},
     )
 
@@ -150,7 +150,7 @@ class TestFromComparison:
     @pytest.mark.parametrize(
         "missing_field,error_msg",
         [
-            ("plan", "Cannot construct a comparison result without a plan"),
+            ("score_plan", "Cannot resolve the plan of a comparison that has not been scored"),
             ("alias", "Cannot construct a comparison result without an alias"),
             ("method", "Missing comparison metadata"),
             ("is_weighted_avg", "Missing comparison metadata"),
@@ -218,7 +218,7 @@ class TestLazyEvaluation:
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",
-            plan=counting_plan,
+            score_plan=counting_plan,
             parameters=dict(),
         )
 
@@ -317,7 +317,7 @@ class TestDataFrameExecution:
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",
-            plan=simple_plan,
+            score_plan=simple_plan,
             parameters=dict(),
         )
 
@@ -350,7 +350,7 @@ class TestDataFrameExecution:
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",
-            plan=complex_plan,
+            score_plan=complex_plan,
             parameters=dict(),
         )
 
@@ -393,7 +393,7 @@ class TestLabelAndSuffixWiring:
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",
-            plan=capturing_plan,
+            score_plan=capturing_plan,
             parameters=dict(),
         )
 
@@ -420,7 +420,7 @@ class TestLabelAndSuffixWiring:
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",
-            plan=capturing_plan,
+            score_plan=capturing_plan,
             parameters=dict(),
         )
 
