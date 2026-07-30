@@ -107,3 +107,25 @@ class TestExcludeTokens:
 
         assert "the" not in df_before["word"].to_list()
         assert_frame_equal(df_before, after._state.resolve()(df_mock, "word"))
+
+
+class TestExclusionsRecord:
+    def test_default_exclusions_are_empty(self) -> None:
+        """A comparison that excludes nothing has nothing to record."""
+        assert comp("ref", "cmp")._state.exclusions == {}
+
+    def test_tokens_are_recorded_as_their_union(self) -> None:
+        """The record is keyed by the kind of exclusion, and repeated calls accumulate into it."""
+        excluded_once = comp("ref", "cmp").exclude.tokens(["the"])
+        excluded_twice = excluded_once.exclude.tokens(["cat", "the"])
+
+        assert excluded_twice._state.exclusions == {"tokens": {"the", "cat"}}
+        assert excluded_once._state.exclusions == {"tokens": {"the"}}
+
+    def test_result_reports_the_exclusions(self, df_mock: pl.DataFrame) -> None:
+        """A result carries the record, so a scored comparison shows what was left out of it."""
+        catalog = Catalog(df_mock, token_col="word", corpora=["ref", "cmp"]).with_comparisons(
+            comp("ref", "cmp").exclude.tokens(["the"]).score.frequency().alias("x")
+        )
+
+        assert catalog.comparisons["x"].exclusions == {"tokens": {"the"}}

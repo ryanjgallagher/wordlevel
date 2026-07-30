@@ -54,6 +54,9 @@ class ComparisonExcluder:
         def plan(df: pl.DataFrame | pl.LazyFrame, token_col: str) -> pl.DataFrame | pl.LazyFrame:
             return exclude_tokens(df, token_col, tokens)
 
+        excluded_tokens = state.exclusions.get("tokens", set()) | set(tokens)
+
         return self._comparison._update_state(
             exclusion_plan=state.compose_plans(state.exclusion_plan, plan),
+            exclusions={**state.exclusions, "tokens": excluded_tokens},
         )
