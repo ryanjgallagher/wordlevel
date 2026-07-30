@@ -256,7 +256,6 @@ class ComparisonResult:
         comparison: Comparison,
         df: pl.DataFrame | pl.LazyFrame,
         token_col: str,
-        normalization_suffix: str,
     ) -> Self:
         """
         Creates a `ComparisonResult` from a `Comparison` by applying the comparison's plan to the
@@ -269,8 +268,6 @@ class ComparisonResult:
                 The dataframe representing the corpus data to score
             token_col:
                 Name of the column indicating tokens in `df`
-            normalization_suffix:
-                Suffix appended to normalized frequency column names
 
         Returns:
             A new `ComparisonResult` with the scored data
@@ -297,7 +294,7 @@ class ComparisonResult:
             )
 
         return cls(
-            _lf=resolved_plan(df, token_col, normalization_suffix).lazy(),
+            _lf=resolved_plan(df, token_col).lazy(),
             reference=state.reference,
             comparison=state.comparison,
             alias=state.alias,

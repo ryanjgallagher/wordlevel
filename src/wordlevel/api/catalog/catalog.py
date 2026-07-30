@@ -290,7 +290,6 @@ class Catalog:
                 comparison,
                 self._df,
                 token_col=self._token_col,
-                normalization_suffix=self._normalization_suffix,
             )
             catalog._comparisons[result.alias] = result
 

@@ -11,7 +11,11 @@ from wordlevel.constants import (
     RANK_COL,
     ATTRIBUTION_COL,
     COUNTERACTED_SUFFIX,
+    FREQ_CMP_COL,
+    FREQ_REF_COL,
     IS_BORROWED_COL,
+    NORMED_FREQ_CMP_COL,
+    NORMED_FREQ_REF_COL,
 )
 from wordlevel.core.comparison.score.plan import (
     ScoreFunc,
@@ -90,19 +94,14 @@ class Scorer:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
         """
-        ref = self._comparison._state.reference
-        cmp = self._comparison._state.comparison
+        if requires_normed_freqs:
+            ref_col = NORMED_FREQ_REF_COL
+            cmp_col = NORMED_FREQ_CMP_COL
+        else:
+            ref_col = FREQ_REF_COL
+            cmp_col = FREQ_CMP_COL
 
-        def plan(
-            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
-        ) -> pl.DataFrame | pl.LazyFrame:
-            if requires_normed_freqs:
-                ref_col = f"{ref}{normalization_suffix}"
-                cmp_col = f"{cmp}{normalization_suffix}"
-            else:
-                ref_col = ref
-                cmp_col = cmp
-
+        def plan(df: pl.DataFrame | pl.LazyFrame, token_col: str) -> pl.DataFrame | pl.LazyFrame:
             return basic_score_plan(
                 df,
                 freqs_ref=col(ref_col),
@@ -131,26 +130,21 @@ class Scorer:
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
         """
-        ref = self._comparison._state.reference
-        cmp = self._comparison._state.comparison
+        if requires_normed_freqs:
+            freqs_ref = NORMED_FREQ_REF_COL
+            freqs_cmp = NORMED_FREQ_CMP_COL
+        else:
+            freqs_ref = FREQ_REF_COL
+            freqs_cmp = FREQ_CMP_COL
 
-        def plan(
-            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
-        ) -> pl.DataFrame | pl.LazyFrame:
-            if requires_normed_freqs:
-                freqs_ref = f"{ref}{normalization_suffix}"
-                freqs_cmp = f"{cmp}{normalization_suffix}"
-            else:
-                freqs_ref = ref
-                freqs_cmp = cmp
+        component_freqs_ref = freqs_ref
+        component_freqs_cmp = freqs_cmp
+        if share_component_freqs_by == "reference":
+            component_freqs_cmp = component_freqs_ref
+        elif share_component_freqs_by == "comparison":
+            component_freqs_ref = component_freqs_cmp
 
-            component_freqs_ref = freqs_ref
-            component_freqs_cmp = freqs_cmp
-            if share_component_freqs_by == "reference":
-                component_freqs_cmp = component_freqs_ref
-            elif share_component_freqs_by == "comparison":
-                component_freqs_ref = component_freqs_cmp
-
+        def plan(df: pl.DataFrame | pl.LazyFrame, token_col: str) -> pl.DataFrame | pl.LazyFrame:
             return weighted_average_score_plan(
                 df,
                 score_freqs_ref=col(freqs_ref),
@@ -509,7 +503,7 @@ class Scorer:
         )
 
         def join_plan(
-            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str
         ) -> pl.DataFrame | pl.LazyFrame:
             return lexicon_join_plan(
                 df,
@@ -826,13 +820,15 @@ class Scorer:
         cmp = self._comparison._state.comparison
 
         def validated_plan(
-            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str
         ) -> pl.DataFrame | pl.LazyFrame:
-            ref_col = f"{ref}{normalization_suffix}"
-            cmp_col = f"{cmp}{normalization_suffix}"
             diverges = (
                 df.lazy()
-                .select(((col(cmp_col) > 0) & (col(ref_col) == 0)).any().alias("diverges"))
+                .select(
+                    ((col(NORMED_FREQ_CMP_COL) > 0) & (col(NORMED_FREQ_REF_COL) == 0))
+                    .any()
+                    .alias("diverges")
+                )
                 .collect()
                 .item()
             )
@@ -842,7 +838,7 @@ class Scorer:
                     f"({cmp!r}) contains at least one token absent from the reference "
                     f"corpus ({ref!r}). The KLD is not well-defined."
                 )
-            return plan(df, token_col, normalization_suffix)
+            return plan(df, token_col)
 
         return self._return_comparison(
             validated_plan,

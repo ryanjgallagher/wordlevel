@@ -27,7 +27,6 @@ class PlanStage(Protocol):
         self,
         df: pl.DataFrame | pl.LazyFrame,
         token_col: str,
-        normalization_suffix: str,
     ) -> pl.DataFrame | pl.LazyFrame: ...
 
 
@@ -109,11 +108,9 @@ class ComparisonState:
             return wrapping_plan
 
         def composed(
-            df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
+            df: pl.DataFrame | pl.LazyFrame, token_col: str
         ) -> pl.DataFrame | pl.LazyFrame:
-            return wrapping_plan(
-                base_plan(df, token_col, normalization_suffix), token_col, normalization_suffix
-            )
+            return wrapping_plan(base_plan(df, token_col), token_col)
 
         return composed
 
@@ -158,12 +155,12 @@ class ComparisonState:
         plans = [
             plan
             for plan in (
-                # select_corpora_plan,
+                select_corpora_plan,
                 self.lexicon_join_plan,
-                # renormalize_plan,
+                renormalize_plan,
                 self.score_plan,
                 self.score_normalization_plan,
-                # restore_corpus_names_plan,
+                restore_corpus_names_plan,
             )
             if plan is not None
         ]

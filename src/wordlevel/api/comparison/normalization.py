@@ -34,9 +34,7 @@ def make_normalized_plan(by: NORMALIZE_BY) -> PlanStage:
     scores are realized. If the constant is zero, it raises; otherwise it normalizes the scores.
     """
 
-    def plan(
-        df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
-    ) -> pl.DataFrame | pl.LazyFrame:
+    def plan(df: pl.DataFrame | pl.LazyFrame, token_col: str) -> pl.DataFrame | pl.LazyFrame:
         df_scored = df.lazy().collect()
 
         constant = df_scored.select(normalization_constant_expr(by, SCORE_COL)).item()
