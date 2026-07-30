@@ -1,6 +1,7 @@
 import pytest
 
 from wordlevel.api.comparison.comparison import Comparison, comp
+from wordlevel.api.comparison.exclude import ComparisonExcluder
 from wordlevel.api.comparison.score import Scorer
 
 
@@ -134,6 +135,14 @@ def test_scorer_integration() -> None:
 
     assert isinstance(comparison.score, Scorer)
     assert comparison.score._comparison is comparison
+
+
+def test_excluder_integration() -> None:
+    """ """
+    comparison = Comparison("ref", "cmp")
+
+    assert isinstance(comparison.exclude, ComparisonExcluder)
+    assert comparison.exclude._comparison is comparison
 
 
 @pytest.mark.parametrize("ref_col, cmp_col", [("frequency1", "frequency2"), ("freqs1", "freqs2")])

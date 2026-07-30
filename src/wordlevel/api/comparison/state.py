@@ -64,6 +64,11 @@ class ComparisonState:
             Any parameters specific to the scoring method when making the comparison
         normalized_by:
             The normalization applied to token contributions, or `None` if they are not normalized
+        exclusions:
+            The exclusions applied to the vocabulary, keyed by the kind of exclusion. Each value
+            describes what that kind of exclusion removed, e.g. `{"tokens": {"the", "a"}}`
+        exclusion_plan:
+            The plan removing tokens from the vocabulary of the two corpora
         lexicon_join_plan:
             The plan joining lexicon scores onto the corpus data
         score_plan:
@@ -81,6 +86,8 @@ class ComparisonState:
     attributed_by: ATTRIBUTION_TYPE | None = None
     parameters: dict[str, Any] = field(default_factory=dict)
     normalized_by: NORMALIZE_BY | None = None
+    exclusions: dict[str, Any] = field(default_factory=dict)
+    exclusion_plan: PlanStage | None = None
     lexicon_join_plan: PlanStage | None = None
     score_plan: PlanStage | None = None
     score_normalization_plan: PlanStage | None = None
@@ -88,6 +95,7 @@ class ComparisonState:
     def __post_init__(self) -> None:
         # Copy the parameters so a caller mutating the mapping they passed does not affect the state
         object.__setattr__(self, "parameters", dict(self.parameters))
+        object.__setattr__(self, "exclusions", dict(self.exclusions))
 
     @staticmethod
     def compose_plans(base_plan: PlanStage | None, wrapping_plan: PlanStage) -> PlanStage:
@@ -156,6 +164,7 @@ class ComparisonState:
             plan
             for plan in (
                 select_corpora_plan,
+                self.exclusion_plan,
                 self.lexicon_join_plan,
                 renormalize_plan,
                 self.score_plan,

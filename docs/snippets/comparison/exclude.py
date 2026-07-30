@@ -1,0 +1,15 @@
+# --8<-- [start:setup]
+import wordlevel as wl
+
+cl = wl.Catalog.from_dict_of_freqs(
+    {
+        "before": {"the": 30, "good": 12, "bad": 8, "happy": 6, "sad": 4},
+        "after": {"the": 25, "good": 5, "bad": 7, "happy": 3, "sad": 9},
+    }
+)
+# --8<-- [end:setup]
+
+
+# --8<-- [start:tokens]
+cl = cl.with_comparisons(wl.comp("before", "after").exclude.tokens(["the"]).score.proportion())
+# --8<-- [end:tokens]
