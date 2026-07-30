@@ -586,6 +586,43 @@ class TestLexiconScorer:
 
         assert df_result["word"].to_list() == ["the", "cat"]
 
+    def test_impute_strategy_changes_the_normalized_freqs(self, df_mock) -> None:
+        """
+        Imputing keeps a token the lexicon does not score, so that token holds onto its share of
+        the frequency mass instead of the mass being spread over the tokens that are scored.
+        """
+        lexicon = {"the": 1.0, "cat": 5.0}  # "dog" is in the corpora but not the lexicon
+        borrowed, imputed = [
+            Comparison("ref", "cmp")
+            .score.lexicon(lexicon=lexicon, impute=impute)
+            ._state.resolve()(df_mock, "word")
+            .filter(col("word") == "the")["ref__wl_normed"]
+            .item()
+            for impute in ("borrow", 0.0)
+        ]
+
+        assert borrowed > imputed
+
+    def test_mean_reference_score_is_taken_over_the_scored_vocabulary(self, df_mock) -> None:
+        """
+        A `"mean"` reference score is the reference corpus's own weighted average, and it is taken
+        over the tokens the lexicon scores rather than being shrunk by the unscored mass.
+        """
+        lexicon = {"the": 1.0, "cat": 5.0}  # "dog" is in the corpora but not the lexicon
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(lexicon=lexicon, reference_score="mean")
+            ._state.resolve()(df_mock, "word")
+        )
+
+        # One lexicon scores both corpora alike, so a token's `ref_score_diff` is its own lexicon
+        # score minus the reference score
+        the = df_result.filter(col("word") == "the")
+        reference_score = lexicon["the"] - the["ref_score_diff"].item()
+
+        # The reference corpus is 100 "the" and 50 "cat" once "dog" is dropped
+        assert reference_score == pytest.approx((100 * 1.0 + 50 * 5.0) / 150)
+
     def test_contributions_sum_to_the_difference_in_weighted_averages(self, df_mock) -> None:
         """
         The frequencies are renormalized after the lexicon drops the tokens it cannot score, so
