@@ -41,7 +41,8 @@ from wordlevel.core.comparison.score.plan import (
 from wordlevel.core.lexicons.load import Lexicon
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.comparison import Comparison, PlanStage
+    from wordlevel.api.comparison.comparison import Comparison
+    from wordlevel.api.comparison.state import PlanStage
 
 
 def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:

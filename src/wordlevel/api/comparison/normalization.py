@@ -16,7 +16,7 @@ from wordlevel.core.comparison.normalization import (
 )
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.comparison import PlanStage
+    from wordlevel.api.comparison.state import PlanStage
 
 
 _ZERO_CONSTANT_DESCRIPTION: dict[NORMALIZE_BY, str] = {
