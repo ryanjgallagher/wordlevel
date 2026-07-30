@@ -8,6 +8,7 @@ from polars.testing import assert_frame_equal
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import Comparison, comp
 from wordlevel.api.comparison.score import Scorer
+from wordlevel.core.comparison.exclude import EXCLUDE_CORPUS
 
 
 LEXICON = {"the": 1.0, "cat": 5.0, "dog": 2.0, "ran": 3.0}
@@ -109,6 +110,169 @@ class TestExcludeTokens:
         assert_frame_equal(df_before, after._state.resolve()(df_mock, "word"))
 
 
+class TestExcludeByLexiconScore:
+    def test_matches_excluding_the_same_tokens_directly(self, df_mock: pl.DataFrame) -> None:
+        """
+        A range of lexicon scores names a set of tokens, so excluding by score is equivalent to
+        excluding those tokens by name. `dog` scores 2.0 and `ran` scores 3.0.
+        """
+        by_score = comp("ref", "cmp").exclude.by_lexicon_score(between=(2.0, 3.0))
+        by_tokens = comp("ref", "cmp").exclude.tokens(["dog", "ran"])
+
+        assert_frame_equal(
+            by_score.score.lexicon(lexicon=LEXICON)._state.resolve()(df_mock, "word"),
+            by_tokens.score.lexicon(lexicon=LEXICON)._state.resolve()(df_mock, "word"),
+        )
+
+    def test_less_than_excludes_the_low_end(self, df_mock: pl.DataFrame) -> None:
+        """The bound is one-sided, so nothing above it is touched."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(less_than=2.0)
+            .score.lexicon(lexicon=LEXICON)
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == ["cat", "ran"]
+
+    def test_greater_than_excludes_the_high_end(self, df_mock: pl.DataFrame) -> None:
+        """The bound is one-sided, so nothing below it is touched."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(greater_than=3.0)
+            .score.lexicon(lexicon=LEXICON)
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == ["the", "dog"]
+
+    @pytest.mark.parametrize(
+        "inclusive, expected", [(True, ["cat"]), (False, ["the", "cat", "ran"])]
+    )
+    def test_bounds_are_part_of_the_range_only_when_inclusive(
+        self, df_mock: pl.DataFrame, inclusive: bool, expected: list[str]
+    ) -> None:
+        """`the` scores exactly 1.0 and `ran` exactly 3.0, so both sit on a bound of the range."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(between=(1.0, 3.0), inclusive=inclusive)
+            .score.lexicon(lexicon=LEXICON)
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == expected
+
+    def test_excluding_more_than_once_removes_the_union(self, df_mock: pl.DataFrame) -> None:
+        """Each call composes onto the exclusions already in place, so the ranges accumulate."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(less_than=1.0)
+            .exclude.by_lexicon_score(greater_than=5.0)
+            .score.lexicon(lexicon=LEXICON)
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == ["dog", "ran"]
+
+    @pytest.mark.parametrize(
+        "corpus, expected",
+        [
+            ("reference", ["cat", "ran"]),
+            ("comparison", ["cat", "dog"]),
+            ("both", ["cat", "dog", "ran"]),
+            ("either", ["cat"]),
+        ],
+    )
+    def test_corpus_chooses_which_lexicons_score_is_tested(
+        self, df_mock: pl.DataFrame, corpus: EXCLUDE_CORPUS, expected: list[str]
+    ) -> None:
+        """
+        With a lexicon per corpus the two scores differ, so which of them the range is tested
+        against decides what is excluded. `dog` is low-scoring only in the reference and `ran` only
+        in the comparison, while `the` is low-scoring in both.
+        """
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(less_than=2.5, corpus=corpus)
+            .score.lexicon(
+                lexicon_reference={"the": 1.0, "cat": 5.0, "dog": 2.0, "ran": 3.0},
+                lexicon_comparison={"the": 1.0, "cat": 5.0, "dog": 5.0, "ran": 1.0},
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == expected
+
+    def test_excluding_before_scoring_matches_excluding_after(self, df_mock: pl.DataFrame) -> None:
+        """
+        The exclusion shares a plan with `exclude.tokens` but is only expressible once the lexicon
+        is joined, so it must run after the join no matter which order the two are called in.
+        """
+        before = comp("ref", "cmp").exclude.by_lexicon_score(less_than=2.0)
+        after = (
+            comp("ref", "cmp")
+            .score.lexicon(lexicon=LEXICON)
+            .exclude.by_lexicon_score(less_than=2.0)
+        )
+
+        assert_frame_equal(
+            before.score.lexicon(lexicon=LEXICON)._state.resolve()(df_mock, "word"),
+            after._state.resolve()(df_mock, "word"),
+        )
+
+
+class TestExcludeByLexiconScoreValidation:
+    def test_no_range_raises(self) -> None:
+        """Without a bound there is no range to exclude."""
+        with pytest.raises(ValueError, match="Must specify one of"):
+            comp("ref", "cmp").exclude.by_lexicon_score()
+
+    def test_more_than_one_range_raises(self) -> None:
+        """Two bounds in one call are ambiguous between excluding their union and intersection."""
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            comp("ref", "cmp").exclude.by_lexicon_score(less_than=2.0, greater_than=4.0)
+
+    def test_reversed_between_raises(self) -> None:
+        """A range whose bounds are the wrong way around excludes nothing, silently."""
+        with pytest.raises(ValueError, match="lower bound"):
+            comp("ref", "cmp").exclude.by_lexicon_score(between=(4.0, 2.0))
+
+    def test_excluding_an_already_unlexiconed_comparison_raises(self) -> None:
+        """A comparison scored another way has no lexicon scores to test a range against."""
+        with pytest.raises(ValueError, match="scored by a lexicon"):
+            comp("ref", "cmp").score.shannon_entropy().exclude.by_lexicon_score(less_than=2.0)
+
+    def test_scoring_without_a_lexicon_after_excluding_raises(self) -> None:
+        """The scoring method is only known to be incompatible once every plan is in place."""
+        excluded = comp("ref", "cmp").exclude.by_lexicon_score(less_than=2.0)
+
+        with pytest.raises(ValueError, match="scored by a lexicon"):
+            excluded.score.shannon_entropy()._state.resolve()
+
+    @pytest.mark.parametrize("impute", ["mean", 5.0])
+    def test_imputed_scores_raise(self, impute: float | str) -> None:
+        """
+        An imputed score is a modeling choice rather than what the lexicon says about a token, so
+        excluding by it would remove tokens on the strength of a value the lexicon never gave.
+        """
+        with pytest.raises(ValueError, match="modeling choice"):
+            comp("ref", "cmp").score.lexicon(
+                lexicon=LEXICON,
+                impute=impute,  # type: ignore[arg-type]
+            ).exclude.by_lexicon_score(less_than=2.0)
+
+    def test_borrowed_scores_are_allowed(self, df_mock: pl.DataFrame) -> None:
+        """A borrowed score is a genuine one, just taken from the lexicon of the other corpus."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(less_than=2.0)
+            .score.lexicon(lexicon=LEXICON, impute="borrow")
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == ["cat", "ran"]
+
+
 class TestExclusionsRecord:
     def test_default_exclusions_are_empty(self) -> None:
         """A comparison that excludes nothing has nothing to record."""
@@ -121,6 +285,21 @@ class TestExclusionsRecord:
 
         assert excluded_twice._state.exclusions == {"tokens": {"the", "cat"}}
         assert excluded_once._state.exclusions == {"tokens": {"the"}}
+
+    def test_lexicon_score_ranges_are_recorded_in_the_order_they_were_applied(self) -> None:
+        """Repeated calls exclude the union of their ranges, so every one of them is recorded."""
+        excluded = (
+            comp("ref", "cmp")
+            .exclude.by_lexicon_score(less_than=2.0)
+            .exclude.by_lexicon_score(between=(4.0, 5.0), inclusive=False, corpus="either")
+        )
+
+        assert excluded._state.exclusions == {
+            "lexicon_score": [
+                {"less_than": 2.0, "inclusive": True, "corpus": "both"},
+                {"between": (4.0, 5.0), "inclusive": False, "corpus": "either"},
+            ]
+        }
 
     def test_result_reports_the_exclusions(self, df_mock: pl.DataFrame) -> None:
         """A result carries the record, so a scored comparison shows what was left out of it."""

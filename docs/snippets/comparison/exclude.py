@@ -13,3 +13,12 @@ cl = wl.Catalog.from_dict_of_freqs(
 # --8<-- [start:tokens]
 cl = cl.with_comparisons(wl.comp("before", "after").exclude.tokens(["the"]).score.proportion())
 # --8<-- [end:tokens]
+
+
+# --8<-- [start:by_lexicon_score]
+cl = cl.with_comparisons(
+    wl.comp("before", "after")
+    .exclude.by_lexicon_score(between=(4.0, 6.0))
+    .score.lexicon(wl.lex.labMT("english"))
+)
+# --8<-- [end:by_lexicon_score]

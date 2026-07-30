@@ -60,18 +60,18 @@ class TestResolve:
         state = ComparisonState(
             reference="ref",
             comparison="cmp",
-            exclusion_plan=record("exclusion"),
             lexicon_join_plan=record("lexicon_join"),
+            exclusion_plan=record("exclusion"),
             score_plan=record("score"),
         )
         df_result = state.resolve()(
             pl.DataFrame({"word": ["a"], "ref": [1], "cmp": [2], "other": [3]}), "word"
         )
 
-        # Exclusions run on the two selected corpora, before they are renormalized and before any
-        # other corpus in the catalog could reach them, and the join sees the excluded vocabulary
-        assert seen[0] == ("exclusion", ["word", FREQ_REF_COL, FREQ_CMP_COL])
-        assert seen[1] == ("lexicon_join", ["word", FREQ_REF_COL, FREQ_CMP_COL])
+        # The join runs on the two selected corpora, before they are renormalized and before any
+        # other corpus in the catalog could reach them, so exclusions can see the lexicon scores
+        assert seen[0] == ("lexicon_join", ["word", FREQ_REF_COL, FREQ_CMP_COL])
+        assert seen[1] == ("exclusion", ["word", FREQ_REF_COL, FREQ_CMP_COL])
 
         name, columns = seen[2]
         assert name == "score"

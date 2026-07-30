@@ -8,6 +8,7 @@ from wordlevel.constants import (
     COMPARISON_ATTRIBUTION,
     REINFORCE_ATTRIBUTION,
     IS_BORROWED_COL,
+    LEXICON_SCORE_REF_COL,
     NORMED_FREQ_REF_COL,
     SCORE_COL,
 )
@@ -444,7 +445,7 @@ class TestLexiconScorer:
 
         df_joined = join_plan(df_mock, "word")
 
-        assert "lexicon_score_ref" in df_joined.columns
+        assert LEXICON_SCORE_REF_COL in df_joined.columns
         assert SCORE_COL not in df_joined.columns
 
     def test_rescoring_without_a_lexicon_clears_the_join_plan(self) -> None:
