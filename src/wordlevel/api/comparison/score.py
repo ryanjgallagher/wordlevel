@@ -506,10 +506,10 @@ class Scorer:
             passthrough_cols=passthrough_cols,
         )
 
-        def plan(
+        def join_plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
-            df = lexicon_join_plan(
+            return lexicon_join_plan(
                 df,
                 df_token_col=token_col,
                 lexicon=lexicon,
@@ -523,15 +523,14 @@ class Scorer:
                 drop_null_scores=True,
             )
 
-            return score_plan(df, token_col=token_col, normalization_suffix=normalization_suffix)
-
         return self._return_comparison(
-            plan,
+            score_plan,
             method="lexicon",
             parameters={"reference_score": reference_score, "impute": impute},
             is_weighted_avg=True,
             is_nonnegative=False,
             attributed_by="score_sign",
+            lexicon_join_plan=join_plan,
         )
 
     def tsallis_entropy(
