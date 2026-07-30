@@ -138,6 +138,26 @@ class TestCatalogProperties:
         assert "freq1__wl_normed" in result_df.columns
         assert "freq2__wl_normed" in result_df.columns
 
+    def test_comparisons_normalize_an_unnormalized_catalog(self, df_mock) -> None:
+        """
+        A comparison normalizes the frequencies it scores with, so `normalize=False` only opts out
+        of normalizing the catalog itself.
+        """
+        catalog = Catalog.from_polars(
+            df_mock, token_col="word", corpora=["freq1", "freq2"], normalize=False
+        ).with_comparisons(
+            comp("freq1", "freq2").score.frequency().alias("raw"),
+            comp("freq1", "freq2").score.proportion().alias("normalized"),
+        )
+
+        assert "freq1__wl_normed" not in catalog.df.columns
+
+        raw = catalog.comparisons["raw"].df[SCORE_COL]
+        normalized = catalog.comparisons["normalized"].df[SCORE_COL]
+
+        assert normalized.abs().max() < 1
+        assert raw.abs().max() > 1
+
 
 # ============================================================================
 # TestIntegration - Test end-to-end workflows

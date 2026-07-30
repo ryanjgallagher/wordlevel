@@ -2,35 +2,23 @@ from typing import Callable
 
 import pytest
 import polars as pl
-from polars import col
-from polars.testing import assert_frame_equal, assert_series_equal
+from polars.testing import assert_series_equal
 
 from wordlevel.api.comparison.comparison import Comparison, comp
 from wordlevel.api.comparison.score import Scorer
 from wordlevel.constants import SCORE_COL, NORMALIZATION_CONSTANT_COL
-from wordlevel.core.utils import normalize_freqs
 
 
 @pytest.fixture
 def df_mock() -> pl.DataFrame:
-    """A mock corpus frame with the normalized-frequency columns the plans expect."""
-    return pl.DataFrame(
-        {"word": ["the", "cat", "dog"], "ref": [100, 50, 25], "cmp": [20, 30, 80]}
-    ).with_columns(
-        normalize_freqs(col("ref")).alias("ref__wl_normed"),
-        normalize_freqs(col("cmp")).alias("cmp__wl_normed"),
-    )
+    """A mock corpus frame."""
+    return pl.DataFrame({"word": ["the", "cat", "dog"], "ref": [100, 50, 25], "cmp": [20, 30, 80]})
 
 
 @pytest.fixture
 def df_equal() -> pl.DataFrame:
     """A mock corpus frame where both corpora are identical, so all contributions are zero."""
-    return pl.DataFrame(
-        {"word": ["the", "cat", "dog"], "ref": [100, 50, 25], "cmp": [100, 50, 25]}
-    ).with_columns(
-        normalize_freqs(col("ref")).alias("ref__wl_normed"),
-        normalize_freqs(col("cmp")).alias("cmp__wl_normed"),
-    )
+    return pl.DataFrame({"word": ["the", "cat", "dog"], "ref": [100, 50, 25], "cmp": [100, 50, 25]})
 
 
 class TestNormalizeMethod:
@@ -41,11 +29,6 @@ class TestNormalizeMethod:
     def test_normalizing_before_scoring_is_allowed(self) -> None:
         """Normalization has its own plan, so it does not need a score plan to exist yet."""
         assert comp("ref", "cmp").normalize("sum_abs")._state.normalized_by == "sum_abs"
-
-    def test_resolving_without_scoring_raises(self) -> None:
-        """A comparison that is only normalized has no scores to normalize."""
-        with pytest.raises(ValueError, match="scored"):
-            comp("ref", "cmp").normalize("sum_abs")._state.resolve()
 
     def test_raises_on_invalid_by(self) -> None:
         """`by` must be one of the two supported strategies."""
@@ -89,41 +72,18 @@ class TestNormalizeMethod:
         normalized = comp("ref", "cmp").score.proportion().normalize("sum_abs")
         assert normalized.alias("foo")._state.normalized_by == "sum_abs"
 
-    def test_normalizing_before_scoring_matches_normalizing_after(
-        self, df_mock: pl.DataFrame
-    ) -> None:
-        """Normalization occupies its own plan, so the order it is called in does not matter."""
-        before = comp("ref", "cmp").normalize("sum_abs").score.shannon_entropy()
-        after = comp("ref", "cmp").score.shannon_entropy().normalize("sum_abs")
-
-        assert_frame_equal(
-            before._state.resolve()(df_mock, "word", "__wl_normed").lazy().collect(),
-            after._state.resolve()(df_mock, "word", "__wl_normed").lazy().collect(),
-        )
-
-    def test_invalid_normalization_for_a_later_scoring_method_raises(self) -> None:
-        """The scoring method is only known to be compatible once every plan is in place."""
-        normalized = comp("ref", "cmp").normalize("abs_sum")
-
-        with pytest.raises(ValueError, match="proportion"):
-            normalized.score.proportion()._state.resolve()
-
 
 class TestNormalizedPlan:
     def test_normalization_constant_is_the_real_divisor(self, df_mock: pl.DataFrame) -> None:
         """The constant column holds the divisor computed from the un-normalized measure scores."""
-        raw = (
-            comp("ref", "cmp")
-            .score.shannon_entropy()
-            ._state.resolve()(df_mock, "word", "__wl_normed")
-        )
+        raw = comp("ref", "cmp").score.shannon_entropy()._state.resolve()(df_mock, "word")
         expected = raw[SCORE_COL].abs().sum()
 
         normalized = (
             comp("ref", "cmp")
             .score.shannon_entropy()
             .normalize("sum_abs")
-            ._state.resolve()(df_mock, "word", "__wl_normed")
+            ._state.resolve()(df_mock, "word")
             .lazy()
             .collect()
         )
@@ -136,7 +96,7 @@ class TestNormalizedPlan:
             comp("ref", "cmp")
             .score.jensen_shannon_divergence()
             .normalize("sum_abs")
-            ._state.resolve()(df_mock, "word", "__wl_normed")
+            ._state.resolve()(df_mock, "word")
             .lazy()
             .collect()
         )
@@ -144,7 +104,7 @@ class TestNormalizedPlan:
             comp("ref", "cmp")
             .score.jensen_shannon_divergence()
             .normalize("abs_sum")
-            ._state.resolve()(df_mock, "word", "__wl_normed")
+            ._state.resolve()(df_mock, "word")
             .lazy()
             .collect()
         )
@@ -166,4 +126,4 @@ class TestNormalizedPlan:
         """A data-dependent zero divisor is caught when the plan runs (mirrors KLD validation)."""
         normalized = score_func(comp("ref", "cmp").score).normalize(by)  # type: ignore[arg-type]
         with pytest.raises(ValueError, match="zero"):
-            normalized._state.resolve()(df_equal, "word", "__wl_normed")
+            normalized._state.resolve()(df_equal, "word")

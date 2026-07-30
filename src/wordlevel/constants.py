@@ -17,6 +17,11 @@ COMPARISON_ATTRIBUTION = "comparison"
 REINFORCE_ATTRIBUTION = "reinforce"
 OFFSET_ATTRIBUTION = "offset"
 
+FREQ_REF_COL = "__wl_freq_ref"
+FREQ_CMP_COL = "__wl_freq_cmp"
+NORMED_FREQ_REF_COL = "__wl_normed_freq_ref"
+NORMED_FREQ_CMP_COL = "__wl_normed_freq_cmp"
+
 SHIFT_SCORE_TYPES = [f.name for f in fields(ShiftBarConfig) if not f.name.endswith(SYMBOL_SUFFIX)]
 COUNTERACTED_SUFFIX = "_counteracted"
 
