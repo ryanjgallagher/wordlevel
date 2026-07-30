@@ -113,13 +113,13 @@ class TestScoreFunctionWiring:
         assert result._state.alias == expected_alias
 
         # Creates callable plan
-        assert result._state.plan is not None
-        assert callable(result._state.plan)
+        assert result._state.score_plan is not None
+        assert callable(result._state.score_plan)
 
     def test_frequency_scorer_wiring(self, df_mock):
         """Frequency scorer produces scores whose sign matches the raw frequency comparison direction."""
         comparison = Comparison("ref", "cmp")
-        df_result = comparison.score.frequency()._state.plan(df_mock, "word", "__wl_normed")
+        df_result = comparison.score.frequency()._state.resolve()(df_mock, "word", "__wl_normed")
 
         check_expr = (col("cmp") >= col("ref")) == (col("comparison_score") >= 0)
         assert df_result.select(check_expr.all()).item()
@@ -137,7 +137,7 @@ class TestScoreFunctionWiring:
         """Weighted average scorers wire frequency columns to produce correctly-directed shift components."""
         comparison = Comparison("ref", "cmp")
         result = score_func(comparison.score)
-        df_result = result._state.plan(df_mock, "word", "__wl_normed")
+        df_result = result._state.resolve()(df_mock, "word", "__wl_normed")
 
         # Where the (normalized) freqs are larger in the comparison, we should see the same in
         # the `freq_diff` column (KLD is an exception: it uses only comparison freqs, so diff is 0)
@@ -185,7 +185,7 @@ class TestScoreFunctionWiring:
         attribution gives 'reference' (ref > cmp).
         """
         comparison = Comparison("ref", "cmp")
-        df_result = score_func(comparison.score)._state.plan(df_mock, "word", "__wl_normed")
+        df_result = score_func(comparison.score)._state.resolve()(df_mock, "word", "__wl_normed")
 
         cat_attribution = df_result.filter(col("word") == "cat")["attribution"].item()
         assert cat_attribution == expected_attribution
@@ -205,7 +205,7 @@ class TestScoreFunctionWiring:
         with the same sign as the total shift reinforces it; otherwise it offsets it.
         """
         comparison = Comparison("ref", "cmp")
-        df_result = score_func(comparison.score)._state.plan(df_mock, "word", "__wl_normed")
+        df_result = score_func(comparison.score)._state.resolve()(df_mock, "word", "__wl_normed")
 
         total_shift_pos = df_result.select(col("comparison_score").sum() >= 0).item()
         if total_shift_pos:
@@ -229,7 +229,7 @@ class TestScoreFunctionWiring:
             normalize_freqs(col("cmp")).alias("cmp__wl_normed"),
         )
         comparison = Comparison("ref", "cmp")
-        plan = comparison.score.kullback_leibler_divergence()._state.plan
+        plan = comparison.score.kullback_leibler_divergence()._state.resolve()
 
         with pytest.raises(ValueError, match="Kullback-Leibler divergence is infinite"):
             plan(df, "word", "__wl_normed")
@@ -255,8 +255,8 @@ class TestScoreFunctionWiring:
         result1 = score_func(comparison.score, {parameter: value1})
         result2 = score_func(comparison.score, {parameter: value2})
 
-        df_result1 = result1._state.plan(df_mock, "word", "__wl_normed")
-        df_result2 = result2._state.plan(df_mock, "word", "__wl_normed")
+        df_result1 = result1._state.resolve()(df_mock, "word", "__wl_normed")
+        df_result2 = result2._state.resolve()(df_mock, "word", "__wl_normed")
 
         assert_frame_not_equal(
             df_result1, df_result2, check_row_order=False, check_column_order=False
@@ -280,9 +280,9 @@ class TestScoreFunctionWiring:
         result_ref2 = score_func(comparison.score, "mean")
         result_ref3 = score_func(comparison.score, col("ref__wl_normed").pow(2).sum())
 
-        df_ref1 = result_ref1._state.plan(df_mock, "word", "__wl_normed")
-        df_ref2 = result_ref2._state.plan(df_mock, "word", "__wl_normed")
-        df_ref3 = result_ref3._state.plan(df_mock, "word", "__wl_normed")
+        df_ref1 = result_ref1._state.resolve()(df_mock, "word", "__wl_normed")
+        df_ref2 = result_ref2._state.resolve()(df_mock, "word", "__wl_normed")
+        df_ref3 = result_ref3._state.resolve()(df_mock, "word", "__wl_normed")
 
         # If wiring is correct, these dataframes must differ
         assert_frame_not_equal(df_ref1, df_ref2)
@@ -305,7 +305,7 @@ class TestAliasing:
         comparison = Comparison("freq_1990", "freq_2000")._update_state(alias=alias)
 
         result = comparison.score._return_comparison(
-            plan=lambda x: x,
+            score_plan=lambda x: x,
             method=method_name,
             parameters={"param1": "value1"},
             is_weighted_avg=False,
@@ -349,8 +349,8 @@ class TestAliasing:
         assert alias_result._state.is_weighted_avg == method_result._state.is_weighted_avg
 
         # Check plans produce identical dataframes
-        df_method = method_result._state.plan(df_mock, "word", "__wl_normed")
-        df_alias = alias_result._state.plan(df_mock, "word", "__wl_normed")
+        df_method = method_result._state.resolve()(df_mock, "word", "__wl_normed")
+        df_alias = alias_result._state.resolve()(df_mock, "word", "__wl_normed")
 
         assert_frame_equal(df_method, df_alias, check_row_order=False, check_column_order=False)
 
@@ -377,7 +377,7 @@ class TestEdgeCases:
         result = score_func(comparison.score)
 
         with pytest.raises(Exception):
-            result._state.plan(df_normed, "word", "_normed")
+            result._state.resolve()(df_normed, "word", "_normed")
 
     @pytest.mark.parametrize(
         "score_func",
@@ -403,7 +403,7 @@ class TestEdgeCases:
         result = score_func(comparison.score)
 
         with pytest.raises(Exception):
-            result._state.plan(df_raw, "word", "_normed")
+            result._state.resolve()(df_raw, "word", "_normed")
 
     @pytest.mark.parametrize(
         "score_func",
@@ -424,8 +424,8 @@ class TestEdgeCases:
             {"word": "token", "ref__wl_normed": "ref_norm", "cmp__wl_normed": "cmp_norm"}
         )
 
-        df_result_default = result._state.plan(df_mock, "word", "__wl_normed")
-        df_result_renamed = result._state.plan(df_renamed, "token", "_norm")
+        df_result_default = result._state.resolve()(df_mock, "word", "__wl_normed")
+        df_result_renamed = result._state.resolve()(df_renamed, "token", "_norm")
 
         # The renamed result should use "token" as the token column, not "word"
         assert "token" in df_result_renamed.columns
@@ -444,7 +444,7 @@ class TestEdgeCases:
 
         # Error should be raised during plan execution
         with pytest.raises(ValueError, match="alpha must be non-negative"):
-            result._state.plan(df_mock, "word", "__wl_normed")
+            result._state.resolve()(df_mock, "word", "__wl_normed")
 
     def test_calling_score_twice_overrides_previous(self, df_mock):
         """Calling a second scoring method on a scored Comparison overrides the first."""
@@ -458,12 +458,33 @@ class TestEdgeCases:
         assert scored_twice._state.parameters != scored_once._state.parameters
 
         # The second plan should produce weighted-avg columns, not simple score columns
-        df_result = scored_twice._state.plan(df_mock, "word", "__wl_normed")
+        df_result = scored_twice._state.resolve()(df_mock, "word", "__wl_normed")
         assert "freq_diff" in df_result.columns
         assert "weighted_score_diff" in df_result.columns
 
 
 class TestLexiconScorer:
+    def test_lexicon_join_is_its_own_plan(self, df_mock) -> None:
+        """
+        The join runs as a plan of its own rather than nested inside the score plan, so that
+        operations can be slotted between joining a lexicon and scoring with it.
+        """
+        comparison = Comparison("ref", "cmp").score.lexicon(lexicon={"the": 1.0, "cat": 5.0})
+        join_plan = comparison._state.lexicon_join_plan
+
+        assert join_plan is not None
+
+        df_joined = join_plan(df_mock, "word", "__wl_normed")
+
+        assert "lexicon_score_ref" in df_joined.columns
+        assert SCORE_COL not in df_joined.columns
+
+    def test_rescoring_without_a_lexicon_clears_the_join_plan(self) -> None:
+        """A lexicon join belongs to the lexicon method, so scoring another way discards it."""
+        comparison = Comparison("ref", "cmp").score.lexicon(lexicon={"the": 1.0, "cat": 5.0})
+
+        assert comparison.score.shannon_entropy()._state.lexicon_join_plan is None
+
     def test_lexicon_object_execution(self, df_mock) -> None:
         """A Lexicon object flows through Scorer.lexicon() to plan execution without error."""
         lexicon = Lexicon(
@@ -471,7 +492,7 @@ class TestLexiconScorer:
             center=5.0,
         )
         comparison = Comparison("ref", "cmp")
-        df_result = comparison.score.lexicon(lexicon=lexicon)._state.plan(
+        df_result = comparison.score.lexicon(lexicon=lexicon)._state.resolve()(
             df_mock, "word", "__wl_normed"
         )
 
@@ -512,7 +533,7 @@ class TestLexiconScorer:
         comparison = Comparison("ref", "cmp")
         df_result = comparison.score.lexicon(
             lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0}
-        )._state.plan(df_mock, "word", "__wl_normed")
+        )._state.resolve()(df_mock, "word", "__wl_normed")
 
         assert "freq_diff" in df_result.columns
         assert "weighted_score_diff" in df_result.columns
@@ -524,10 +545,10 @@ class TestLexiconScorer:
         comparison = Comparison("ref", "cmp")
         df_flat = comparison.score.lexicon(
             lexicon={"the": 1.0, "cat": 1.0, "dog": 1.0}
-        )._state.plan(df_mock, "word", "__wl_normed")
+        )._state.resolve()(df_mock, "word", "__wl_normed")
         df_varied = comparison.score.lexicon(
             lexicon={"the": 1.0, "cat": 5.0, "dog": -3.0}
-        )._state.plan(df_mock, "word", "__wl_normed")
+        )._state.resolve()(df_mock, "word", "__wl_normed")
 
         assert_frame_not_equal(
             df_flat.select(SCORE_COL),
@@ -540,12 +561,12 @@ class TestLexiconScorer:
         lex_b = {"the": -1.0, "cat": 2.0, "dog": 8.0}
 
         comparison = Comparison("ref", "cmp")
-        df_single = comparison.score.lexicon(lexicon=lex_a)._state.plan(
+        df_single = comparison.score.lexicon(lexicon=lex_a)._state.resolve()(
             df_mock, "word", "__wl_normed"
         )
         df_split = comparison.score.lexicon(
             lexicon_reference=lex_a, lexicon_comparison=lex_b
-        )._state.plan(df_mock, "word", "__wl_normed")
+        )._state.resolve()(df_mock, "word", "__wl_normed")
 
         assert_frame_not_equal(
             df_single.select(SCORE_COL),
@@ -557,10 +578,10 @@ class TestLexiconScorer:
         lexicon = {"the": 1.0, "cat": 5.0}  # missing "dog"
         comparison = Comparison("ref", "cmp")
 
-        df_borrow = comparison.score.lexicon(lexicon=lexicon, impute="borrow")._state.plan(
+        df_borrow = comparison.score.lexicon(lexicon=lexicon, impute="borrow")._state.resolve()(
             df_mock, "word", "__wl_normed"
         )
-        df_zero = comparison.score.lexicon(lexicon=lexicon, impute=0.0)._state.plan(
+        df_zero = comparison.score.lexicon(lexicon=lexicon, impute=0.0)._state.resolve()(
             df_mock, "word", "__wl_normed"
         )
 
@@ -575,7 +596,7 @@ class TestLexiconScorer:
             lexicon_reference={"the": 1.0, "cat": 5.0},  # missing "dog"
             lexicon_comparison={"the": 2.0, "dog": -3.0},  # missing "cat"
             impute="borrow",
-        )._state.plan(df_mock, "word", "__wl_normed")
+        )._state.resolve()(df_mock, "word", "__wl_normed")
 
         borrowed = df_result.filter(col(IS_BORROWED_COL))["word"].to_list()
         assert set(borrowed) == {"cat", "dog"}
@@ -585,7 +606,7 @@ class TestLexiconScorer:
         comparison = Comparison("ref", "cmp")
         df_result = comparison.score.lexicon(
             lexicon={"the": 1.0, "cat": 5.0}, impute=0.0
-        )._state.plan(df_mock, "word", "__wl_normed")
+        )._state.resolve()(df_mock, "word", "__wl_normed")
 
         assert IS_BORROWED_COL not in df_result.columns
 
@@ -595,7 +616,7 @@ class TestLexiconScorer:
         weighted average and is dropped from the comparison.
         """
         comparison = Comparison("ref", "cmp")
-        df_result = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 5.0})._state.plan(
+        df_result = comparison.score.lexicon(lexicon={"the": 1.0, "cat": 5.0})._state.resolve()(
             df_mock, "word", "__wl_normed"
         )
 

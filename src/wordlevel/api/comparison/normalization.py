@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import polars as pl
 
 from wordlevel.constants import (
@@ -12,7 +14,9 @@ from wordlevel.core.comparison.normalization import (
     normalization_constant_expr,
     normalize_scores,
 )
-from wordlevel.api.comparison.score import ScorePlan
+
+if TYPE_CHECKING:
+    from wordlevel.api.comparison.comparison import PlanStage
 
 
 _ZERO_CONSTANT_DESCRIPTION: dict[NORMALIZE_BY, str] = {
@@ -21,19 +25,19 @@ _ZERO_CONSTANT_DESCRIPTION: dict[NORMALIZE_BY, str] = {
 }
 
 
-def make_normalized_plan(base_plan: ScorePlan, by: NORMALIZE_BY) -> ScorePlan:
+def make_normalized_plan(by: NORMALIZE_BY) -> PlanStage:
     """
-    Wraps a scoring plan so that its token contributions are normalized by a single scalar.
+    Creates a plan that normalizes token contributions by a single scalar.
 
-    The wrapped plan runs `base_plan` and collects it once, then validates that the normalization
-    constant is non-zero — a divide-by-zero that depends on the data, so it can only be caught once
-    the scores are realized. If the constant is zero, it raises; otherwise it normalizes the scores.
+    The plan collects the scored contributions once, then validates that the normalization constant
+    is non-zero — a divide-by-zero that depends on the data, so it can only be caught once the
+    scores are realized. If the constant is zero, it raises; otherwise it normalizes the scores.
     """
 
     def plan(
         df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
     ) -> pl.DataFrame | pl.LazyFrame:
-        df_scored = base_plan(df, token_col, normalization_suffix).lazy().collect()
+        df_scored = df.lazy().collect()
 
         constant = df_scored.select(normalization_constant_expr(by, SCORE_COL)).item()
         if constant == 0:

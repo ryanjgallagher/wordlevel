@@ -12,7 +12,7 @@ def test_initialization_defaults() -> None:
     assert comparison._state.method is None
     assert comparison._state.is_weighted_avg is None
     assert comparison._state.attributed_by is None
-    assert comparison._state.plan is None
+    assert comparison._state.score_plan is None
     assert comparison._state.parameters == {}
     assert isinstance(comparison._state.parameters, dict)
 
@@ -31,7 +31,7 @@ def test_with_state_populates_internal_fields() -> None:
         method="jensen_shannon",
         is_weighted_avg=True,
         attributed_by="frequency",
-        plan=mock_plan,
+        score_plan=mock_plan,
         parameters=params,
     )
 
@@ -41,7 +41,7 @@ def test_with_state_populates_internal_fields() -> None:
     assert comparison._state.method == "jensen_shannon"
     assert comparison._state.is_weighted_avg is True
     assert comparison._state.attributed_by == "frequency"
-    assert comparison._state.plan is mock_plan
+    assert comparison._state.score_plan is mock_plan
     assert comparison._state.parameters == {"alpha": 1.5, "base": 2}
     assert comparison._state.parameters is not params  # Parameters are copied
 

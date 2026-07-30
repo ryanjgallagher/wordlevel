@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import partial
-from typing import Any, Literal, Mapping, Protocol, TYPE_CHECKING
+from typing import Any, Literal, Mapping, TYPE_CHECKING
 
 import polars as pl
 from polars import col
@@ -41,16 +41,7 @@ from wordlevel.core.comparison.score.plan import (
 from wordlevel.core.lexicons.load import Lexicon
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.comparison import Comparison
-
-
-class ScorePlan(Protocol):
-    def __call__(
-        self,
-        df: pl.DataFrame | pl.LazyFrame,
-        token_col: str,
-        normalization_suffix: str,
-    ) -> pl.DataFrame | pl.LazyFrame: ...
+    from wordlevel.api.comparison.comparison import Comparison, PlanStage
 
 
 def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
@@ -94,7 +85,7 @@ class Scorer:
         score_func: ScoreFunc,
         attribute_by: ATTRIBUTION_TYPE,
         requires_normed_freqs: bool = True,
-    ) -> ScorePlan:
+    ) -> PlanStage:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison
         """
@@ -134,7 +125,7 @@ class Scorer:
         requires_normed_freqs: bool = True,
         share_component_freqs_by: Literal["reference", "comparison"] | None = None,
         passthrough_cols: list[str] | None = None,
-    ) -> ScorePlan:
+    ) -> PlanStage:
         """
         Creates a set of instructions (i.e. a function) for how to score a comparison when the
         scoring is done using a weighted average method
@@ -187,14 +178,16 @@ class Scorer:
 
     def _return_comparison(
         self,
-        plan: ScorePlan,
+        score_plan: PlanStage,
         method: str,
         parameters: dict[str, Any],
         is_weighted_avg: bool,
         is_nonnegative: bool,
         attributed_by: ATTRIBUTION_TYPE,
+        lexicon_join_plan: PlanStage | None = None,
     ) -> Comparison:
         """ """
+        # TODO: `lexicon_join_plan` shadows the core function of the same name imported above, fix
         state = self._comparison._state
 
         if state.alias is None:
@@ -209,10 +202,8 @@ class Scorer:
             is_weighted_avg=is_weighted_avg,
             is_nonnegative=is_nonnegative,
             attributed_by=attributed_by,
-            plan=plan,
-            # Normalization is applied by wrapping the plan, so replacing the plan here discards it.
-            # Once normalization becomes its own pipeline stage, it will survive re-scoring instead
-            normalized_by=None,
+            lexicon_join_plan=lexicon_join_plan,
+            score_plan=score_plan,
         )
 
     def frequency(self) -> Comparison:
@@ -516,10 +507,10 @@ class Scorer:
             passthrough_cols=passthrough_cols,
         )
 
-        def plan(
+        def join_plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str, normalization_suffix: str
         ) -> pl.DataFrame | pl.LazyFrame:
-            df = lexicon_join_plan(
+            return lexicon_join_plan(
                 df,
                 df_token_col=token_col,
                 lexicon=lexicon,
@@ -533,15 +524,14 @@ class Scorer:
                 drop_null_scores=True,
             )
 
-            return score_plan(df, token_col=token_col, normalization_suffix=normalization_suffix)
-
         return self._return_comparison(
-            plan,
+            score_plan,
             method="lexicon",
             parameters={"reference_score": reference_score, "impute": impute},
             is_weighted_avg=True,
             is_nonnegative=False,
             attributed_by="score_sign",
+            lexicon_join_plan=join_plan,
         )
 
     def tsallis_entropy(
