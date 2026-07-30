@@ -7,6 +7,7 @@ from typing_extensions import Self
 
 import polars as pl
 
+from wordlevel.api.comparison.exclude import ComparisonExcluder
 from wordlevel.api.comparison.score import Scorer
 from wordlevel.api.comparison.normalization import make_normalized_plan
 from wordlevel.api.comparison.state import ComparisonState
@@ -51,6 +52,15 @@ class Comparison:
         See the [available scoring methods](score/index.md).
         """
         return Scorer(self)
+
+    @cached_property
+    def exclude(self) -> ComparisonExcluder:
+        """
+        Namespace for excluding tokens from the reference and comparison corpora.
+
+        See the [available exclusion strategies](exclude/index.md).
+        """
+        return ComparisonExcluder(self)
 
     def alias(self, name: str) -> Comparison:
         """
