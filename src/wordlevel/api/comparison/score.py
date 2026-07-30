@@ -187,6 +187,7 @@ class Scorer:
         lexicon_join_plan: PlanStage | None = None,
     ) -> Comparison:
         """ """
+        # TODO: `lexicon_join_plan` shadows the core function of the same name imported above, fix
         state = self._comparison._state
 
         if state.alias is None:

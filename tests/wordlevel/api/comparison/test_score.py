@@ -464,6 +464,27 @@ class TestEdgeCases:
 
 
 class TestLexiconScorer:
+    def test_lexicon_join_is_its_own_plan(self, df_mock) -> None:
+        """
+        The join runs as a plan of its own rather than nested inside the score plan, so that
+        operations can be slotted between joining a lexicon and scoring with it.
+        """
+        comparison = Comparison("ref", "cmp").score.lexicon(lexicon={"the": 1.0, "cat": 5.0})
+        join_plan = comparison._state.lexicon_join_plan
+
+        assert join_plan is not None
+
+        df_joined = join_plan(df_mock, "word", "__wl_normed")
+
+        assert "lexicon_score_ref" in df_joined.columns
+        assert SCORE_COL not in df_joined.columns
+
+    def test_rescoring_without_a_lexicon_clears_the_join_plan(self) -> None:
+        """A lexicon join belongs to the lexicon method, so scoring another way discards it."""
+        comparison = Comparison("ref", "cmp").score.lexicon(lexicon={"the": 1.0, "cat": 5.0})
+
+        assert comparison.score.shannon_entropy()._state.lexicon_join_plan is None
+
     def test_lexicon_object_execution(self, df_mock) -> None:
         """A Lexicon object flows through Scorer.lexicon() to plan execution without error."""
         lexicon = Lexicon(
