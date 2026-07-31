@@ -67,10 +67,10 @@ class ComparisonState:
         exclusions:
             The exclusions applied to the vocabulary, keyed by the kind of exclusion. Each value
             describes what that kind of exclusion removed, e.g. `{"tokens": {"the", "a"}}`
-        exclusion_plan:
-            The plan removing tokens from the vocabulary of the two corpora
         lexicon_join_plan:
             The plan joining lexicon scores onto the corpus data
+        exclusion_plan:
+            The plan restricting the vocabulary of the two corpora
         score_plan:
             The plan scoring the reference and comparison corpora according to the specified method
         score_normalization_plan:
@@ -87,8 +87,8 @@ class ComparisonState:
     parameters: dict[str, Any] = field(default_factory=dict)
     normalized_by: NORMALIZE_BY | None = None
     exclusions: dict[str, Any] = field(default_factory=dict)
-    exclusion_plan: PlanStage | None = None
     lexicon_join_plan: PlanStage | None = None
+    exclusion_plan: PlanStage | None = None
     score_plan: PlanStage | None = None
     score_normalization_plan: PlanStage | None = None
 
@@ -138,12 +138,15 @@ class ComparisonState:
         Raises:
             ValueError: If the comparison has not been scored, so there is no plan to resolve.
             ValueError: If the normalization is not valid for the scoring method.
+            ValueError: If excluding by lexicon score is not valid for the scoring method.
         """
         if self.score_plan is None:
             raise ValueError("Cannot resolve the plan of a comparison that has not been scored")
 
         if self.normalized_by is not None:
             self.validate_normalization(self.normalized_by)
+        if "lexicon_score" in self.exclusions:
+            self.validate_lexicon_score_exclusion()
 
         def select_corpora_plan(
             df: pl.DataFrame | pl.LazyFrame, token_col: str
@@ -164,8 +167,10 @@ class ComparisonState:
             plan
             for plan in (
                 select_corpora_plan,
-                self.exclusion_plan,
+                # Excluding by proportion needs normalized frequencies before narrowing the vocab
+                renormalize_plan if "proportion" in self.exclusions else None,
                 self.lexicon_join_plan,
+                self.exclusion_plan,
                 renormalize_plan,
                 self.score_plan,
                 self.score_normalization_plan,
@@ -201,4 +206,36 @@ class ComparisonState:
                 "Cannot normalize a 'proportion' comparison by 'abs_sum': proportions sum to one "
                 "in each corpus, so the net difference is zero by construction. Use 'sum_abs' "
                 "instead."
+            )
+
+    def validate_lexicon_score_exclusion(self) -> None:
+        """
+        Checks that excluding by lexicon score is valid for how the comparison is scored.
+
+        A comparison that has not been scored yet passes, because the scoring method it will be
+        given is not known until every plan is in place.
+
+        Raises:
+            ValueError:
+                If the comparison is not scored by a lexicon, so it has no lexicon scores to
+                exclude by.
+            ValueError:
+                If the lexicon scores are imputed by anything other than `"borrow"`, because an
+                imputed score is a modeling choice rather than what a lexicon says about a token.
+        """
+        if self.score_plan is None:
+            return
+
+        if self.method != "lexicon":
+            raise ValueError(
+                "Can only exclude by lexicon score when the comparison is scored by a lexicon, "
+                f"but it is scored by {self.method!r}."
+            )
+
+        impute = self.parameters.get("impute")
+        if impute is not None and not (isinstance(impute, str) and impute == "borrow"):
+            raise ValueError(
+                f"Cannot exclude by lexicon score when `impute` is {impute!r}: an imputed score is "
+                "a modeling choice rather than what a lexicon says about a token. Only the "
+                "'borrow' imputation strategy is compatible"
             )

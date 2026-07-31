@@ -60,24 +60,35 @@ class TestResolve:
         state = ComparisonState(
             reference="ref",
             comparison="cmp",
-            exclusion_plan=record("exclusion"),
             lexicon_join_plan=record("lexicon_join"),
+            exclusion_plan=record("exclusion"),
             score_plan=record("score"),
         )
         df_result = state.resolve()(
             pl.DataFrame({"word": ["a"], "ref": [1], "cmp": [2], "other": [3]}), "word"
         )
 
-        # Exclusions run on the two selected corpora, before they are renormalized and before any
-        # other corpus in the catalog could reach them, and the join sees the excluded vocabulary
-        assert seen[0] == ("exclusion", ["word", FREQ_REF_COL, FREQ_CMP_COL])
-        assert seen[1] == ("lexicon_join", ["word", FREQ_REF_COL, FREQ_CMP_COL])
+        # The join runs on the two selected corpora, before they are renormalized and before any
+        # other corpus in the catalog could reach them, so exclusions can see the lexicon scores
+        assert seen[0] == ("lexicon_join", ["word", FREQ_REF_COL, FREQ_CMP_COL])
+        assert seen[1] == ("exclusion", ["word", FREQ_REF_COL, FREQ_CMP_COL])
 
         name, columns = seen[2]
         assert name == "score"
         assert NORMED_FREQ_REF_COL in columns and NORMED_FREQ_CMP_COL in columns
 
         assert df_result.columns == ["word", "ref", "cmp", "ref__wl_normed", "cmp__wl_normed"]
+
+    def test_drops_tokens_that_neither_corpus_uses(self) -> None:
+        """
+        A comparison's vocabulary is the one its two corpora use, not the catalog's, so a token
+        another corpus contributed is dropped rather than carried as a row of zeros.
+        """
+        df_mock = pl.DataFrame({"word": ["a", "b"], "ref": [1, 0], "cmp": [2, 0], "other": [0, 5]})
+
+        df_result = comp("ref", "cmp").score.frequency()._state.resolve()(df_mock, "word")
+
+        assert df_result["word"].to_list() == ["a"]
 
     def test_normalizing_before_scoring_matches_normalizing_after(self) -> None:
         """Normalization occupies its own plan, so the order it is called in does not matter."""

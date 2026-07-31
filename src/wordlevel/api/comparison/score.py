@@ -14,6 +14,8 @@ from wordlevel.constants import (
     FREQ_CMP_COL,
     FREQ_REF_COL,
     IS_BORROWED_COL,
+    LEXICON_SCORE_CMP_COL,
+    LEXICON_SCORE_REF_COL,
     NORMED_FREQ_CMP_COL,
     NORMED_FREQ_REF_COL,
 )
@@ -462,8 +464,8 @@ class Scorer:
                 If `lexicon` is supplied alongside `lexicon_reference` or `lexicon_comparison` (the
                 single-lexicon and per-corpus-lexicon paths are mutually exclusive).
         """
-        score_alias_ref = "lexicon_score_ref"
-        score_alias_cmp = "lexicon_score_cmp"
+        score_alias_ref = LEXICON_SCORE_REF_COL
+        score_alias_cmp = LEXICON_SCORE_CMP_COL
 
         if reference_score is None:
             is_lexicon = (
