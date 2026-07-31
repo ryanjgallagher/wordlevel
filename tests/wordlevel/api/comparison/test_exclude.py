@@ -113,6 +113,35 @@ class TestExcludeTokens:
         assert_frame_equal(df_before, after._state.resolve()(df_mock, "word"))
 
 
+class TestExcludeUnsharedTokens:
+    def test_matches_excluding_the_tokens_a_corpus_does_not_use(self) -> None:
+        """`dog` is never used in the reference corpus and `ran` never in the comparison."""
+        df_unshared = pl.DataFrame(
+            {
+                "word": ["the", "cat", "dog", "ran"],
+                "ref": [100, 50, 0, 10],
+                "cmp": [80, 30, 60, 0],
+            }
+        )
+
+        unshared = comp("ref", "cmp").exclude.unshared_tokens().score.proportion()
+        by_name = comp("ref", "cmp").exclude.tokens(["dog", "ran"]).score.proportion()
+
+        assert_frame_equal(
+            unshared._state.resolve()(df_unshared, "word"),
+            by_name._state.resolve()(df_unshared, "word"),
+        )
+
+    def test_corpora_sharing_every_token_are_left_alone(self, df_mock: pl.DataFrame) -> None:
+        """The exclusion is about the vocabulary the corpora share, not about rare tokens."""
+        scored = comp("ref", "cmp").score.proportion()
+
+        assert_frame_equal(
+            scored.exclude.unshared_tokens()._state.resolve()(df_mock, "word"),
+            scored._state.resolve()(df_mock, "word"),
+        )
+
+
 class TestExcludeByFrequency:
     def test_matches_excluding_the_same_tokens_directly(self, df_mock: pl.DataFrame) -> None:
         """
@@ -482,6 +511,12 @@ class TestExclusionsRecord:
                 {"between": (4.0, 5.0), "inclusive": False, "corpus": "either"},
             ]
         }
+
+    def test_unshared_tokens_are_recorded_as_having_been_excluded(self) -> None:
+        """The exclusion takes no parameters, so there is nothing to record but that it ran."""
+        excluded = comp("ref", "cmp").exclude.unshared_tokens()
+
+        assert excluded._state.exclusions == {"unshared_tokens": True}
 
     def test_each_kind_of_range_is_recorded_under_its_own_key(self) -> None:
         """A comparison can exclude by more than one kind of range, and they do not collide."""

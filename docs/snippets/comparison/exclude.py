@@ -15,6 +15,13 @@ cl = cl.with_comparisons(wl.comp("before", "after").exclude.tokens(["the"]).scor
 # --8<-- [end:tokens]
 
 
+# --8<-- [start:unshared_tokens]
+cl = cl.with_comparisons(
+    wl.comp("before", "after").exclude.unshared_tokens().score.kullback_leibler_divergence()
+)
+# --8<-- [end:unshared_tokens]
+
+
 # --8<-- [start:by_frequency]
 cl = cl.with_comparisons(
     wl.comp("before", "after").exclude.by_frequency(greater_than=20).score.proportion()

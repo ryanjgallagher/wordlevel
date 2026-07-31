@@ -76,6 +76,46 @@ class ComparisonExcluder:
             exclusions={**state.exclusions, "tokens": excluded_tokens},
         )
 
+    def unshared_tokens(self) -> Comparison:
+        """
+        Removes the tokens that do not appear in both of the corpora being compared.
+
+        Tokens are excluded from both corpora, before they are scored, so the frequencies the
+        scoring measure works with are normalized over the remaining vocabulary.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/exclude.py:setup"
+
+            --8<-- "snippets/comparison/exclude.py:unshared_tokens"
+            ```
+
+        Warning:
+            Excluding tokens changes the normalized frequencies of every token that remains.
+
+            A token that only one corpus uses can be a stark difference between them. Prefer using a
+            measure that can handle these absences, rather than excluding them entirely.
+
+        Returns:
+            A new `Comparison` whose vocabulary is the one the two corpora share
+        """
+        state = self._comparison._state
+
+        def plan(df: pl.DataFrame | pl.LazyFrame, token_col: str) -> pl.DataFrame | pl.LazyFrame:
+            # A token that a corpus does not use has a frequency of zero in it, not a missing one
+            return exclude_by_range(
+                df,
+                value_col_ref=FREQ_REF_COL,
+                value_col_cmp=FREQ_CMP_COL,
+                less_than=0,
+                corpus="either",
+            )
+
+        return self._comparison._update_state(
+            exclusion_plan=state.compose_plans(state.exclusion_plan, plan),
+            exclusions={**state.exclusions, "unshared_tokens": True},
+        )
+
     def by_frequency(
         self,
         less_than: float | None = None,
