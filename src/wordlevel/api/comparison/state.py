@@ -167,6 +167,8 @@ class ComparisonState:
             plan
             for plan in (
                 select_corpora_plan,
+                # Excluding by proportion needs normalized frequencies before narrowing the vocab
+                renormalize_plan if "proportion" in self.exclusions else None,
                 self.lexicon_join_plan,
                 self.exclusion_plan,
                 renormalize_plan,

@@ -18,10 +18,10 @@ def exclude_tokens(
     return df.filter(~col(token_col).is_in(set(tokens)))
 
 
-def exclude_by_lexicon_score(
+def exclude_by_range(
     df: pl.DataFrame | pl.LazyFrame,
-    score_col_ref: str,
-    score_col_cmp: str,
+    value_col_ref: str,
+    value_col_cmp: str,
     less_than: float | None = None,
     greater_than: float | None = None,
     between: tuple[float, float] | None = None,
@@ -29,20 +29,21 @@ def exclude_by_lexicon_score(
     corpus: EXCLUDE_CORPUS = "both",
 ) -> pl.DataFrame | pl.LazyFrame:
     """
-    Removes tokens whose lexicon score falls in the given range from the two corpora being
+    Removes tokens whose per-corpus value falls in the given range from the two corpora being
     compared.
 
-    Exactly one of `less_than`, `greater_than`, or `between` gives the range, and `corpus` decides
-    which corpus's lexicon score the range is tested against.
+    The value columns are whatever the caller wants the range tested against, such as lexicon
+    scores or frequencies. Exactly one of `less_than`, `greater_than`, or `between` gives the
+    range, and `corpus` decides which corpus's value the range is tested against.
     """
     if (less_than is None) and (greater_than is None) and (between is None):
         raise ValueError("Must specify one of `less_than`, `greater_than`, or `between`")
 
-    condition_ref = _get_score_condition(
-        col(score_col_ref), less_than, greater_than, between, inclusive
+    condition_ref = _get_range_condition(
+        col(value_col_ref), less_than, greater_than, between, inclusive
     )
-    condition_cmp = _get_score_condition(
-        col(score_col_cmp), less_than, greater_than, between, inclusive
+    condition_cmp = _get_range_condition(
+        col(value_col_cmp), less_than, greater_than, between, inclusive
     )
 
     condition: pl.Expr
@@ -58,23 +59,23 @@ def exclude_by_lexicon_score(
     return df.filter(~condition)
 
 
-def _get_score_condition(
-    scores: pl.Expr,
+def _get_range_condition(
+    values: pl.Expr,
     less_than: float | None,
     greater_than: float | None,
     between: tuple[float, float] | None,
     inclusive: bool,
 ) -> pl.Expr:
     """
-    Builds the condition that a lexicon score falls in the given range.
+    Builds the condition that a value falls in the given range.
     """
     condition: pl.Expr
     if less_than is not None:
-        condition = scores <= less_than if inclusive else scores < less_than
+        condition = values <= less_than if inclusive else values < less_than
     elif greater_than is not None:
-        condition = scores >= greater_than if inclusive else scores > greater_than
+        condition = values >= greater_than if inclusive else values > greater_than
     else:
         lower, upper = between  # type: ignore[misc]
-        condition = scores.is_between(lower, upper, closed="both" if inclusive else "none")
+        condition = values.is_between(lower, upper, closed="both" if inclusive else "none")
 
     return condition
