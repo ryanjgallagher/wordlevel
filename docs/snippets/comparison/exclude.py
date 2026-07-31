@@ -15,6 +15,20 @@ cl = cl.with_comparisons(wl.comp("before", "after").exclude.tokens(["the"]).scor
 # --8<-- [end:tokens]
 
 
+# --8<-- [start:by_frequency]
+cl = cl.with_comparisons(
+    wl.comp("before", "after").exclude.by_frequency(greater_than=20).score.proportion()
+)
+# --8<-- [end:by_frequency]
+
+
+# --8<-- [start:by_proportion]
+cl = cl.with_comparisons(
+    wl.comp("before", "after").exclude.by_proportion(less_than=0.15).score.proportion()
+)
+# --8<-- [end:by_proportion]
+
+
 # --8<-- [start:by_lexicon_score]
 cl = cl.with_comparisons(
     wl.comp("before", "after")
