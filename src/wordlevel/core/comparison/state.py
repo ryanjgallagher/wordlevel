@@ -22,13 +22,14 @@ def select_corpora(
     columns to fixed internal names.
 
     Every operation that follows refers to the two corpora by those names rather than by the corpus
-    names the user chose
+    names the user chose. A comparison's vocabulary is the one its two corpora use, so a token that
+    only some other corpus in the catalog uses is dropped rather than carried as an empty row
     """
     return df.select(
         col(token_col),
         col(freqs_ref_col).alias(FREQ_REF_COL),
         col(freqs_cmp_col).alias(FREQ_CMP_COL),
-    )
+    ).filter((col(FREQ_REF_COL) > 0) | (col(FREQ_CMP_COL) > 0))
 
 
 def renormalize_freqs(df: pl.DataFrame | pl.LazyFrame) -> pl.DataFrame | pl.LazyFrame:

@@ -79,6 +79,17 @@ class TestResolve:
 
         assert df_result.columns == ["word", "ref", "cmp", "ref__wl_normed", "cmp__wl_normed"]
 
+    def test_drops_tokens_that_neither_corpus_uses(self) -> None:
+        """
+        A comparison's vocabulary is the one its two corpora use, not the catalog's, so a token
+        another corpus contributed is dropped rather than carried as a row of zeros.
+        """
+        df_mock = pl.DataFrame({"word": ["a", "b"], "ref": [1, 0], "cmp": [2, 0], "other": [0, 5]})
+
+        df_result = comp("ref", "cmp").score.frequency()._state.resolve()(df_mock, "word")
+
+        assert df_result["word"].to_list() == ["a"]
+
     def test_normalizing_before_scoring_matches_normalizing_after(self) -> None:
         """Normalization occupies its own plan, so the order it is called in does not matter."""
         df_mock = pl.DataFrame(
