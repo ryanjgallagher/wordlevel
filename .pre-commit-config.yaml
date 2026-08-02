@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.8
+    rev: v0.15.0  # If this version is updated, update in pyproject.toml too
     hooks:
       - id: ruff-check
         exclude: ^docs/snippets/
