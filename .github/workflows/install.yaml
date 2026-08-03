@@ -37,30 +37,32 @@ jobs:
         with:
           enable-cache: true
 
-      # Deliberately not the uv-managed Python from setup-uv: that interpreter is marked
-      # externally managed, which `uv pip install --system` refuses to write to
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Build wheel
         run: uv build --wheel --out-dir dist
 
+      # The interpreter is named explicitly from here on, so that nothing resolves out of the
+      # project itself and the dev dependencies cannot quietly satisfy an undeclared import
       - name: Install wheel
-        run: uv pip install --system "$(ls dist/*.whl)${{ matrix.extras }}"
+        run: |
+          uv venv
+          uv pip install "$(ls dist/*.whl)${{ matrix.extras }}"
 
       - name: Import every module in the package
-        run: python .github/scripts/import_all.py
+        run: .venv/bin/python .github/scripts/import_all.py
 
       - name: Check that the save extra installs the export backend
         if: matrix.extras == '[save]'
-        run: python -c "import vl_convert"
+        run: .venv/bin/python -c "import vl_convert"
 
       - name: Check that a base install leaves out the export backend
         if: matrix.extras == ''
         run: |
-          if python -c "import vl_convert" 2>/dev/null; then
+          if .venv/bin/python -c "import vl_convert" 2>/dev/null; then
             echo "Error: vl_convert is installed without the 'save' extra flag"
             exit 1
           fi
