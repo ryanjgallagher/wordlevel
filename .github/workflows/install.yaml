@@ -37,8 +37,10 @@ jobs:
         with:
           enable-cache: true
 
+      # Deliberately not the uv-managed Python from setup-uv: that interpreter is marked
+      # externally managed, which `uv pip install --system` refuses to write to
       - name: Install Python
-        uses: astral-sh/setup-uv@v6
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
