@@ -38,10 +38,9 @@ jobs:
       - name: Run tests
         run: uv run --no-sync pytest
 
-  # Resolves every direct dependency down to its declared floor, so that the lower bounds specified
-  # in the pyproject.toml user dependencies are tested. Deliberately does not use the lock file, 
-  # since the point is to re-resolve
-  test-lowest:
+  # Resolves every dependency to the minimum possible version. Deliberately does not use the lock 
+  # file, since the point is to use those lowest versions
+  test-minimal-dependencies:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch

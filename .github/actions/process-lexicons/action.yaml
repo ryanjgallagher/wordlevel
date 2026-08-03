@@ -11,8 +11,8 @@ runs:
   steps:
     - name: Download Raw Lexicon Data
       shell: bash
-      run: uv run python -m lexicons.huggingface --mode download --data raw --lexicon ${{ inputs.lexicon }}
+      run: uv run --no-sync python -m lexicons.huggingface --mode download --data raw --lexicon ${{ inputs.lexicon }}
         
     - name: Process Lexicon
       shell: bash
-      run: uv run python -m lexicons.${{ inputs.lexicon }}.process
+      run: uv run --no-sync python -m lexicons.${{ inputs.lexicon }}.process
