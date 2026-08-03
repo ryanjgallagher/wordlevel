@@ -1,0 +1,64 @@
+name: Install
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  # Installs the built wheel with only the dependencies declared in pyproject.toml to test a typical 
+  # install by a user
+  install:
+    runs-on: ubuntu-latest
+    name: wordlevel${{ matrix.extras }} (${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.14"
+        extras:
+          - ""
+          - "[save]"
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          # hatch-vcs reads the version from the tags
+          fetch-depth: 0
+
+      - name: Enable uv caching
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build wheel
+        run: uv build --wheel --out-dir dist
+
+      - name: Install wheel
+        run: uv pip install --system "$(ls dist/*.whl)${{ matrix.extras }}"
+
+      - name: Import every module in the package
+        run: python .github/scripts/import_all.py
+
+      - name: Check that the save extra installs the export backend
+        if: matrix.extras == '[save]'
+        run: python -c "import vl_convert"
+
+      - name: Check that a base install leaves out the export backend
+        if: matrix.extras == ''
+        run: |
+          if python -c "import vl_convert" 2>/dev/null; then
+            echo "Error: vl_convert is installed without the 'save' extra flag"
+            exit 1
+          fi
