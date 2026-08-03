@@ -10,6 +10,13 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -33,7 +40,31 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --group dev
+        run: uv sync --locked --group dev
 
       - name: Run tests
-        run: uv run pytest
+        run: uv run --no-sync pytest
+
+  # Resolves every dependency to the minimum possible version. Deliberately does not use the lock 
+  # file, since the point is to use those lowest versions
+  test-lowest-dependency-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Enable uv caching
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install lowest supported dependencies
+        run: uv sync --group dev --resolution lowest-direct
+
+      - name: Run tests
+        run: uv run --no-sync pytest

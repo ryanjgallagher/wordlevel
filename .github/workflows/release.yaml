@@ -18,8 +18,11 @@ jobs:
   lint:
     uses: ./.github/workflows/ruff.yaml
 
+  install:
+    uses: ./.github/workflows/install.yaml
+
   build:
-    needs: [test, type-check, lint]
+    needs: [test, type-check, lint, install]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch

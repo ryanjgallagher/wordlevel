@@ -26,11 +26,18 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 
-requires-python = ">= 3.10"
+requires-python = ">=3.10"
 dependencies = [
   "altair>=5.5.0",
-  "huggingface-hub>=1.10.1",
-  "polars",
+  "huggingface-hub>=1.0.0",
+  "platformdirs>=2.0.0",
+  "polars>=1.30.0",
+  "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+save = [
+  "altair[save]>=5.5.0",
 ]
 
 [project.urls]
@@ -38,21 +45,18 @@ dependencies = [
 #Documentation = ""
 Repository = "https://github.com/ryanjgallagher/wordlevel"
 
-
 # Development
 [dependency-groups]
 dev = [
-  "pytest",
   "altair[all]>=5.5.0",
-  "ruff==0.15.0",
-  "pre-commit>=4.3.0",
-  "huggingface-hub>=1.10.1",
-  "pyright>=1.1.409",
-]
-docs = [
+  "griffelib>=2.0.0",
   "mkdocstrings-python>=2.0.3",
-  "zensical>=0.0.40",
+  "pre-commit>=4.3.0",
+  "pyright>=1.1.409",
+  "pytest>=8.0.0",
+  "ruff==0.15.0",  # If this version is updated, update in .pre-commit-config.yaml too
   "tomlkit>=0.13.0",
+  "zensical>=0.0.40",
 ]
 
 [tool.pytest.ini_options]
