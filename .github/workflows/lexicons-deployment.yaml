@@ -8,6 +8,12 @@ on:
       # Only trigger this workflow if files inside the lexicons/ folder change
       - 'lexicons/**'
 
+# Never cancelled: a run that is interrupted partway through can leave a lexicon uploaded to
+# Hugging Face without its metadata
+concurrency:
+  group: lexicons-deployment
+  cancel-in-progress: false
+
 jobs:
   # ==========================================
   # JOB 1: Detect and Categorize Changes

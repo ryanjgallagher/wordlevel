@@ -10,6 +10,10 @@ on:
   workflow_call:
   workflow_dispatch:
 
+concurrency:
+  group: install-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Installs the built wheel with only the dependencies declared in pyproject.toml to test a typical 
   # install by a user

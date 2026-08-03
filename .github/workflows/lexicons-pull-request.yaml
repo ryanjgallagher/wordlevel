@@ -8,6 +8,10 @@ on:
       # Only trigger this workflow if files inside the lexicons/ folder change
       - 'lexicons/**'
 
+concurrency:
+  group: lexicons-pull-request-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ==========================================
   # JOB 1: Detect and Categorize Changes

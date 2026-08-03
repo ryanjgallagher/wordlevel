@@ -10,6 +10,10 @@ on:
   workflow_call:
   workflow_dispatch:
 
+concurrency:
+  group: pyright-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   type-check:
     runs-on: ubuntu-latest

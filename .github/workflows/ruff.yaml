@@ -9,6 +9,10 @@ on:
       - main
   workflow_call:
 
+concurrency:
+  group: ruff-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
