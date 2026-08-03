@@ -21,7 +21,7 @@ def main():
 def get_changed_lexicons(args: argparse.Namespace) -> None:
     """ """
     if not args.changed_files.strip():
-        set_github_output("matrix_array", "[]")
+        set_github_output("lexicon_changes", "[]")
         return
 
     lexicon_states = {}
