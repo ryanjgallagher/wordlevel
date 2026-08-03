@@ -40,7 +40,7 @@ jobs:
 
   # Resolves every dependency to the minimum possible version. Deliberately does not use the lock 
   # file, since the point is to use those lowest versions
-  test-minimal-dependencies:
+  test-lowest-dependency-versions:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
