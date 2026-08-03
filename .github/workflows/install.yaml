@@ -10,6 +10,9 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: install-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

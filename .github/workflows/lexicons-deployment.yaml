@@ -8,6 +8,9 @@ on:
       # Only trigger this workflow if files inside the lexicons/ folder change
       - 'lexicons/**'
 
+permissions:
+  contents: read
+
 # Never cancelled: a run that is interrupted partway through can leave a lexicon uploaded to
 # Hugging Face without its metadata
 concurrency:
