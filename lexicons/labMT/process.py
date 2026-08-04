@@ -40,8 +40,11 @@ class labMTProcessor(LexiconProcessor):
         words_f = self.raw_dir / language / f"labMTwords-{language}.csv"
         scores_f = self.raw_dir / language / f"labMTscores-{language}.csv"
 
-        words = open(words_f).read().splitlines()
-        scores = [float(score) for score in open(scores_f).read().splitlines()]
+        with open(words_f) as f:
+            words = f.read().splitlines()
+
+        with open(scores_f) as f:
+            scores = [float(score) for score in f.read().splitlines()]
 
         df = pl.DataFrame({"token": words, "score": scores}).sort("score", descending=True)
 

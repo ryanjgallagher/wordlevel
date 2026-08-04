@@ -1,12 +1,12 @@
-from typing import Callable
+from collections.abc import Callable
 
-import pytest
 import polars as pl
+import pytest
 from polars.testing import assert_series_equal
 
 from wordlevel.api.comparison.comparison import Comparison, comp
 from wordlevel.api.comparison.score import Scorer
-from wordlevel.constants import SCORE_COL, NORMALIZATION_CONSTANT_COL
+from wordlevel.constants import NORMALIZATION_CONSTANT_COL, SCORE_COL
 
 
 @pytest.fixture

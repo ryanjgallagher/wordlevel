@@ -1,8 +1,8 @@
-import pytest
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.comparison.score.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL, join_lexicon
 from wordlevel.core.lexicons.load import Lexicon
 
 
@@ -129,6 +129,10 @@ class TestValidation:
             join_lexicon(
                 df_words, lexicon_df, df_token_col=TOKEN_COL, lexicon_token_col=LEXICON_TOKEN_COL
             )
+
+    def test_unsupported_lexicon_type_raises_type_error(self, df_words):
+        with pytest.raises(TypeError, match="must be a Mapping or Polars DataFrame/LazyFrame"):
+            join_lexicon(df_words, [("the", 1.0)], df_token_col=TOKEN_COL)
 
 
 class TestReturnType:

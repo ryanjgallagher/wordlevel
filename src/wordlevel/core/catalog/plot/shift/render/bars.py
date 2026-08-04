@@ -1,22 +1,22 @@
-import altair as alt
-import polars as pl
-
-from typing_extensions import Self
 from dataclasses import asdict, dataclass, fields
 
+import altair as alt
+import polars as pl
+from typing_extensions import Self
+
 from wordlevel.configs import (
-    ScoreSignBarConfig,
+    DEFAULT_SCORE_AXIS_TITLE,
+    PERCENT_SCORE_AXIS_TITLE,
+    SYMBOL_SUFFIX,
     BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
+    ScoreSignBarConfig,
     ShiftBarConfig,
     TotalShiftConfig,
-    SYMBOL_SUFFIX,
-    DEFAULT_SCORE_AXIS_TITLE,
-    PERCENT_SCORE_AXIS_TITLE,
 )
+from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.core.catalog.plot.utils import to_altair_optional
-from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, _TRANSLATE_PX
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
 
 
@@ -108,7 +108,7 @@ class InternalBarConfig:
 
         The expected config class depends on how the comparison is attributed
         """
-        expected_config: type[BarConfig] | type[ScoreSignBarConfig]
+        expected_config: type[BarConfig | ScoreSignBarConfig]
         if attributed_by == "score_sign":
             expected_config = ScoreSignBarConfig
         else:
@@ -182,7 +182,7 @@ class InternalBarConfig:
                 )
             return expected_config(**config)
         if not isinstance(config, expected_config):
-            raise ValueError(
+            raise TypeError(
                 f"Expected a {expected_config.__name__} or a dict of its fields, but got a "
                 f"{type(config).__name__}."
             )
@@ -302,7 +302,7 @@ def shift_bars(
     # is passed, it is ignored
     # For the configurable dimension, Altair does not allow them to be None or alt.Undefined, so we
     # unpack them from a dict (default is that they're not in the dictionary).
-    chart_params = dict()
+    chart_params = {}
     if vertical:
         chart_params["height"] = alt.Step(rank_axis.bar_width)
         if width is not None:
@@ -349,15 +349,13 @@ def shift_bars(
 
     # Configure the score axis tick labels: optionally force positive values (for non-negative
     # measures shown in both directions) and optionally suffix a percent sign.
-    if score_axis.all_positive_labels:
-        score_tick_label_expr = "abs(datum.value)"
-    else:
-        score_tick_label_expr = "datum.value"
-
-    if score_axis.percent:
-        score_tick_label_expr = score_tick_label_expr + " + '%'"
-    elif score_axis.all_positive_labels:
-        score_tick_label_expr = score_tick_label_expr
+    if score_axis.all_positive_labels or score_axis.percent:
+        if score_axis.all_positive_labels:
+            base = "abs(datum.value)"
+        else:
+            base = "datum.value"
+        suffix = " + '%'" if score_axis.percent else ""
+        score_tick_label_expr = base + suffix
     else:
         score_tick_label_expr = alt.Undefined
 

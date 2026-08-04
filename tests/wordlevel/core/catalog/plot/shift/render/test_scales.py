@@ -1,14 +1,13 @@
 import altair as alt
 import polars as pl
 import pytest
-
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import LabelConfig
 from wordlevel.core.catalog.plot.shift.render.scales import (
-    shift_scales,
-    get_scale_limits,
     get_bar_lengths,
+    get_scale_limits,
+    shift_scales,
 )
 
 
@@ -25,7 +24,7 @@ def _chart_positive_limit(chart: alt.LayerChart) -> float:
     """Gets the positive_limit from a shift_scales chart, which applies max_rank filtering and config
     resolution that get_scale_limits (and so _limits) does not."""
     # chart datasets are of the form {arbitrary_key: [{rank: 1, positive_limit: N, negative_limit: -N}]}
-    return list(chart.to_dict()["datasets"].values())[0][0]["positive_limit"]
+    return list(chart.to_dict()["datasets"].values())[0][0]["positive_limit"]  # ruff: ignore[RUF015]
 
 
 def test_get_bar_lengths(score_col, rank_col, token_col):
@@ -59,9 +58,13 @@ def test_on_bar_ends_reserves_label_space(score_col, rank_col, token_col):
     """A label at the bar tip (on_bar_ends=True) extends the domain, whereas one pinned at the zero
     line does not, so the same data yields a wider limit when labels sit on the bar ends."""
     df = pl.DataFrame({token_col: ["short", "muchlongerword"], rank_col: [1, 2], score_col: [5, 4]})
-    kwargs = dict(
-        score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
-    )
+    kwargs = {
+        "score_col": score_col,
+        "rank_col": rank_col,
+        "token_col": token_col,
+        "size": 600,
+        "fontsize": 11,
+    }
 
     on_ends, _ = _limits(df, on_bar_ends=True, **kwargs)
     at_zero, _ = _limits(df, on_bar_ends=False, **kwargs)
@@ -115,9 +118,13 @@ def test_scale_factor_scales_limit_linearly(score_col, rank_col, token_col):
     scale_factor = 3
 
     df = pl.DataFrame({token_col: ["w1", "w2"], rank_col: [1, 2], score_col: [5, 4]})
-    kwargs = dict(
-        score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
-    )
+    kwargs = {
+        "score_col": score_col,
+        "rank_col": rank_col,
+        "token_col": token_col,
+        "size": 600,
+        "fontsize": 11,
+    }
 
     base, _ = _limits(df, scale_factor=1, **kwargs)
     scaled, _ = _limits(df, scale_factor=scale_factor, **kwargs)
@@ -127,9 +134,13 @@ def test_scale_factor_scales_limit_linearly(score_col, rank_col, token_col):
 
 def test_wider_label_widens_limit(score_col, rank_col, token_col):
     """A longer token reserves more label space at the bar tip, widening the limit."""
-    kwargs = dict(
-        score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
-    )
+    kwargs = {
+        "score_col": score_col,
+        "rank_col": rank_col,
+        "token_col": token_col,
+        "size": 600,
+        "fontsize": 11,
+    }
 
     narrow, _ = _limits(pl.DataFrame({token_col: ["a"], rank_col: [1], score_col: [5]}), **kwargs)
     wide, _ = _limits(
@@ -227,8 +238,8 @@ def test_default_fontsize(make_mock_df, score_col, rank_col, token_col):
         make_mock_df(), score_col, rank_col, token_col, width=10, config=LabelConfig(size=None)
     )
 
-    data_config = list(chart_config.to_dict()["datasets"].values())[0]
-    data_none = list(chart_none.to_dict()["datasets"].values())[0]
+    data_config = list(chart_config.to_dict()["datasets"].values())[0]  # ruff: ignore[RUF015]
+    data_none = list(chart_none.to_dict()["datasets"].values())[0]  # ruff: ignore[RUF015]
     limit_config = data_config[0]["positive_limit"]
     limit_none = data_none[0]["positive_limit"]
 

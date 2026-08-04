@@ -1,16 +1,16 @@
-from typing import Literal, Mapping, Protocol
+from collections.abc import Mapping
+from typing import Literal, Protocol
 
 import polars as pl
-
 from polars import col
 
 from wordlevel.constants import IS_BORROWED_COL
-from wordlevel.core.comparison.score.attribution import attribute_scores, ATTRIBUTION_TYPE
+from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE, attribute_scores
 from wordlevel.core.comparison.score.components import (
     get_shift_components,
     get_shift_plot_components,
 )
-from wordlevel.core.comparison.score.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL, join_lexicon
 from wordlevel.core.lexicons.load import Lexicon
 
 
@@ -52,7 +52,7 @@ def basic_score_plan(
     attribution_alias: str = "attribution",
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
-    attribution_cols = dict()
+    attribution_cols = {}
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
     else:
@@ -105,7 +105,7 @@ def weighted_average_score_plan(
     counteracted_suffix: str = "_counteracted",
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
-    attribution_cols = dict()
+    attribution_cols = {}
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
     else:

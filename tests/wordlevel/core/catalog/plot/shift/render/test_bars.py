@@ -1,25 +1,24 @@
 import altair as alt
 import polars as pl
 import pytest
-
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    DEFAULT_SCORE_AXIS_TITLE,
+    PERCENT_SCORE_AXIS_TITLE,
     BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ScoreSignBarConfig,
     ShiftBarConfig,
     TotalShiftConfig,
-    DEFAULT_SCORE_AXIS_TITLE,
-    PERCENT_SCORE_AXIS_TITLE,
 )
 from wordlevel.constants import SHIFT_SCORE_TYPES
 from wordlevel.core.catalog.plot.shift.render.bars import (
-    shift_bars,
     _SHIFT_TYPE_ORDERS,
     InternalBarConfig,
     InternalScoreAxisConfig,
+    shift_bars,
 )
 from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig
 
@@ -913,9 +912,9 @@ def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
 )
 def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_config):
     """
-    Passing a config of the wrong class raises the `_resolve_config` ValueError
+    Passing a config of the wrong class raises the `_resolve_config` TypeError
     """
-    with pytest.raises(ValueError, match="Expected a .* or a dict of its fields"):
+    with pytest.raises(TypeError, match="Expected a .* or a dict of its fields"):
         make_internal_bar_config(wrong_config)
 
 

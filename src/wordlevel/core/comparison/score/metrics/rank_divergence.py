@@ -1,5 +1,6 @@
-import polars as pl
 from math import isinf
+
+import polars as pl
 
 
 def rank(expr: pl.Expr, alpha: float = 1) -> pl.Expr:

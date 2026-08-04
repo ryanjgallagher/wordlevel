@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, Mapping, Sequence, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
 from polars import col
@@ -160,7 +160,7 @@ def from_polars(
         token_col=token_col,
         freq_cols=deduped_freq_cols,
         normalization_suffix=normalization_suffix,
-        comparisons=dict(),
+        comparisons={},
     )
 
 

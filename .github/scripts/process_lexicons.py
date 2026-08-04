@@ -1,6 +1,6 @@
-import os
 import argparse
 import json
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 

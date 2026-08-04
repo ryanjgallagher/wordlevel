@@ -1,41 +1,42 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import altair as alt
 import polars as pl
 from polars import col
 
 from wordlevel.api.comparison.comparison import ComparisonResult
-from wordlevel.constants import (
-    ATTRIBUTION_COL,
-    PLOT_CONTRIBUTION_COL,
-    PLOT_CONTRIBUTION_TYPE_COL,
-    RANK_COL,
-    SCORE_COL,
-    IS_BORROWED_COL,
-)
 from wordlevel.configs import (
-    ScoreSignBarConfig,
     BarConfig,
     BorderConfig,
     LabelConfig,
     RankAxisConfig,
     ScoreAxisConfig,
+    ScoreSignBarConfig,
     ShiftBarConfig,
     ZeroLineConfig,
 )
-from wordlevel.core.catalog.plot.shift.transform import (
-    bar_plot_df,
-    shift_plot_df,
-    append_borrow_symbol_to_tokens,
+from wordlevel.constants import (
+    ATTRIBUTION_COL,
+    IS_BORROWED_COL,
+    PLOT_CONTRIBUTION_COL,
+    PLOT_CONTRIBUTION_TYPE_COL,
+    RANK_COL,
+    SCORE_COL,
 )
 from wordlevel.core.catalog.plot.shift.render.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
 from wordlevel.core.catalog.plot.shift.render.shift import shift
+from wordlevel.core.catalog.plot.shift.transform import (
+    append_borrow_symbol_to_tokens,
+    bar_plot_df,
+    shift_plot_df,
+)
+
 
 if TYPE_CHECKING:
     from wordlevel.api.catalog.catalog import Catalog
@@ -70,7 +71,7 @@ class Plotter:
 
     def __init__(self, catalog: Catalog):
         self._catalog = catalog
-        self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = dict()
+        self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = {}
 
     def bar(
         self,

@@ -148,7 +148,8 @@ class LexiconProcessor(ABC):
         with open(self.types_f, "w") as type_f:
             type_f.write(header)
             type_f.write("\n")
-            type_f.write(literal_import)
+            # Trailing newline so the first literal lands two blank lines below the import
+            type_f.write(f"{literal_import}\n")
 
     def _write_literals(
         self,

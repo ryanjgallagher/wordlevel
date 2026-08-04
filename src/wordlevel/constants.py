@@ -2,7 +2,8 @@
 
 from dataclasses import fields
 
-from wordlevel.configs import ShiftBarConfig, SYMBOL_SUFFIX
+from wordlevel.configs import SYMBOL_SUFFIX, ShiftBarConfig
+
 
 RANK_COL = "score_rank"
 SCORE_COL = "comparison_score"

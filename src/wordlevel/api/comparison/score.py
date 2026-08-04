@@ -1,14 +1,14 @@
 from __future__ import annotations
+
+from collections.abc import Mapping
 from functools import partial
-from typing import Any, Literal, Mapping, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 import polars as pl
 from polars import col
 
 from wordlevel.configs import SHIFT_BAR_NAMES
 from wordlevel.constants import (
-    SCORE_COL,
-    RANK_COL,
     ATTRIBUTION_COL,
     COUNTERACTED_SUFFIX,
     FREQ_CMP_COL,
@@ -18,33 +18,34 @@ from wordlevel.constants import (
     LEXICON_SCORE_REF_COL,
     NORMED_FREQ_CMP_COL,
     NORMED_FREQ_REF_COL,
-)
-from wordlevel.core.comparison.score.plan import (
-    ScoreFunc,
-    DualScoreFunc,
-    DualCleanScoreFunc,
+    RANK_COL,
+    SCORE_COL,
 )
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
 from wordlevel.core.comparison.score.metrics.entropy import (
-    tsallis_entropy_dual_dist_scores,
     tsallis_entropy_clean_dual_dist_scores,
+    tsallis_entropy_dual_dist_scores,
+)
+from wordlevel.core.comparison.score.metrics.frequency import frequency_difference
+from wordlevel.core.comparison.score.metrics.jensen_shannon_divergence import (
+    jensen_shannon_divergence_clean_dual_dist_scores,
+    jensen_shannon_divergence_dual_dist_scores,
 )
 from wordlevel.core.comparison.score.metrics.kullback_leibler_divergence import (
-    kullback_leibler_divergence_dual_dist_scores,
     kullback_leibler_divergence_clean_dual_dist_scores,
-)
-from wordlevel.core.comparison.score.metrics.jensen_shannon_divergence import (
-    jensen_shannon_divergence_dual_dist_scores,
-    jensen_shannon_divergence_clean_dual_dist_scores,
+    kullback_leibler_divergence_dual_dist_scores,
 )
 from wordlevel.core.comparison.score.metrics.rank_divergence import rank_divergence
-from wordlevel.core.comparison.score.metrics.frequency import frequency_difference
 from wordlevel.core.comparison.score.plan import (
+    DualCleanScoreFunc,
+    DualScoreFunc,
+    ScoreFunc,
     basic_score_plan,
-    weighted_average_score_plan,
     lexicon_join_plan,
+    weighted_average_score_plan,
 )
 from wordlevel.core.lexicons.load import Lexicon
+
 
 if TYPE_CHECKING:
     from wordlevel.api.comparison.comparison import Comparison
@@ -244,7 +245,7 @@ class Scorer:
         return self._return_comparison(
             plan,
             method="frequency",
-            parameters=dict(),
+            parameters={},
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Collection, get_args, Literal, TYPE_CHECKING
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import polars as pl
 
@@ -17,6 +18,7 @@ from wordlevel.core.comparison.exclude import (
     exclude_by_range,
     exclude_tokens,
 )
+
 
 if TYPE_CHECKING:
     from wordlevel.api.comparison.comparison import Comparison

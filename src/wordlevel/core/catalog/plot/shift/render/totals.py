@@ -1,8 +1,7 @@
 from typing import cast
 
-import polars as pl
 import altair as alt
-
+import polars as pl
 from polars import col
 
 from wordlevel.configs import (
@@ -11,21 +10,21 @@ from wordlevel.configs import (
     TotalShiftConfig,
     ZeroLineConfig,
 )
-from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE, COUNTERACTED_SUFFIX
-from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.constants import COUNTERACTED_SUFFIX, DEFAULT_SCORE_AXIS_PIXEL_SIZE
 from wordlevel.core.catalog.plot.shift.render.bars import (
-    shift_bars,
     InternalBarConfig,
     InternalScoreAxisConfig,
+    shift_bars,
 )
 from wordlevel.core.catalog.plot.shift.render.border import (
+    _TRANSLATE_PX,
     InternalBorderConfig,
     shift_borders,
-    _TRANSLATE_PX,
 )
 from wordlevel.core.catalog.plot.shift.render.labels import shift_labels
 from wordlevel.core.catalog.plot.shift.render.scales import shift_scales
 from wordlevel.core.catalog.plot.shift.render.zero_line import zero_line
+from wordlevel.core.catalog.plot.utils import to_altair_optional
 
 
 _SCORE_TYPE_COL = "score_type"
@@ -232,7 +231,7 @@ def shift_total(
         border_config = InternalBorderConfig()
 
     # Size parameters
-    size_param = dict()
+    size_param = {}
     if vertical:
         if width is None:
             size_param["width"] = DEFAULT_SCORE_AXIS_PIXEL_SIZE

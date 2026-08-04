@@ -1,3 +1,4 @@
+import itertools
 from typing import cast
 
 import altair as alt
@@ -292,5 +293,5 @@ class TestFrameConsistency:
         assert counts[0].get(near, 0) == 1
         assert counts[-1].get(far, 0) == 1
         # Each flush seam between adjacent panels is drawn by exactly one of the two
-        for upper, lower in zip(counts, counts[1:]):
+        for upper, lower in itertools.pairwise(counts):
             assert upper.get(far, 0) + lower.get(near, 0) == 1

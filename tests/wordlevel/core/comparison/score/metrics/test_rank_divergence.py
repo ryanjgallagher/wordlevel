@@ -1,13 +1,14 @@
-import pytest
+from math import log
+
 import polars as pl
 import polars.testing
+import pytest
 
-from math import log
 from wordlevel.core.comparison.score.metrics.rank_divergence import (
     rank,
-    rank_divergence_summands,
-    rank_divergence_norm_summands,
     rank_divergence,
+    rank_divergence_norm_summands,
+    rank_divergence_summands,
 )
 
 

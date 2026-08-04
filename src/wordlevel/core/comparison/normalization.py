@@ -1,4 +1,5 @@
-from typing import Literal, Sequence, TypeAlias
+from collections.abc import Sequence
+from typing import Literal, TypeAlias
 
 import polars as pl
 import polars.selectors as cs

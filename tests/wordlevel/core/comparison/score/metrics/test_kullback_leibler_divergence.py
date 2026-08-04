@@ -1,13 +1,13 @@
-import pytest
+from math import log10
+
 import polars as pl
 import polars.testing
-
-from math import log10
+import pytest
 
 from wordlevel.core.comparison.score.metrics.entropy import tsallis_entropy_dist_scores
 from wordlevel.core.comparison.score.metrics.kullback_leibler_divergence import (
-    kullback_leibler_divergence_dual_dist_scores,
     kullback_leibler_divergence,
+    kullback_leibler_divergence_dual_dist_scores,
 )
 
 

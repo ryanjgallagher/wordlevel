@@ -1,11 +1,12 @@
 from pathlib import Path
 
-import pytest
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.datasets import dataset as dataset_module
 from wordlevel.datasets.dataset import Dataset
+
 
 DATA_DIR = Path(dataset_module.__file__).parent / "data"
 DATASET_NAMES = sorted(p.stem for p in DATA_DIR.glob("*.parquet"))

@@ -1,14 +1,13 @@
 from random import randint, sample
 
-import pytest
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.constants import TOKEN, NORMALIZATION_SUFFIX
-from wordlevel.api.catalog.constructors import CatalogData
-from wordlevel.api.catalog.constructors import _normalize_frequency_columns
+from wordlevel.api.catalog.constructors import CatalogData, _normalize_frequency_columns
 from wordlevel.api.comparison.comparison import ComparisonResult
+from wordlevel.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.datasets.dataset import Dataset
 
 
@@ -59,7 +58,7 @@ def get_mock_freqs(words):
     def mock_freqs() -> dict[str, int]:
         """ """
         n_words = randint(1, len(words))
-        word_indxs = sample(range(0, len(words)), n_words)
+        word_indxs = sample(range(len(words)), n_words)
 
         corpus_words = [words[indx] for indx in word_indxs]
         corpus_freqs = [randint(1, 50) for _ in range(n_words)]
@@ -93,7 +92,7 @@ def mock_catalog_data(
         token_col=token_col,
         freq_cols=freq_cols,
         normalization_suffix=norm_suffix,
-        comparisons=dict({"comparison": mock_comparison_result}),
+        comparisons={"comparison": mock_comparison_result},
     )
 
 
@@ -117,7 +116,7 @@ class TestConstructors:
         assert catalog._token_col == token_col
         assert catalog._normalization_suffix == norm_suffix
 
-        assert sorted(list(catalog._freq_cols)) == sorted(freq_cols)
+        assert sorted(catalog._freq_cols) == sorted(freq_cols)
         assert catalog._comparisons == {"comparison": mock_comparison_result}
         assert_frame_equal(catalog._df, df_mock, check_column_order=False, check_row_order=False)
 
@@ -318,7 +317,7 @@ class TestConstructorValidation:
     def test_from_polars_duplicate_freq_cols(self, df_mock, freq_cols, token_col):
         catalog = Catalog(data=df_mock, token_col=token_col, corpora=freq_cols + freq_cols)
 
-        assert sorted(list(catalog._freq_cols)) == sorted(freq_cols)
+        assert sorted(catalog._freq_cols) == sorted(freq_cols)
 
     def test_from_polars_invalid_freq_cols(self, df_mock, freq_cols, token_col):
         """Test that from_polars throws an error if not all the columns are specified"""

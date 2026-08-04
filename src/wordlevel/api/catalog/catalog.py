@@ -7,14 +7,16 @@ from types import MappingProxyType
 import polars as pl
 
 from wordlevel.api.catalog.constructors import (
+    CatalogData,
+    DictOfFreqs,
+    ListOfFreqs,
     from_catalog,
-    from_wl_dataset,
-    from_polars,
     from_dict_of_freqs,
     from_list_of_freqs,
+    from_polars,
+    from_wl_dataset,
 )
 from wordlevel.api.catalog.plot import Plotter
-from wordlevel.api.catalog.constructors import CatalogData, DictOfFreqs, ListOfFreqs
 from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
 from wordlevel.datasets.dataset import Dataset
 

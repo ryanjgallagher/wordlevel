@@ -1,4 +1,5 @@
-from typing import Literal, Mapping
+from collections.abc import Mapping
+from typing import Literal
 
 import polars as pl
 from polars import col
@@ -53,8 +54,8 @@ def join_lexicon(
             impute=impute,
         )
     else:
-        raise ValueError(
-            f" The lexicon must be a Mapping or Polars DataFrame/LazyFrame, got: {type(lexicon)}"
+        raise TypeError(
+            f"The lexicon must be a Mapping or Polars DataFrame/LazyFrame, got: {type(lexicon)}"
         )
 
     if isinstance(df, pl.DataFrame):

@@ -1,4 +1,5 @@
-from typing import Collection, Literal
+from collections.abc import Collection
+from typing import Literal
 
 import polars as pl
 from polars import col

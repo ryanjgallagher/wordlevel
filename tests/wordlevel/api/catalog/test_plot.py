@@ -1,18 +1,18 @@
 from typing import cast
 
-import pytest
 import altair as alt
 import polars as pl
+import pytest
 
 from wordlevel.api.catalog.catalog import Catalog
+from wordlevel.api.catalog.plot import PlotCacheKey, Plotter, PlotType
 from wordlevel.api.comparison.comparison import comp
-from wordlevel.api.catalog.plot import Plotter, PlotCacheKey, PlotType
-from wordlevel.configs import ScoreSignBarConfig, BarConfig, ShiftBarConfig
+from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig
 from wordlevel.constants import (
-    RANK_COL,
-    SCORE_COL,
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
+    RANK_COL,
+    SCORE_COL,
 )
 
 
@@ -68,7 +68,7 @@ class TestGetPlotDf:
         assert df1 is df2
         assert isinstance(df1, pl.DataFrame)
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank == 50
 
     def test_caching_smaller_max_rank(self, catalog: Catalog) -> None:
@@ -83,7 +83,7 @@ class TestGetPlotDf:
         assert df_small is not df_large
         assert len(plotter._plot_dfs) == 1
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank == 50
 
     def test_caching_larger_max_rank_recomputes(self, catalog: Catalog) -> None:
@@ -98,7 +98,7 @@ class TestGetPlotDf:
         assert df_large is not df_small
         assert len(plotter._plot_dfs) == 1
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank == 50
 
     def test_caching_isolates_by_split_flag(self, catalog: Catalog) -> None:
@@ -156,7 +156,7 @@ class TestGetPlotDf:
         assert df_top2.height < df_full.height
         assert len(plotter._plot_dfs) == 1
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank is None  # the full-df entry is unchanged
 
 
@@ -290,22 +290,29 @@ class TestBar:
         assert set(scale["domain"]) == {"reinforce", "offset"}
 
     @pytest.mark.parametrize(
-        "comparison,bad_config",
+        "comparison,bad_config,expected_error",
         [
             # Corpus-attributed measure given a sign-attribution config/keys
-            ("freq_comp", ScoreSignBarConfig()),
-            ("freq_comp", {"reinforce": "#ffffff"}),
+            ("freq_comp", ScoreSignBarConfig(), TypeError),
+            ("freq_comp", {"reinforce": "#ffffff"}, ValueError),
             # Sign-attributed measure given a corpus-attribution config/keys
-            ("entropy_comp", BarConfig()),
-            ("entropy_comp", {"reference": "#ffffff"}),
+            ("entropy_comp", BarConfig(), TypeError),
+            ("entropy_comp", {"reference": "#ffffff"}, ValueError),
         ],
     )
     def test_bar_config_mismatch_raises(
-        self, catalog: Catalog, comparison: str, bad_config: BarConfig | ScoreSignBarConfig | dict
+        self,
+        catalog: Catalog,
+        comparison: str,
+        bad_config: BarConfig | ScoreSignBarConfig | dict,
+        expected_error: type[Exception],
     ) -> None:
-        """A config or dict that doesn't match the comparison's attribution raises a ValueError."""
+        """
+        A config of the wrong class raises a TypeError, whereas a dict whose keys don't match the
+        comparison's attribution raises a ValueError
+        """
         plotter = Plotter(catalog)
-        with pytest.raises(ValueError):
+        with pytest.raises(expected_error):
             plotter.bar(comparison, bar_config=bad_config)
 
     def test_show_totals_totals_span_full_vocab(
