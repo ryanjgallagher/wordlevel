@@ -6,8 +6,23 @@ import polars as pl
 from huggingface_hub import hf_hub_download
 
 
-@dataclass
+@dataclass(frozen=True)
 class Lexicon:
+    """
+    A set of scores assigned to tokens, along with the center of the scoring scale
+
+    Attributes:
+        lf:
+            The (lazy) dataframe containing the lexicon's tokens and their scores. Contains one row
+            per token.
+        center:
+            The center of the lexicon's scoring scale, which scores are interpreted relative to
+        token_col:
+            The column in `lf` that contains the tokens
+        score_col:
+            The column in `lf` that contains the scores
+    """
+
     lf: pl.LazyFrame
     center: float
     token_col: str = "token"
@@ -15,6 +30,9 @@ class Lexicon:
 
     @cached_property
     def df(self) -> pl.DataFrame:
+        """
+        The lexicon's tokens and their scores, collected into a dataframe
+        """
         return self.lf.collect()
 
 
@@ -24,7 +42,27 @@ def load_lexicon(
     subfolder: str | None = None,
     cache_dir: str | Path | None = None,
 ) -> Lexicon:
-    """ """
+    """
+    Downloads a lexicon from the HuggingFace dataset repository where the processed lexicons are
+    published, reading the scores from the file's rows and the center of the scoring scale from its
+    metadata
+
+    Downloaded files are cached, so a lexicon is only retrieved over the network the first time it
+    is loaded.
+
+    Args:
+        lexicon:
+            The name of the lexicon
+        filename:
+            The name of the file holding the lexicon's scores within the lexicon's directory
+        subfolder:
+            A directory nested within the lexicon's directory that `filename` sits in
+        cache_dir:
+            The directory that downloaded lexicons are cached in
+
+    Returns:
+        A `Lexicon` of tokens and their scores
+    """
     full_subfolder = f"{lexicon}/data/processed"
     if subfolder is not None:
         full_subfolder = f"{full_subfolder}/{subfolder}"

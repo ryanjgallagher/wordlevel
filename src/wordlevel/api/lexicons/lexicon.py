@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from platformdirs import user_cache_dir
 
 from wordlevel.api.lexicons.types.labmt import labMTLanguage
@@ -6,8 +8,19 @@ from wordlevel.core.lexicons.load import Lexicon, load_lexicon
 
 
 class LexiconLoader:
-    def __init__(self, cache_dir: str | None = None):
-        """ """
+    """
+    An interface for (down)loading pre-defined lexicons that map tokens to scores.
+
+    Lexicons are downloaded the first time they are loaded and cached locally. Later loads of the
+    same lexicon read from the local cache.
+
+    Args:
+        cache_dir:
+            The directory that downloaded lexicons are cached in. Defaults to the user's cache
+            directory.
+    """
+
+    def __init__(self, cache_dir: str | Path | None = None):
         if cache_dir is None:
             cache_dir = user_cache_dir("wordlevel/lexicons")
 
