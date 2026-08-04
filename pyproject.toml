@@ -54,7 +54,7 @@ dev = [
   "pre-commit>=4.3.0",
   "pyright>=1.1.409",
   "pytest>=8.0.0",
-  "ruff==0.15.0",  # If this version is updated, update in .pre-commit-config.yaml too
+  "ruff==0.16.1",  # If this version is updated, update in .pre-commit-config.yaml too
   "tomlkit>=0.13.0",
   "zensical>=0.0.40",
 ]
