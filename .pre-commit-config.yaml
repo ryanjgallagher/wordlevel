@@ -1,4 +1,12 @@
 repos:
+  # Runs before Ruff so that the types it generates are formatted in the same pass
+  - repo: local
+    hooks:
+      - id: generate-lexicon-types
+        name: generate lexicon types
+        entry: uv run python -m lexicons.generate_types
+        language: system
+        files: ^lexicons/(processor\.py|[^/]+/process\.py)$
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.0  # If this version is updated, update in pyproject.toml too
     hooks:
