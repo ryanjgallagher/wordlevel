@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import polars as pl
 import pytest
 
@@ -17,7 +19,8 @@ def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
         lexicon: str,
         filename: str,
         subfolder: str | None = None,
-        cache_dir: str | None = None,
+        cache_dir: str | Path | None = None,
+        hf_token: str | None = None,
     ) -> Lexicon:
         return Lexicon(
             lf=pl.LazyFrame(
