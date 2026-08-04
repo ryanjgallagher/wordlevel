@@ -41,6 +41,7 @@ def load_lexicon(
     filename: str,
     subfolder: str | None = None,
     cache_dir: str | Path | None = None,
+    hf_token: str | None = None,
 ) -> Lexicon:
     """
     Downloads a lexicon from the HuggingFace dataset repository where the processed lexicons are
@@ -59,6 +60,10 @@ def load_lexicon(
             A directory nested within the lexicon's directory that `filename` sits in
         cache_dir:
             The directory that downloaded lexicons are cached in
+        hf_token:
+            A HuggingFace access token to authenticate the download with. If not given, the token
+            is read from the `HF_TOKEN` environment variable or a local HuggingFace login, if
+            either is available.
 
     Returns:
         A `Lexicon` of tokens and their scores
@@ -73,6 +78,7 @@ def load_lexicon(
         filename=filename,
         repo_type="dataset",
         cache_dir=cache_dir,
+        token=hf_token,
     )
 
     lf = pl.scan_parquet(lexicon_f)

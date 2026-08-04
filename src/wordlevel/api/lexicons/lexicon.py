@@ -18,13 +18,18 @@ class LexiconLoader:
         cache_dir:
             The directory that downloaded lexicons are cached in. Defaults to the user's cache
             directory.
+        hf_token:
+            A HuggingFace access token to authenticate downloads with. If not given, the token is
+            read from the `HF_TOKEN` environment variable or a local HuggingFace login, if either
+            is available.
     """
 
-    def __init__(self, cache_dir: str | Path | None = None):
+    def __init__(self, cache_dir: str | Path | None = None, hf_token: str | None = None):
         if cache_dir is None:
             cache_dir = user_cache_dir("wordlevel/lexicons")
 
         self.cache_dir = cache_dir
+        self.hf_token = hf_token
 
     def labMT(self, language: labMTLanguage) -> Lexicon:
         """
@@ -66,7 +71,10 @@ class LexiconLoader:
             language: The language of the lexicon
         """
         return load_lexicon(
-            lexicon="labMT", filename=f"{language}.parquet", cache_dir=self.cache_dir
+            lexicon="labMT",
+            filename=f"{language}.parquet",
+            cache_dir=self.cache_dir,
+            hf_token=self.hf_token,
         )
 
     def SocialSent(self, year: SocialSentYear) -> Lexicon:
@@ -97,7 +105,10 @@ class LexiconLoader:
             year: The year of the lexicon
         """
         return load_lexicon(
-            lexicon="SocialSent", filename=f"{year}.parquet", cache_dir=self.cache_dir
+            lexicon="SocialSent",
+            filename=f"{year}.parquet",
+            cache_dir=self.cache_dir,
+            hf_token=self.hf_token,
         )
 
 
