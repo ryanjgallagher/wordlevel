@@ -1,34 +1,49 @@
 import os
 import argparse
 import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 
-def main():
-    """ """
-    parser = argparse.ArgumentParser(
-        description="Parse changed files to determine which lexicons need processing"
-    )
-    parser.add_argument(
-        "changed_files",
-        type=str,
-        help="A space-separated string of file paths changed in the commit",
-    )
-
-    get_changed_lexicons(parser.parse_args())
+LEXICONS_DIR = Path(__file__).parents[2] / "lexicons"
 
 
-def get_changed_lexicons(args: argparse.Namespace) -> None:
-    """ """
-    if not args.changed_files.strip():
-        set_github_output("lexicon_changes", "[]")
-        return
+@dataclass
+class LexiconState:
+    """
+    How a lexicon changed, which determines whether it is reprocessed and what is uploaded for it
+    """
 
-    lexicon_states = {}
-    changed_fs = args.changed_files.split()
-    for f_path in changed_fs:
+    name: str
+    processor_changed: bool = False
+    readme_changed: bool = False
+    license_changed: bool = False
+
+
+def get_changed_lexicons(changed_fs: list[str]) -> list[LexiconState]:
+    """
+    Determines which lexicons changed and how
+
+    Args:
+        changed_fs:
+            The paths of the files changed in the commit
+
+    Returns:
+        The state of every lexicon that needs to be processed or uploaded
+    """
+    lexicon_states: dict[str, LexiconState] = {}
+
+    # The base processor decides how every lexicon is processed, so a change to it means all of
+    # them need reprocessing, not just the ones whose own files changed
+    if any(Path(changed_f).name == "processor.py" for changed_f in changed_fs):
+        lexicon_states = {
+            lexicon: LexiconState(lexicon, processor_changed=True)
+            for lexicon in enumerate_lexicons()
+        }
+
+    for changed_f in changed_fs:
         # lexicons/{lexicon}/{changed_f}
-        path_parts = Path(f_path).parts
+        path_parts = Path(changed_f).parts
 
         # The length check ensures it's a file in `lexicons/*/{lexicon}` and not just `lexicons/*`
         if not (path_parts[0] == "lexicons" and len(path_parts) >= 3):
@@ -38,22 +53,24 @@ def get_changed_lexicons(args: argparse.Namespace) -> None:
         file_name = path_parts[2]
 
         if lexicon not in lexicon_states:
-            lexicon_states[lexicon] = {
-                "name": lexicon,
-                "processor_changed": False,
-                "readme_changed": False,
-                "license_changed": False,
-            }
+            lexicon_states[lexicon] = LexiconState(lexicon)
 
         if file_name == "README.md":
-            lexicon_states[lexicon]["readme_changed"] = True
+            lexicon_states[lexicon].readme_changed = True
         elif file_name == "LICENSE":
-            lexicon_states[lexicon]["license_changed"] = True
+            lexicon_states[lexicon].license_changed = True
         elif file_name == "process.py":
-            lexicon_states[lexicon]["processor_changed"] = True
+            lexicon_states[lexicon].processor_changed = True
 
-    # Output directly to the GitHub Actions $GITHUB_OUTPUT environment
-    set_github_output("lexicon_changes", json.dumps(list(lexicon_states.values())))
+    return list(lexicon_states.values())
+
+
+def enumerate_lexicons() -> list[str]:
+    """
+    Finds the names of all the lexicons that have a processor. The names come from the directories
+    rather than from the processors themselves so that this can run without the package installed
+    """
+    return sorted(process_f.parent.name for process_f in LEXICONS_DIR.glob("*/process.py"))
 
 
 def set_github_output(key: str, value: str) -> None:
@@ -71,4 +88,18 @@ def set_github_output(key: str, value: str) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Parse changed files to determine which lexicons need processing"
+    )
+    parser.add_argument(
+        "changed_files",
+        type=str,
+        help="A space-separated string of file paths changed in the commit",
+    )
+
+    args = parser.parse_args()
+    lexicon_states = get_changed_lexicons(args.changed_files.split())
+
+    # Output directly to the GitHub Actions $GITHUB_OUTPUT environment
+    lexicon_changes = [asdict(lexicon_state) for lexicon_state in lexicon_states]
+    set_github_output("lexicon_changes", json.dumps(lexicon_changes))

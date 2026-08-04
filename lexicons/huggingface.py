@@ -91,8 +91,17 @@ def upload_lexicon_metadata(lexicon: str, metadata: Literal["README.md", "LICENS
 
 
 def download_lexicon(lexicon: str, data_stage: Literal["raw", "processed"]) -> None:
-    """ """
+    """
+    Raises:
+        FileNotFoundError: If the repository holds no data for the lexicon
+        HuggingFaceUnavailableError: If the repository cannot be reached
+    """
     hf_data_dir = get_hf_data_dir(lexicon, data_stage)
+
+    # A download that matches no files succeeds without fetching anything, so the data has to be
+    # confirmed to be there for the download to mean anything
+    if not list_lexicon_files(lexicon, data_stage):
+        raise FileNotFoundError(f"The repository '{REPO}' has no data at '{hf_data_dir}'")
 
     print(f"Downloading '{hf_data_dir}' from {REPO}...")
     snapshot_download(
