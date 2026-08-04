@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Collection, Literal, get_args
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import polars as pl
 

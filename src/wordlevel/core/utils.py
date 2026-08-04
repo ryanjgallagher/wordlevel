@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import polars as pl
 
 
@@ -50,7 +48,7 @@ def alias_expressions(
     expr2: pl.Expr,
     alias1: str | None = None,
     alias2: str | None = None,
-) -> Tuple[pl.Expr, pl.Expr]:
+) -> tuple[pl.Expr, pl.Expr]:
     """ """
     if alias1 is not None:
         expr1 = expr1.alias(alias1)

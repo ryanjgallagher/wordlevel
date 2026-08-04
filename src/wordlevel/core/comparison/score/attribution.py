@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 
 import polars as pl
 
@@ -88,11 +88,11 @@ def score_sign_attribution(
 def attribute_scores(
     df: pl.DataFrame | pl.LazyFrame,
     by: ATTRIBUTION_TYPE,
-    reference: Optional[pl.Expr] = None,
-    comparison: Optional[pl.Expr] = None,
-    score: Optional[pl.Expr] = None,
+    reference: pl.Expr | None = None,
+    comparison: pl.Expr | None = None,
+    score: pl.Expr | None = None,
     normalize: bool = True,
-    labels: Optional[tuple[str, str]] = None,
+    labels: tuple[str, str] | None = None,
     attribution_alias: str = "attribution",
 ) -> pl.DataFrame | pl.LazyFrame:
     """

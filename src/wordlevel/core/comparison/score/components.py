@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 
 import polars as pl
 from polars import col
@@ -88,7 +88,7 @@ def reference_score_diff(
     scores1: pl.Expr,
     scores2: pl.Expr,
     reference_score: float | Literal["mean"] | pl.Expr,
-    freqs1: Optional[pl.Expr] = None,
+    freqs1: pl.Expr | None = None,
     normalize: bool = True,
 ) -> pl.Expr:
     """ """

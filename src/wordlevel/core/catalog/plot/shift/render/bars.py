@@ -108,7 +108,7 @@ class InternalBarConfig:
 
         The expected config class depends on how the comparison is attributed
         """
-        expected_config: type[BarConfig] | type[ScoreSignBarConfig]
+        expected_config: type[BarConfig | ScoreSignBarConfig]
         if attributed_by == "score_sign":
             expected_config = ScoreSignBarConfig
         else:
