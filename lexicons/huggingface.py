@@ -3,10 +3,49 @@ import pathlib
 from typing import Literal
 
 from huggingface_hub import HfApi, snapshot_download
+from huggingface_hub.errors import (
+    HTTPError,  # type: ignore[reportPrivateImportUsage]
+    OfflineModeIsEnabled,
+)
 
 
 REPO = "ryanjgallag/wordlevel-lexicons"
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
+
+
+class HuggingFaceUnavailableError(Exception):
+    """
+    Raised when the HuggingFace repository cannot be reached, as opposed to being reached and not
+    holding the data that was asked for
+    """
+
+
+def get_hf_data_dir(lexicon: str, data_stage: Literal["raw", "processed"]) -> str:
+    """
+    The location of a lexicon's data within the HuggingFace repository
+    """
+    return f"{lexicon}/data/{data_stage}"
+
+
+def list_lexicon_files(lexicon: str, data_stage: Literal["raw", "processed"]) -> list[str]:
+    """
+    Lists a lexicon's data files in the HuggingFace repository. Only the names of the files are
+    read, so no data is downloaded
+
+    Raises:
+        HuggingFaceUnavailableError: If the repository cannot be reached
+    """
+    hf_data_dir = get_hf_data_dir(lexicon, data_stage)
+
+    api = HfApi()
+    try:
+        repo_fs = api.list_repo_files(repo_id=REPO, repo_type="dataset")
+    except (HTTPError, OfflineModeIsEnabled) as error:
+        raise HuggingFaceUnavailableError(
+            f"Could not reach the HuggingFace repository '{REPO}': {error}"
+        ) from error
+
+    return [repo_f for repo_f in repo_fs if repo_f.startswith(f"{hf_data_dir}/")]
 
 
 def upload_lexicon(lexicon: str, data_stage: Literal["raw", "processed"]) -> None:
@@ -15,7 +54,7 @@ def upload_lexicon(lexicon: str, data_stage: Literal["raw", "processed"]) -> Non
     if not local_data_dir.exists() or not local_data_dir.is_dir():
         raise FileNotFoundError(f"The local directory '{local_data_dir}' does not exist")
 
-    hf_data_dir = f"{lexicon}/data/{data_stage}"
+    hf_data_dir = get_hf_data_dir(lexicon, data_stage)
     print(f"Uploading '{local_data_dir}' to {REPO} at '{hf_data_dir}'...")
 
     api = HfApi()
@@ -53,7 +92,7 @@ def upload_lexicon_metadata(lexicon: str, metadata: Literal["README.md", "LICENS
 
 def download_lexicon(lexicon: str, data_stage: Literal["raw", "processed"]) -> None:
     """ """
-    hf_data_dir = f"{lexicon}/data/{data_stage}"
+    hf_data_dir = get_hf_data_dir(lexicon, data_stage)
 
     print(f"Downloading '{hf_data_dir}' from {REPO}...")
     snapshot_download(

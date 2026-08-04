@@ -1,8 +1,11 @@
 import os
 import pathlib
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 
 import polars as pl
+
+from lexicons.huggingface import get_hf_data_dir, list_lexicon_files
 
 
 class LexiconProcessor(ABC):
@@ -11,8 +14,12 @@ class LexiconProcessor(ABC):
     def __init__(self):
         """ """
         self.base_dir = pathlib.Path(__file__).parent.resolve() / self.lexicon_name
+        self.raw_dir = self.base_dir / "data" / "raw"
+        self.processed_dir = self.base_dir / "data" / "processed"
 
-        self.types_dir = self.base_dir.parents[1] / "src" / "wordlevel" / "lexicons" / "types"
+        self.types_dir = (
+            self.base_dir.parents[1] / "src" / "wordlevel" / "api" / "lexicons" / "types"
+        )
         self.types_f = self.types_dir / f"{self.lexicon_name.lower()}.py"
 
     @property
@@ -29,22 +36,87 @@ class LexiconProcessor(ABC):
         """ """
         self._make_directories()
         self._process_lexicon()
+
+    def generate_types(self) -> None:
+        """
+        Writes the lexicon's parameter types from the raw data
+        """
+        raw_fs = self._resolve_raw_files()
+
         self._create_types_file()
-        self._generate_types()
+        self._generate_types(raw_fs)
 
     @abstractmethod
     def _process_lexicon(self) -> None:
         """ """
 
     @abstractmethod
-    def _generate_types(self) -> None:
-        """ """
+    def _generate_types(self, raw_fs: list[str]) -> None:
+        """
+        Args:
+            raw_fs:
+                The lexicon's raw data files, as paths relative to `data/raw`
+        """
 
     def _make_directories(self) -> None:
         """ """
-        os.makedirs(self.base_dir / "data" / "raw", exist_ok=True)
-        os.makedirs(self.base_dir / "data" / "processed", exist_ok=True)
-        os.makedirs(self.types_dir, exist_ok=True)
+        os.makedirs(self.raw_dir, exist_ok=True)
+        os.makedirs(self.processed_dir, exist_ok=True)
+
+    def _resolve_raw_files(self) -> list[str]:
+        """
+        Finds the lexicon's raw data files, as paths relative to `data/raw`. Local data takes
+        priority so that a new lexicon can be developed before its data is on HuggingFace
+
+        Raises:
+            FileNotFoundError: If the lexicon has no raw data locally or on HuggingFace
+        """
+        local_raw_fs = self._list_local_raw_files()
+
+        if local_raw_fs:
+            raw_fs = local_raw_fs
+        else:
+            raw_fs = self._list_remote_raw_files()
+
+        if not raw_fs:
+            raise FileNotFoundError(
+                f"No raw data found for {self.lexicon_name} in '{self.raw_dir}' or on HuggingFace"
+            )
+
+        return raw_fs
+
+    def _list_local_raw_files(self) -> list[str]:
+        """
+        Lists the raw data files available locally, as paths relative to `data/raw`. Only files
+        count as raw data, so a directory that holds nothing reads as an absent download
+        """
+        if not self.raw_dir.is_dir():
+            return []
+
+        return sorted(
+            f.relative_to(self.raw_dir).as_posix() for f in self.raw_dir.rglob("*") if f.is_file()
+        )
+
+    def _list_remote_raw_files(self) -> list[str]:
+        """
+        Lists the raw data files on HuggingFace, as paths relative to `data/raw`
+
+        Raises:
+            HuggingFaceUnavailableError: If HuggingFace cannot be reached
+        """
+        repo_fs = list_lexicon_files(self.lexicon_name, "raw")
+
+        return self._strip_raw_prefix(repo_fs, self.lexicon_name)
+
+    @staticmethod
+    def _strip_raw_prefix(repo_fs: Iterable[str], lexicon_name: str) -> list[str]:
+        """
+        Rewrites HuggingFace paths as paths relative to `data/raw`, so that a lexicon derives its
+        types from the same paths whether its raw data was found remotely or locally
+        """
+        prefix = f"{get_hf_data_dir(lexicon_name, 'raw')}/"
+
+        return sorted(repo_f.removeprefix(prefix) for repo_f in repo_fs)
 
     def _write_lexicon(
         self, df: pl.DataFrame, filepath: str, metadata: dict[str, str] | None = None
@@ -54,7 +126,7 @@ class LexiconProcessor(ABC):
         if metadata is not None:
             all_metadata = all_metadata | metadata
 
-        df.write_parquet(f"{self.base_dir}/data/processed/{filepath}", metadata=all_metadata)
+        df.write_parquet(self.processed_dir / filepath, metadata=all_metadata)
 
     def _create_types_file(self) -> None:
         """ """
@@ -71,11 +143,14 @@ class LexiconProcessor(ABC):
 
     def _write_literals(
         self,
-        values: list[str],
+        values: Iterable[str],
         variable: str,
     ) -> None:
-        """ """
-        literal_values = ", ".join([f'"{val}"' for val in values])
+        """
+        Writes a `Literal` of the given values, deduplicated, sorted, and with empty values
+        dropped, so that the generated types do not depend on how a lexicon enumerates them
+        """
+        literal_values = ", ".join([f'"{val}"' for val in sorted({val for val in values if val})])
         literal_str = f"""{variable} = Literal[{literal_values}]"""
 
         with open(self.types_f, "a") as type_f:
