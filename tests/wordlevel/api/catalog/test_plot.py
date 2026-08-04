@@ -290,22 +290,29 @@ class TestBar:
         assert set(scale["domain"]) == {"reinforce", "offset"}
 
     @pytest.mark.parametrize(
-        "comparison,bad_config",
+        "comparison,bad_config,expected_error",
         [
             # Corpus-attributed measure given a sign-attribution config/keys
-            ("freq_comp", ScoreSignBarConfig()),
-            ("freq_comp", {"reinforce": "#ffffff"}),
+            ("freq_comp", ScoreSignBarConfig(), TypeError),
+            ("freq_comp", {"reinforce": "#ffffff"}, ValueError),
             # Sign-attributed measure given a corpus-attribution config/keys
-            ("entropy_comp", BarConfig()),
-            ("entropy_comp", {"reference": "#ffffff"}),
+            ("entropy_comp", BarConfig(), TypeError),
+            ("entropy_comp", {"reference": "#ffffff"}, ValueError),
         ],
     )
     def test_bar_config_mismatch_raises(
-        self, catalog: Catalog, comparison: str, bad_config: BarConfig | ScoreSignBarConfig | dict
+        self,
+        catalog: Catalog,
+        comparison: str,
+        bad_config: BarConfig | ScoreSignBarConfig | dict,
+        expected_error: type[Exception],
     ) -> None:
-        """A config or dict that doesn't match the comparison's attribution raises a ValueError."""
+        """
+        A config of the wrong class raises a TypeError, whereas a dict whose keys don't match the
+        comparison's attribution raises a ValueError
+        """
         plotter = Plotter(catalog)
-        with pytest.raises(ValueError):
+        with pytest.raises(expected_error):
             plotter.bar(comparison, bar_config=bad_config)
 
     def test_show_totals_totals_span_full_vocab(
