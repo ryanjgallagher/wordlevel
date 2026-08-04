@@ -58,7 +58,7 @@ def get_mock_freqs(words):
     def mock_freqs() -> dict[str, int]:
         """ """
         n_words = randint(1, len(words))
-        word_indxs = sample(range(0, len(words)), n_words)
+        word_indxs = sample(range(len(words)), n_words)
 
         corpus_words = [words[indx] for indx in word_indxs]
         corpus_freqs = [randint(1, 50) for _ in range(n_words)]

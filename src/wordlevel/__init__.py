@@ -9,4 +9,4 @@ try:
 except ImportError:
     __version__ = "0.0.0"
 
-__all__ = ["__version__", "Catalog", "comp", "Dataset", "lex"]
+__all__ = ["Catalog", "Dataset", "__version__", "comp", "lex"]
