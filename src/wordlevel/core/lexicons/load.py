@@ -1,9 +1,16 @@
+import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from functools import cached_property
 from dataclasses import dataclass
 from pathlib import Path
 
 import polars as pl
 from huggingface_hub import hf_hub_download
+
+
+# The logger that `huggingface_hub` emits the hub's response header warnings on
+HF_HTTP_LOGGER = "huggingface_hub.utils._http"
 
 
 @dataclass(frozen=True)
@@ -34,6 +41,25 @@ class Lexicon:
         The lexicon's tokens and their scores, collected into a dataframe
         """
         return self.lf.collect()
+
+
+@contextmanager
+def _suppress_hf_token_warning() -> Iterator[None]:
+    """
+    Silences the HuggingFace advisory that unauthenticated requests are being sent to the hub. The
+    hub returns the advisory as an `X-HF-Warning` response header, which `huggingface_hub` emits as
+    a log record rather than a warning, so it has to be filtered at the logging layer.
+    """
+    logger = logging.getLogger(HF_HTTP_LOGGER)
+
+    def drop_token_advisory(record: logging.LogRecord) -> bool:
+        return "HF_TOKEN" not in record.getMessage()
+
+    logger.addFilter(drop_token_advisory)
+    try:
+        yield
+    finally:
+        logger.removeFilter(drop_token_advisory)
 
 
 def load_lexicon(
@@ -72,14 +98,15 @@ def load_lexicon(
     if subfolder is not None:
         full_subfolder = f"{full_subfolder}/{subfolder}"
 
-    lexicon_f = hf_hub_download(
-        repo_id="ryanjgallag/wordlevel-lexicons",
-        subfolder=full_subfolder,
-        filename=filename,
-        repo_type="dataset",
-        cache_dir=cache_dir,
-        token=hf_token,
-    )
+    with _suppress_hf_token_warning():
+        lexicon_f = hf_hub_download(
+            repo_id="ryanjgallag/wordlevel-lexicons",
+            subfolder=full_subfolder,
+            filename=filename,
+            repo_type="dataset",
+            cache_dir=cache_dir,
+            token=hf_token,
+        )
 
     lf = pl.scan_parquet(lexicon_f)
     center_score = float(pl.read_parquet_metadata(lexicon_f)["center"])
