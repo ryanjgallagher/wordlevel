@@ -58,6 +58,22 @@ def test_list_local_raw_files_returns_paths_relative_to_raw_dir(
     assert processor._list_local_raw_files() == ["english/labMTwords-english.csv"]
 
 
+def test_resolve_raw_files_prefers_local_data(
+    processor: LexiconProcessor, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that HuggingFace is not consulted when the lexicon's raw data is already local
+    """
+    (tmp_path / "1800.tsv").touch()
+    processor.raw_dir = tmp_path
+
+    monkeypatch.setattr(
+        processor, "_list_remote_raw_files", lambda: pytest.fail("HuggingFace was consulted")
+    )
+
+    assert processor._resolve_raw_files() == ["1800.tsv"]
+
+
 def test_types_dir_matches_package_types_module(processor: LexiconProcessor) -> None:
     """
     Checks that the processor writes generated types into the same directory that `wordlevel`

@@ -5,6 +5,8 @@ from collections.abc import Iterable
 
 import polars as pl
 
+from lexicons.huggingface import get_hf_data_dir, list_lexicon_files
+
 
 class LexiconProcessor(ABC):
     """ """
@@ -63,16 +65,22 @@ class LexiconProcessor(ABC):
 
     def _resolve_raw_files(self) -> list[str]:
         """
-        Finds the lexicon's raw data files, as paths relative to `data/raw`
+        Finds the lexicon's raw data files, as paths relative to `data/raw`. Local data takes
+        priority so that a new lexicon can be developed before its data is on HuggingFace
 
         Raises:
-            FileNotFoundError: If the lexicon has no raw data
+            FileNotFoundError: If the lexicon has no raw data locally or on HuggingFace
         """
-        raw_fs = self._list_local_raw_files()
+        local_raw_fs = self._list_local_raw_files()
+
+        if local_raw_fs:
+            raw_fs = local_raw_fs
+        else:
+            raw_fs = self._list_remote_raw_files()
 
         if not raw_fs:
             raise FileNotFoundError(
-                f"No raw data found for {self.lexicon_name} in '{self.raw_dir}'"
+                f"No raw data found for {self.lexicon_name} in '{self.raw_dir}' or on HuggingFace"
             )
 
         return raw_fs
@@ -88,6 +96,27 @@ class LexiconProcessor(ABC):
         return sorted(
             f.relative_to(self.raw_dir).as_posix() for f in self.raw_dir.rglob("*") if f.is_file()
         )
+
+    def _list_remote_raw_files(self) -> list[str]:
+        """
+        Lists the raw data files on HuggingFace, as paths relative to `data/raw`
+
+        Raises:
+            HuggingFaceUnavailableError: If HuggingFace cannot be reached
+        """
+        repo_fs = list_lexicon_files(self.lexicon_name, "raw")
+
+        return self._strip_raw_prefix(repo_fs, self.lexicon_name)
+
+    @staticmethod
+    def _strip_raw_prefix(repo_fs: Iterable[str], lexicon_name: str) -> list[str]:
+        """
+        Rewrites HuggingFace paths as paths relative to `data/raw`, so that a lexicon derives its
+        types from the same paths whether its raw data was found remotely or locally
+        """
+        prefix = f"{get_hf_data_dir(lexicon_name, 'raw')}/"
+
+        return sorted(repo_f.removeprefix(prefix) for repo_f in repo_fs)
 
     def _write_lexicon(
         self, df: pl.DataFrame, filepath: str, metadata: dict[str, str] | None = None
