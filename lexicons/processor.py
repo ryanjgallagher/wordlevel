@@ -11,8 +11,12 @@ class LexiconProcessor(ABC):
     def __init__(self):
         """ """
         self.base_dir = pathlib.Path(__file__).parent.resolve() / self.lexicon_name
+        self.raw_dir = self.base_dir / "data" / "raw"
+        self.processed_dir = self.base_dir / "data" / "processed"
 
-        self.types_dir = self.base_dir.parents[1] / "src" / "wordlevel" / "lexicons" / "types"
+        self.types_dir = (
+            self.base_dir.parents[1] / "src" / "wordlevel" / "api" / "lexicons" / "types"
+        )
         self.types_f = self.types_dir / f"{self.lexicon_name.lower()}.py"
 
     @property
@@ -42,8 +46,8 @@ class LexiconProcessor(ABC):
 
     def _make_directories(self) -> None:
         """ """
-        os.makedirs(self.base_dir / "data" / "raw", exist_ok=True)
-        os.makedirs(self.base_dir / "data" / "processed", exist_ok=True)
+        os.makedirs(self.raw_dir, exist_ok=True)
+        os.makedirs(self.processed_dir, exist_ok=True)
         os.makedirs(self.types_dir, exist_ok=True)
 
     def _write_lexicon(
@@ -54,7 +58,7 @@ class LexiconProcessor(ABC):
         if metadata is not None:
             all_metadata = all_metadata | metadata
 
-        df.write_parquet(f"{self.base_dir}/data/processed/{filepath}", metadata=all_metadata)
+        df.write_parquet(self.processed_dir / filepath, metadata=all_metadata)
 
     def _create_types_file(self) -> None:
         """ """

@@ -29,15 +29,15 @@ class labMTProcessor(LexiconProcessor):
 
     def _process_lexicon(self) -> None:
         """ """
-        languages = os.listdir(f"{self.base_dir}/data/raw")
+        languages = os.listdir(self.raw_dir)
 
         for language in languages:
             self._process_language(language=language)
 
     def _process_language(self, language: str) -> None:
         """ """
-        words_f = f"{self.base_dir}/data/raw/{language}/labMTwords-{language}.csv"
-        scores_f = f"{self.base_dir}/data/raw/{language}/labMTscores-{language}.csv"
+        words_f = self.raw_dir / language / f"labMTwords-{language}.csv"
+        scores_f = self.raw_dir / language / f"labMTscores-{language}.csv"
 
         words = open(words_f).read().splitlines()
         scores = [float(score) for score in open(scores_f).read().splitlines()]
@@ -52,7 +52,7 @@ class labMTProcessor(LexiconProcessor):
 
     def _generate_types(self) -> None:
         """ """
-        languages = sorted(f.stem for f in (self.base_dir / "data" / "processed").glob("*.parquet"))
+        languages = sorted(f.stem for f in self.processed_dir.glob("*.parquet"))
 
         self._write_literals(values=languages, variable="labMTLanguage")
 

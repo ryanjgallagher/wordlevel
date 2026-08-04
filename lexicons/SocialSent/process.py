@@ -18,7 +18,7 @@ class SocialSentProcessor(LexiconProcessor):
 
     def _process_lexicon(self) -> None:
         """ """
-        year_fs = os.listdir(f"{self.base_dir}/data/raw")
+        year_fs = os.listdir(self.raw_dir)
         years = sorted([year.split(".")[0] for year in year_fs if "README" not in year])
 
         for year in years:
@@ -26,7 +26,7 @@ class SocialSentProcessor(LexiconProcessor):
 
     def _process_year(self, year: str) -> None:
         """ """
-        scores_f = f"{self.base_dir}/data/raw/{year}.tsv"
+        scores_f = self.raw_dir / f"{year}.tsv"
 
         df = (
             pl.read_csv(scores_f, has_header=False, separator="\t")
@@ -42,7 +42,7 @@ class SocialSentProcessor(LexiconProcessor):
         )
 
     def _generate_types(self) -> None:
-        years = sorted(f.stem for f in (self.base_dir / "data" / "processed").glob("*.parquet"))
+        years = sorted(f.stem for f in self.processed_dir.glob("*.parquet"))
 
         self._write_literals(values=years, variable="SocialSentYear")
 
