@@ -130,6 +130,10 @@ class TestValidation:
                 df_words, lexicon_df, df_token_col=TOKEN_COL, lexicon_token_col=LEXICON_TOKEN_COL
             )
 
+    def test_unsupported_lexicon_type_raises_type_error(self, df_words):
+        with pytest.raises(TypeError, match="must be a Mapping or Polars DataFrame/LazyFrame"):
+            join_lexicon(df_words, [("the", 1.0)], df_token_col=TOKEN_COL)
+
 
 class TestReturnType:
     @pytest.mark.parametrize(

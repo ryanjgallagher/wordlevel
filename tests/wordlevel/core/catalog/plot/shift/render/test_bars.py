@@ -912,9 +912,9 @@ def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
 )
 def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_config):
     """
-    Passing a config of the wrong class raises the `_resolve_config` ValueError
+    Passing a config of the wrong class raises the `_resolve_config` TypeError
     """
-    with pytest.raises(ValueError, match="Expected a .* or a dict of its fields"):
+    with pytest.raises(TypeError, match="Expected a .* or a dict of its fields"):
         make_internal_bar_config(wrong_config)
 
 

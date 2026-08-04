@@ -54,8 +54,8 @@ def join_lexicon(
             impute=impute,
         )
     else:
-        raise ValueError(
-            f" The lexicon must be a Mapping or Polars DataFrame/LazyFrame, got: {type(lexicon)}"
+        raise TypeError(
+            f"The lexicon must be a Mapping or Polars DataFrame/LazyFrame, got: {type(lexicon)}"
         )
 
     if isinstance(df, pl.DataFrame):

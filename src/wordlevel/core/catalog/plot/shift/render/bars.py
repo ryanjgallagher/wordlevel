@@ -182,7 +182,7 @@ class InternalBarConfig:
                 )
             return expected_config(**config)
         if not isinstance(config, expected_config):
-            raise ValueError(
+            raise TypeError(
                 f"Expected a {expected_config.__name__} or a dict of its fields, but got a "
                 f"{type(config).__name__}."
             )
