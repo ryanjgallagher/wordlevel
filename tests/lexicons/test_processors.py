@@ -63,6 +63,22 @@ def test_resolve_raw_files_prefers_local_data(
     assert processor._resolve_raw_files() == ["1800.tsv"]
 
 
+def test_process_fails_when_no_data_is_written(
+    processor: LexiconProcessor, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that processing which produces no data fails, rather than leaving an empty directory
+    behind and reporting success
+    """
+    processor.raw_dir = tmp_path / "raw"
+    processor.processed_dir = tmp_path / "processed"
+
+    monkeypatch.setattr(processor, "_process_lexicon", lambda: None)
+
+    with pytest.raises(FileNotFoundError):
+        processor.process()
+
+
 def test_types_dir_matches_package_types_module(processor: LexiconProcessor) -> None:
     """
     Checks that the processor writes generated types into the same directory that `wordlevel`

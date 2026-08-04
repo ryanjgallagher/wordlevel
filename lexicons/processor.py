@@ -33,9 +33,18 @@ class LexiconProcessor(ABC):
         """ """
 
     def process(self) -> None:
-        """ """
+        """
+        Raises:
+            FileNotFoundError: If processing the lexicon wrote no data
+        """
         self._make_directories()
         self._process_lexicon()
+
+        # A processor that matches none of the raw data leaves the directory it was given empty
+        if not any(f.is_file() for f in self.processed_dir.rglob("*")):
+            raise FileNotFoundError(
+                f"Processing {self.lexicon_name} wrote no data to '{self.processed_dir}'"
+            )
 
     def generate_types(self) -> None:
         """
@@ -150,8 +159,10 @@ class LexiconProcessor(ABC):
         Writes a `Literal` of the given values, deduplicated, sorted, and with empty values
         dropped, so that the generated types do not depend on how a lexicon enumerates them
         """
-        literal_values = ", ".join([f'"{val}"' for val in sorted({val for val in values if val})])
-        literal_str = f"""{variable} = Literal[{literal_values}]"""
+        literal_values = "".join(
+            f'    "{val}",\n' for val in sorted({val for val in values if val})
+        )
+        literal_str = f"{variable} = Literal[\n{literal_values}]"
 
         with open(self.types_f, "a") as type_f:
             type_f.write(f"\n\n{literal_str}\n")

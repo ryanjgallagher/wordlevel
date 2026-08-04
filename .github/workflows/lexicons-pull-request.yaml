@@ -85,7 +85,7 @@ jobs:
       - name: Generate the types of every lexicon
         run: |
           uv run --no-sync python -m lexicons.generate_types --strict lexicons/processor.py
-          uv run --no-sync ruff format src/wordlevel/api/lexicons/types
+          uv run --no-sync ruff format --check src/wordlevel/api/lexicons/types
 
       - name: Check that the generated types are committed
         run: |
