@@ -11,15 +11,19 @@ from lexicons.processor import LexiconProcessor
 LEXICONS_DIR = pathlib.Path(__file__).parent.resolve()
 
 
-def generate_changed_types(changed_fs: Iterable[str]) -> None:
+def generate_changed_types(changed_fs: Iterable[str], strict: bool = False) -> None:
     """
-    Regenerates the types of every lexicon affected by the changed files. A lexicon whose raw data
-    cannot be reached is skipped with a warning rather than held up, so that a commit can still be
-    made without a network connection
+    Regenerates the types of every lexicon affected by the changed files
 
     Args:
         changed_fs:
             The paths of the processor files that changed
+        strict:
+            Whether to fail when a lexicon's raw data cannot be reached, rather than skipping the
+            lexicon with a warning
+
+    Raises:
+        HuggingFaceUnavailableError: If `strict` and HuggingFace cannot be reached
     """
     processors = enumerate_processors()
 
@@ -27,6 +31,9 @@ def generate_changed_types(changed_fs: Iterable[str]) -> None:
         try:
             processors[lexicon]().generate_types()
         except HuggingFaceUnavailableError as error:
+            if strict:
+                raise
+
             warnings.warn(f"Skipped generating types for {lexicon}: {error}", stacklevel=2)
 
 
@@ -84,5 +91,12 @@ if __name__ == "__main__":
         nargs="*",
         help="The paths of the processor files that changed",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail, rather than warn, if a lexicon's raw data cannot be reached",
+    )
 
-    generate_changed_types(parser.parse_args().changed_fs)
+    args = parser.parse_args()
+
+    generate_changed_types(args.changed_fs, strict=args.strict)
