@@ -52,7 +52,7 @@ def score_type_col() -> str:
 @pytest.fixture
 def words() -> Callable:
     def _words_factory(n: int = 52) -> list[str]:
-        ws = "a b c d e f g h i j k l m n o p q r s t u v w x y z".split()
+        ws = "a b c d e f g h i j k l m n o p q r s t u v w x y z".split()  # ruff: ignore[SIM905]
         ws += [f"{w}{w}" for w in ws]
 
         return ws[:n]

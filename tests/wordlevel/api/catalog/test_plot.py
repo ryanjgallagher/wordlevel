@@ -68,7 +68,7 @@ class TestGetPlotDf:
         assert df1 is df2
         assert isinstance(df1, pl.DataFrame)
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank == 50
 
     def test_caching_smaller_max_rank(self, catalog: Catalog) -> None:
@@ -83,7 +83,7 @@ class TestGetPlotDf:
         assert df_small is not df_large
         assert len(plotter._plot_dfs) == 1
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank == 50
 
     def test_caching_larger_max_rank_recomputes(self, catalog: Catalog) -> None:
@@ -98,7 +98,7 @@ class TestGetPlotDf:
         assert df_large is not df_small
         assert len(plotter._plot_dfs) == 1
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank == 50
 
     def test_caching_isolates_by_split_flag(self, catalog: Catalog) -> None:
@@ -156,7 +156,7 @@ class TestGetPlotDf:
         assert df_top2.height < df_full.height
         assert len(plotter._plot_dfs) == 1
 
-        cached = list(plotter._plot_dfs.values())[0]
+        cached = list(plotter._plot_dfs.values())[0]  # ruff: ignore[RUF015]
         assert cached.max_rank is None  # the full-df entry is unchanged
 
 

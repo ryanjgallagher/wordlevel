@@ -24,7 +24,7 @@ def _chart_positive_limit(chart: alt.LayerChart) -> float:
     """Gets the positive_limit from a shift_scales chart, which applies max_rank filtering and config
     resolution that get_scale_limits (and so _limits) does not."""
     # chart datasets are of the form {arbitrary_key: [{rank: 1, positive_limit: N, negative_limit: -N}]}
-    return list(chart.to_dict()["datasets"].values())[0][0]["positive_limit"]
+    return list(chart.to_dict()["datasets"].values())[0][0]["positive_limit"]  # ruff: ignore[RUF015]
 
 
 def test_get_bar_lengths(score_col, rank_col, token_col):
@@ -238,8 +238,8 @@ def test_default_fontsize(make_mock_df, score_col, rank_col, token_col):
         make_mock_df(), score_col, rank_col, token_col, width=10, config=LabelConfig(size=None)
     )
 
-    data_config = list(chart_config.to_dict()["datasets"].values())[0]
-    data_none = list(chart_none.to_dict()["datasets"].values())[0]
+    data_config = list(chart_config.to_dict()["datasets"].values())[0]  # ruff: ignore[RUF015]
+    data_none = list(chart_none.to_dict()["datasets"].values())[0]  # ruff: ignore[RUF015]
     limit_config = data_config[0]["positive_limit"]
     limit_none = data_none[0]["positive_limit"]
 
