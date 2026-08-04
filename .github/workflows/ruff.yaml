@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Run Ruff check
-        uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89
 
       - name: Run Ruff format
-        uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89
         with:
           args: "format --check --diff"
