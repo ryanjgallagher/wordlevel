@@ -1,6 +1,5 @@
-from process_lexicons import LexiconState, enumerate_lexicons, get_changed_lexicons
-
 from lexicons.generate_types import enumerate_processors
+from process_lexicons import LexiconState, enumerate_lexicons, get_changed_lexicons
 
 
 def test_base_processor_change_reprocesses_every_lexicon() -> None:

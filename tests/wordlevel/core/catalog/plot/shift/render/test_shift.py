@@ -1,16 +1,16 @@
 from typing import cast
 
-import pytest
 import altair as alt
 import polars as pl
+import pytest
 
 from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftBarConfig
 from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE
-from wordlevel.core.catalog.plot.shift.render.shift import shift
 from wordlevel.core.catalog.plot.shift.render.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
+from wordlevel.core.catalog.plot.shift.render.shift import shift
 
 
 def test_shift_returns_layer_chart(make_mock_df, score_col, rank_col, token_col, score_type_col):

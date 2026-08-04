@@ -1,13 +1,14 @@
-import pytest
-import altair as alt
-import polars as pl
-from polars.testing import assert_frame_equal
 from types import MappingProxyType
 
-from wordlevel.constants import SCORE_COL, RANK_COL
+import altair as alt
+import polars as pl
+import pytest
+from polars.testing import assert_frame_equal
+
 from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.api.comparison.comparison import comp
 from wordlevel.api.catalog.plot import Plotter
+from wordlevel.api.comparison.comparison import comp
+from wordlevel.constants import RANK_COL, SCORE_COL
 
 
 @pytest.fixture

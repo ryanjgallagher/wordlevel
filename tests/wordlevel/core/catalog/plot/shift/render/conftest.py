@@ -3,21 +3,20 @@ from typing import Callable
 
 import polars as pl
 import pytest
-
 from polars import col
 
+from wordlevel.constants import SHIFT_SCORE_TYPES
 from wordlevel.core.comparison.score.components import (
     frequency_diff,
-    weighted_score_diff,
-    reference_score_diff,
-    more_of_negative,
-    more_of_positive,
+    higher_score,
     less_of_negative,
     less_of_positive,
-    higher_score,
     lower_score,
+    more_of_negative,
+    more_of_positive,
+    reference_score_diff,
+    weighted_score_diff,
 )
-from wordlevel.constants import SHIFT_SCORE_TYPES
 
 
 negative_score_types = {

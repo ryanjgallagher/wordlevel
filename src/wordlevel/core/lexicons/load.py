@@ -1,8 +1,8 @@
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
-from functools import cached_property
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 
 import polars as pl

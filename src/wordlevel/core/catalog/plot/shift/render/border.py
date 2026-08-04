@@ -3,7 +3,6 @@ from typing import cast
 
 import altair as alt
 import polars as pl
-
 from typing_extensions import Self
 
 from wordlevel.configs import BorderConfig, RankAxisConfig, ScoreAxisConfig

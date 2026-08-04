@@ -1,8 +1,8 @@
-import pytest
 import polars as pl
 import polars.testing
+import pytest
 
-from wordlevel.core.utils import normalize_freqs, mixed_distribution, are_same_sign
+from wordlevel.core.utils import are_same_sign, mixed_distribution, normalize_freqs
 
 
 @pytest.mark.parametrize(

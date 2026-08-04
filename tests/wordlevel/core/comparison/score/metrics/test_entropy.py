@@ -1,14 +1,14 @@
-import pytest
-import polars as pl
-import polars.testing
-
 from math import log
 
+import polars as pl
+import polars.testing
+import pytest
+
 from wordlevel.core.comparison.score.metrics.entropy import (
+    shannon_entropy,
+    tsallis_entropy,
     tsallis_entropy_dist_scores,
     tsallis_entropy_dual_dist_scores,
-    tsallis_entropy,
-    shannon_entropy,
 )
 
 

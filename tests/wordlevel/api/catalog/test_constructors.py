@@ -1,14 +1,13 @@
 from random import randint, sample
 
-import pytest
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.constants import TOKEN, NORMALIZATION_SUFFIX
-from wordlevel.api.catalog.constructors import CatalogData
-from wordlevel.api.catalog.constructors import _normalize_frequency_columns
+from wordlevel.api.catalog.constructors import CatalogData, _normalize_frequency_columns
 from wordlevel.api.comparison.comparison import ComparisonResult
+from wordlevel.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.datasets.dataset import Dataset
 
 

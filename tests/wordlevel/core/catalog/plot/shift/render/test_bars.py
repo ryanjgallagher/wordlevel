@@ -1,25 +1,24 @@
 import altair as alt
 import polars as pl
 import pytest
-
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    DEFAULT_SCORE_AXIS_TITLE,
+    PERCENT_SCORE_AXIS_TITLE,
     BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ScoreSignBarConfig,
     ShiftBarConfig,
     TotalShiftConfig,
-    DEFAULT_SCORE_AXIS_TITLE,
-    PERCENT_SCORE_AXIS_TITLE,
 )
 from wordlevel.constants import SHIFT_SCORE_TYPES
 from wordlevel.core.catalog.plot.shift.render.bars import (
-    shift_bars,
     _SHIFT_TYPE_ORDERS,
     InternalBarConfig,
     InternalScoreAxisConfig,
+    shift_bars,
 )
 from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig
 

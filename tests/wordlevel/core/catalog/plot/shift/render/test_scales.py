@@ -1,14 +1,13 @@
 import altair as alt
 import polars as pl
 import pytest
-
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import LabelConfig
 from wordlevel.core.catalog.plot.shift.render.scales import (
-    shift_scales,
-    get_scale_limits,
     get_bar_lengths,
+    get_scale_limits,
+    shift_scales,
 )
 
 

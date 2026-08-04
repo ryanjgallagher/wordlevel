@@ -1,8 +1,8 @@
-import pytest
 import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.comparison.score.lexicon import join_lexicon, DEFAULT_LEXICON_SCORE_COL
+from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL, join_lexicon
 from wordlevel.core.lexicons.load import Lexicon
 
 

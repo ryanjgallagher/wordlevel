@@ -3,17 +3,17 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
+from wordlevel.api.comparison.comparison import Comparison
+from wordlevel.api.comparison.score import Scorer
 from wordlevel.constants import (
-    REFERENCE_ATTRIBUTION,
     COMPARISON_ATTRIBUTION,
-    REINFORCE_ATTRIBUTION,
     IS_BORROWED_COL,
     LEXICON_SCORE_REF_COL,
     NORMED_FREQ_REF_COL,
+    REFERENCE_ATTRIBUTION,
+    REINFORCE_ATTRIBUTION,
     SCORE_COL,
 )
-from wordlevel.api.comparison.comparison import Comparison
-from wordlevel.api.comparison.score import Scorer
 from wordlevel.core.lexicons.load import Lexicon
 
 

@@ -2,7 +2,6 @@ import math
 
 import altair as alt
 import polars as pl
-
 from polars import col
 
 from wordlevel.configs import LabelConfig

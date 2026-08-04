@@ -1,6 +1,6 @@
-import pytest
 import polars as pl
 import polars.testing
+import pytest
 from polars import col
 from polars.testing import assert_series_equal, assert_series_not_equal
 
@@ -9,8 +9,8 @@ from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS
 from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL
 from wordlevel.core.comparison.score.plan import (
     basic_score_plan,
-    weighted_average_score_plan,
     lexicon_join_plan,
+    weighted_average_score_plan,
 )
 from wordlevel.core.lexicons.load import Lexicon
 

@@ -3,10 +3,10 @@ from typing import Literal, Optional
 import polars as pl
 
 from wordlevel.constants import (
-    REFERENCE_ATTRIBUTION,
     COMPARISON_ATTRIBUTION,
-    REINFORCE_ATTRIBUTION,
     OFFSET_ATTRIBUTION,
+    REFERENCE_ATTRIBUTION,
+    REINFORCE_ATTRIBUTION,
 )
 from wordlevel.core.utils import are_same_sign, normalize_freqs
 

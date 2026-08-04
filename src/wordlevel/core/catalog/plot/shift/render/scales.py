@@ -2,11 +2,11 @@ from typing import cast
 
 import altair as alt
 import polars as pl
-
 from polars import col
 
 from wordlevel.configs import DEFAULT_LABEL_SIZE, LabelConfig
 from wordlevel.core.catalog.plot.shift.render.labels import get_label_positions
+
 
 # Minimum fraction of the score axis reserved for a bar when its label is too wide to fit. Floors
 # the available bar pixels so a pathologically long label overflows instead of blowing up the domain

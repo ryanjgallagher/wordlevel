@@ -10,15 +10,15 @@ from wordlevel.configs import (
 )
 from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE
 from wordlevel.core.catalog.plot.shift.render.bars import (
-    shift_bars,
-    InternalScoreAxisConfig,
     InternalBarConfig,
+    InternalScoreAxisConfig,
+    shift_bars,
 )
 from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, shift_borders
 from wordlevel.core.catalog.plot.shift.render.labels import shift_labels
 from wordlevel.core.catalog.plot.shift.render.scales import shift_scales
-from wordlevel.core.catalog.plot.shift.render.zero_line import zero_line
 from wordlevel.core.catalog.plot.shift.render.totals import shift_total
+from wordlevel.core.catalog.plot.shift.render.zero_line import zero_line
 
 
 def shift(

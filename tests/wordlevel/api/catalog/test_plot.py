@@ -1,18 +1,18 @@
 from typing import cast
 
-import pytest
 import altair as alt
 import polars as pl
+import pytest
 
 from wordlevel.api.catalog.catalog import Catalog
+from wordlevel.api.catalog.plot import PlotCacheKey, Plotter, PlotType
 from wordlevel.api.comparison.comparison import comp
-from wordlevel.api.catalog.plot import Plotter, PlotCacheKey, PlotType
-from wordlevel.configs import ScoreSignBarConfig, BarConfig, ShiftBarConfig
+from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig
 from wordlevel.constants import (
-    RANK_COL,
-    SCORE_COL,
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
+    RANK_COL,
+    SCORE_COL,
 )
 
 

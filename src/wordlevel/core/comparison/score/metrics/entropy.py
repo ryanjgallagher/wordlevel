@@ -1,6 +1,6 @@
 import polars as pl
 
-from wordlevel.core.utils import normalize_freqs, alias_expressions
+from wordlevel.core.utils import alias_expressions, normalize_freqs
 
 
 def tsallis_entropy_dist_scores(

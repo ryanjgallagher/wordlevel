@@ -1,22 +1,22 @@
-import altair as alt
-import polars as pl
-
-from typing_extensions import Self
 from dataclasses import asdict, dataclass, fields
 
+import altair as alt
+import polars as pl
+from typing_extensions import Self
+
 from wordlevel.configs import (
-    ScoreSignBarConfig,
+    DEFAULT_SCORE_AXIS_TITLE,
+    PERCENT_SCORE_AXIS_TITLE,
+    SYMBOL_SUFFIX,
     BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
+    ScoreSignBarConfig,
     ShiftBarConfig,
     TotalShiftConfig,
-    SYMBOL_SUFFIX,
-    DEFAULT_SCORE_AXIS_TITLE,
-    PERCENT_SCORE_AXIS_TITLE,
 )
+from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.core.catalog.plot.utils import to_altair_optional
-from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, _TRANSLATE_PX
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
 
 

@@ -1,6 +1,6 @@
-import pytest
 import polars as pl
 import polars.testing
+import pytest
 
 from wordlevel.core.comparison.normalization import (
     normalization_constant_expr,

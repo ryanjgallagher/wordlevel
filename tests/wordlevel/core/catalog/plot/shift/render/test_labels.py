@@ -1,17 +1,17 @@
 import re
-import pytest
-import polars as pl
-import altair as alt
 
+import altair as alt
+import polars as pl
+import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import LabelConfig
 from wordlevel.core.catalog.plot.shift.render.labels import (
-    shift_labels,
     get_label_positions,
-    to_readable_angle,
     get_position_params,
+    shift_labels,
     to_conditional_expr,
+    to_readable_angle,
 )
 
 

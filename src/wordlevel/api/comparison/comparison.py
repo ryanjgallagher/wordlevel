@@ -3,13 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from functools import cached_property
 from typing import Any
-from typing_extensions import Self
 
 import polars as pl
+from typing_extensions import Self
 
 from wordlevel.api.comparison.exclude import ComparisonExcluder
-from wordlevel.api.comparison.score import Scorer
 from wordlevel.api.comparison.normalization import make_normalized_plan
+from wordlevel.api.comparison.score import Scorer
 from wordlevel.api.comparison.state import ComparisonState
 from wordlevel.constants import NORMALIZATION_CONSTANT_COL
 from wordlevel.core.comparison.normalization import NORMALIZE_BY

@@ -1,15 +1,14 @@
-import pytest
 import polars as pl
 import polars.testing
-
+import pytest
 from polars import col
 
 from wordlevel.core.comparison.score.components import (
     frequency_diff,
-    weighted_score_diff,
-    reference_score_diff,
     get_shift_components,
     get_shift_plot_components,
+    reference_score_diff,
+    weighted_score_diff,
 )
 
 
