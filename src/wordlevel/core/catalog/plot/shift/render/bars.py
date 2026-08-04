@@ -349,15 +349,13 @@ def shift_bars(
 
     # Configure the score axis tick labels: optionally force positive values (for non-negative
     # measures shown in both directions) and optionally suffix a percent sign.
-    if score_axis.all_positive_labels:
-        score_tick_label_expr = "abs(datum.value)"
-    else:
-        score_tick_label_expr = "datum.value"
-
-    if score_axis.percent:
-        score_tick_label_expr = score_tick_label_expr + " + '%'"
-    elif score_axis.all_positive_labels:
-        score_tick_label_expr = score_tick_label_expr
+    if score_axis.all_positive_labels or score_axis.percent:
+        if score_axis.all_positive_labels:
+            base = "abs(datum.value)"
+        else:
+            base = "datum.value"
+        suffix = " + '%'" if score_axis.percent else ""
+        score_tick_label_expr = base + suffix
     else:
         score_tick_label_expr = alt.Undefined
 
