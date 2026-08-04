@@ -245,7 +245,7 @@ class Scorer:
         return self._return_comparison(
             plan,
             method="frequency",
-            parameters=dict(),
+            parameters={},
             is_weighted_avg=False,
             is_nonnegative=False,
             attributed_by="frequency",

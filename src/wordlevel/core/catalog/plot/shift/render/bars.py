@@ -302,7 +302,7 @@ def shift_bars(
     # is passed, it is ignored
     # For the configurable dimension, Altair does not allow them to be None or alt.Undefined, so we
     # unpack them from a dict (default is that they're not in the dictionary).
-    chart_params = dict()
+    chart_params = {}
     if vertical:
         chart_params["height"] = alt.Step(rank_axis.bar_width)
         if width is not None:

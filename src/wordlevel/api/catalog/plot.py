@@ -71,7 +71,7 @@ class Plotter:
 
     def __init__(self, catalog: Catalog):
         self._catalog = catalog
-        self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = dict()
+        self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = {}
 
     def bar(
         self,

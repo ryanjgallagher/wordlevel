@@ -52,7 +52,7 @@ def basic_score_plan(
     attribution_alias: str = "attribution",
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
-    attribution_cols = dict()
+    attribution_cols = {}
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
     else:
@@ -105,7 +105,7 @@ def weighted_average_score_plan(
     counteracted_suffix: str = "_counteracted",
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
-    attribution_cols = dict()
+    attribution_cols = {}
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
     else:

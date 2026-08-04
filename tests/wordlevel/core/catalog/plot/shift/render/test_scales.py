@@ -58,9 +58,13 @@ def test_on_bar_ends_reserves_label_space(score_col, rank_col, token_col):
     """A label at the bar tip (on_bar_ends=True) extends the domain, whereas one pinned at the zero
     line does not, so the same data yields a wider limit when labels sit on the bar ends."""
     df = pl.DataFrame({token_col: ["short", "muchlongerword"], rank_col: [1, 2], score_col: [5, 4]})
-    kwargs = dict(
-        score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
-    )
+    kwargs = {
+        "score_col": score_col,
+        "rank_col": rank_col,
+        "token_col": token_col,
+        "size": 600,
+        "fontsize": 11,
+    }
 
     on_ends, _ = _limits(df, on_bar_ends=True, **kwargs)
     at_zero, _ = _limits(df, on_bar_ends=False, **kwargs)
@@ -114,9 +118,13 @@ def test_scale_factor_scales_limit_linearly(score_col, rank_col, token_col):
     scale_factor = 3
 
     df = pl.DataFrame({token_col: ["w1", "w2"], rank_col: [1, 2], score_col: [5, 4]})
-    kwargs = dict(
-        score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
-    )
+    kwargs = {
+        "score_col": score_col,
+        "rank_col": rank_col,
+        "token_col": token_col,
+        "size": 600,
+        "fontsize": 11,
+    }
 
     base, _ = _limits(df, scale_factor=1, **kwargs)
     scaled, _ = _limits(df, scale_factor=scale_factor, **kwargs)
@@ -126,9 +134,13 @@ def test_scale_factor_scales_limit_linearly(score_col, rank_col, token_col):
 
 def test_wider_label_widens_limit(score_col, rank_col, token_col):
     """A longer token reserves more label space at the bar tip, widening the limit."""
-    kwargs = dict(
-        score_col=score_col, rank_col=rank_col, token_col=token_col, size=600, fontsize=11
-    )
+    kwargs = {
+        "score_col": score_col,
+        "rank_col": rank_col,
+        "token_col": token_col,
+        "size": 600,
+        "fontsize": 11,
+    }
 
     narrow, _ = _limits(pl.DataFrame({token_col: ["a"], rank_col: [1], score_col: [5]}), **kwargs)
     wide, _ = _limits(

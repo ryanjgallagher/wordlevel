@@ -203,7 +203,7 @@ class TestLazyEvaluation:
             is_nonnegative=False,
             attributed_by="frequency",
             score_plan=counting_plan,
-            parameters=dict(),
+            parameters={},
         )
 
         # Creating the result should execute the plan once upon initialization
@@ -292,7 +292,7 @@ class TestDataFrameExecution:
             is_nonnegative=False,
             attributed_by="frequency",
             score_plan=simple_plan,
-            parameters=dict(),
+            parameters={},
         )
 
         result = ComparisonResult.from_comparison(comparison, df_mock, token_col="word")
@@ -323,7 +323,7 @@ class TestDataFrameExecution:
             is_nonnegative=False,
             attributed_by="frequency",
             score_plan=complex_plan,
-            parameters=dict(),
+            parameters={},
         )
 
         result = ComparisonResult.from_comparison(comparison, df_mock, token_col="word")
@@ -361,7 +361,7 @@ class TestTokenColWiring:
             is_nonnegative=False,
             attributed_by="frequency",
             score_plan=capturing_plan,
-            parameters=dict(),
+            parameters={},
         )
 
         ComparisonResult.from_comparison(

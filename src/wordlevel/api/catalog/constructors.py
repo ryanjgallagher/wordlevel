@@ -160,7 +160,7 @@ def from_polars(
         token_col=token_col,
         freq_cols=deduped_freq_cols,
         normalization_suffix=normalization_suffix,
-        comparisons=dict(),
+        comparisons={},
     )
 
 

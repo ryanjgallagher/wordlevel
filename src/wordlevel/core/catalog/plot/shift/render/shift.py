@@ -104,7 +104,7 @@ def shift(
         .collect()
     )
 
-    size_param = dict()
+    size_param = {}
     if vertical:
         if width is None:
             size_param["width"] = DEFAULT_SCORE_AXIS_PIXEL_SIZE
