@@ -4,22 +4,11 @@ import pathlib
 import pytest
 
 import wordlevel.api.lexicons.types
+from lexicons.generate_types import enumerate_processors
 from lexicons.processor import LexiconProcessor
 
 
-def _discover_processors() -> list[type[LexiconProcessor]]:
-    """
-    Automatically finds all implemented processors (subclasses of LexiconProcessor)
-    """
-    lexicons_dir = pathlib.Path(__file__).parents[2] / "lexicons"
-
-    for process_file in sorted(lexicons_dir.glob("*/process.py")):
-        importlib.import_module(f"lexicons.{process_file.parent.name}.process")
-
-    return LexiconProcessor.__subclasses__()
-
-
-@pytest.fixture(params=_discover_processors(), ids=lambda cls: cls.__name__)
+@pytest.fixture(params=enumerate_processors().values(), ids=lambda cls: cls.__name__)
 def processor(request: pytest.FixtureRequest) -> LexiconProcessor:
     """
     Parameterizes processors for all tests
