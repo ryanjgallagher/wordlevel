@@ -41,8 +41,8 @@ class SocialSentProcessor(LexiconProcessor):
             df, filepath=f"{year}.parquet", metadata={"min": str(min_score), "max": str(max_score)}
         )
 
-    def _generate_types(self) -> None:
-        years = sorted(f.stem for f in self.processed_dir.glob("*.parquet"))
+    def _generate_types(self, raw_fs: list[str]) -> None:
+        years = {raw_f.removesuffix(".tsv") for raw_f in raw_fs if raw_f.endswith(".tsv")}
 
         self._write_literals(values=years, variable="SocialSentYear")
 

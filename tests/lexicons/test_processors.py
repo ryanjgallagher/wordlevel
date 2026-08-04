@@ -42,6 +42,22 @@ def test_lexicon_name_matches_directory(processor: LexiconProcessor) -> None:
     assert processor.lexicon_name == processor.base_dir.name
 
 
+def test_list_local_raw_files_returns_paths_relative_to_raw_dir(
+    processor: LexiconProcessor, tmp_path: pathlib.Path
+) -> None:
+    """
+    Checks that local raw data is listed relative to `data/raw`, matching how the files are named
+    on HuggingFace, and that a directory holding no files does not read as raw data
+    """
+    (tmp_path / "english").mkdir()
+    (tmp_path / "english" / "labMTwords-english.csv").touch()
+    (tmp_path / "empty").mkdir()
+
+    processor.raw_dir = tmp_path
+
+    assert processor._list_local_raw_files() == ["english/labMTwords-english.csv"]
+
+
 def test_types_dir_matches_package_types_module(processor: LexiconProcessor) -> None:
     """
     Checks that the processor writes generated types into the same directory that `wordlevel`

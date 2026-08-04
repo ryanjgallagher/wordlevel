@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 import polars as pl
 
@@ -50,9 +51,9 @@ class labMTProcessor(LexiconProcessor):
             metadata={"min": str(MIN_SCORE), "max": str(MAX_SCORE)},
         )
 
-    def _generate_types(self) -> None:
+    def _generate_types(self, raw_fs: list[str]) -> None:
         """ """
-        languages = sorted(f.stem for f in self.processed_dir.glob("*.parquet"))
+        languages = {pathlib.PurePosixPath(raw_f).parent.name for raw_f in raw_fs}
 
         self._write_literals(values=languages, variable="labMTLanguage")
 

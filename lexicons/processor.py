@@ -1,6 +1,7 @@
 import os
 import pathlib
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 
 import polars as pl
 
@@ -33,22 +34,60 @@ class LexiconProcessor(ABC):
         """ """
         self._make_directories()
         self._process_lexicon()
+
+    def generate_types(self) -> None:
+        """
+        Writes the lexicon's parameter types from the raw data
+        """
+        raw_fs = self._resolve_raw_files()
+
         self._create_types_file()
-        self._generate_types()
+        self._generate_types(raw_fs)
 
     @abstractmethod
     def _process_lexicon(self) -> None:
         """ """
 
     @abstractmethod
-    def _generate_types(self) -> None:
-        """ """
+    def _generate_types(self, raw_fs: list[str]) -> None:
+        """
+        Args:
+            raw_fs:
+                The lexicon's raw data files, as paths relative to `data/raw`
+        """
 
     def _make_directories(self) -> None:
         """ """
         os.makedirs(self.raw_dir, exist_ok=True)
         os.makedirs(self.processed_dir, exist_ok=True)
-        os.makedirs(self.types_dir, exist_ok=True)
+
+    def _resolve_raw_files(self) -> list[str]:
+        """
+        Finds the lexicon's raw data files, as paths relative to `data/raw`
+
+        Raises:
+            FileNotFoundError: If the lexicon has no raw data
+        """
+        raw_fs = self._list_local_raw_files()
+
+        if not raw_fs:
+            raise FileNotFoundError(
+                f"No raw data found for {self.lexicon_name} in '{self.raw_dir}'"
+            )
+
+        return raw_fs
+
+    def _list_local_raw_files(self) -> list[str]:
+        """
+        Lists the raw data files available locally, as paths relative to `data/raw`. Only files
+        count as raw data, so a directory that holds nothing reads as an absent download
+        """
+        if not self.raw_dir.is_dir():
+            return []
+
+        return sorted(
+            f.relative_to(self.raw_dir).as_posix() for f in self.raw_dir.rglob("*") if f.is_file()
+        )
 
     def _write_lexicon(
         self, df: pl.DataFrame, filepath: str, metadata: dict[str, str] | None = None
@@ -75,11 +114,14 @@ class LexiconProcessor(ABC):
 
     def _write_literals(
         self,
-        values: list[str],
+        values: Iterable[str],
         variable: str,
     ) -> None:
-        """ """
-        literal_values = ", ".join([f'"{val}"' for val in values])
+        """
+        Writes a `Literal` of the given values, deduplicated, sorted, and with empty values
+        dropped, so that the generated types do not depend on how a lexicon enumerates them
+        """
+        literal_values = ", ".join([f'"{val}"' for val in sorted({val for val in values if val})])
         literal_str = f"""{variable} = Literal[{literal_values}]"""
 
         with open(self.types_f, "a") as type_f:
