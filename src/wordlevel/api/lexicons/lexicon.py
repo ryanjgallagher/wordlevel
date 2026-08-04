@@ -69,6 +69,9 @@ class LexiconLoader:
 
         Args:
             language: The language of the lexicon
+
+        Raises:
+            LexiconDownloadError: If the lexicon could not be downloaded from HuggingFace
         """
         return load_lexicon(
             lexicon="labMT",
@@ -103,6 +106,9 @@ class LexiconLoader:
 
         Args:
             year: The year of the lexicon
+
+        Raises:
+            LexiconDownloadError: If the lexicon could not be downloaded from HuggingFace
         """
         return load_lexicon(
             lexicon="SocialSent",

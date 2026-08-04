@@ -1,11 +1,23 @@
 import logging
 from pathlib import Path
 
+import httpx
 import polars as pl
 import pytest
+from huggingface_hub.errors import (
+    HfHubHTTPError,
+    LocalEntryNotFoundError,
+    OfflineModeIsEnabled,
+    XetDownloadError,
+)
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.lexicons.load import HF_HTTP_LOGGER, Lexicon, load_lexicon
+from wordlevel.core.lexicons.load import (
+    HF_HTTP_LOGGER,
+    Lexicon,
+    LexiconDownloadError,
+    load_lexicon,
+)
 
 
 CENTER = 5.0
@@ -103,4 +115,76 @@ def test_hf_token_advisory_filter_removed(lexicon: Lexicon) -> None:
     Checks that the filter is taken back off of HuggingFace's logger once the lexicon is loaded, so
     that it cannot silence messages logged outside of a download
     """
+    assert logging.getLogger(HF_HTTP_LOGGER).filters == []
+
+
+@pytest.fixture
+def download_error(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> Exception:
+    """
+    Stubs the HuggingFace download so that it fails with the error being parameterized over
+    """
+    download_error: Exception = request.param
+
+    def fake_hf_hub_download(**kwargs: object) -> str:
+        raise download_error
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+
+    return download_error
+
+
+@pytest.mark.parametrize(
+    "download_error",
+    [
+        LocalEntryNotFoundError("Could not connect to the hub"),
+        OfflineModeIsEnabled("Offline mode is enabled"),
+        HfHubHTTPError(
+            "429 Too Many Requests",
+            response=httpx.Response(429, request=httpx.Request("GET", "https://huggingface.co")),
+        ),
+        XetDownloadError("The transfer failed"),
+    ],
+    indirect=True,
+)
+def test_download_failures_raised_as_download_error(download_error: Exception) -> None:
+    """
+    Checks that HuggingFace's failures are surfaced as a `LexiconDownloadError`, so that the user
+    gets an interpretable message rather than a `huggingface_hub` traceback, and that the original
+    error is kept as the cause so that it is still available for debugging
+    """
+    with pytest.raises(LexiconDownloadError) as error:
+        load_lexicon("labMT", "lexicon.parquet")
+
+    assert error.value.__cause__ is download_error
+
+
+@pytest.mark.parametrize(
+    "download_error", [LocalEntryNotFoundError("Could not connect to the hub")], indirect=True
+)
+def test_offline_mode_reported_instead_of_network_failure(
+    download_error: Exception, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that a user who has turned HuggingFace's offline mode on is told so, rather than being
+    told to check a network connection that was never used. HuggingFace reports offline mode as a
+    failure to find the file locally, so the two are only told apart by asking it whether offline
+    mode is on
+    """
+    monkeypatch.setattr("wordlevel.core.lexicons.load.is_offline_mode", lambda: True)
+
+    with pytest.raises(LexiconDownloadError, match="offline mode is enabled"):
+        load_lexicon("labMT", "lexicon.parquet")
+
+
+@pytest.mark.parametrize(
+    "download_error", [LocalEntryNotFoundError("Could not connect to the hub")], indirect=True
+)
+def test_hf_token_advisory_filter_removed_on_error(download_error: Exception) -> None:
+    """
+    Checks that the filter is taken back off of HuggingFace's logger when the download fails, and
+    not just when it succeeds
+    """
+    with pytest.raises(LexiconDownloadError):
+        load_lexicon("labMT", "lexicon.parquet")
+
     assert logging.getLogger(HF_HTTP_LOGGER).filters == []
