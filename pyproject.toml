@@ -60,7 +60,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [".", ".github/scripts"]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib"]
 
