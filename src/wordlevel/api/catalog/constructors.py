@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, TypeGuard
 
 import narwhals as nw
 import polars as pl
@@ -75,7 +75,7 @@ Example:
 """
 
 
-def is_dataframe(data: object) -> bool:
+def is_dataframe(data: object) -> TypeGuard[IntoFrame]:
     """
     Checks whether an object is a dataframe that can be converted to a Polars dataframe.
 
