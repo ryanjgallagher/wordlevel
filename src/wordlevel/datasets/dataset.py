@@ -1,11 +1,15 @@
 from collections.abc import Collection
 from pathlib import Path
+from typing import Literal
 
 import polars as pl
 
 
+WordLevelDataset = Literal["presidential_speeches"]
+
+
 class Dataset:
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: WordLevelDataset) -> None:
         """
         Dataset loader to use for examples in the `wordlevel` package
 

@@ -351,7 +351,7 @@ class TestConstructors:
     @pytest.mark.parametrize("corpora", [None, ["Lyndon B. Johnson", "George W. Bush"]])
     def test_from_wl_dataset(self, constructor, corpora):
         """Test initialization from a WordLevel Dataset"""
-        dataset = Dataset("presidental_speeches")
+        dataset = Dataset("presidential_speeches")
         token_col = dataset._token_col
         all_corpora = [c for c in dataset.as_df().columns if c != token_col]
         expected_corpora = corpora if corpora is not None else all_corpora
