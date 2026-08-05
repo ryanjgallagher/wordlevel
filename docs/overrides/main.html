@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{#-
+  Override the htmltitle block to drop the redundant `{title} - {site_name}`
+  when the page title already equals the site name (typical for the home page).
+
+  Zensical's default tries to special-case this in base.html's `page.title`
+  branch via `not page.is_homepage`, but `page.is_homepage` isn't surfaced
+  in the MiniJinja template context, so the check silently fails. We bypass
+  the broken homepage check by deduping on title equality directly.
+-#}
+{% block htmltitle %}
+  {% if page.meta and page.meta.title %}
+    {% set t = page.meta.title %}
+  {% elif page.title %}
+    {% set t = page.title | striptags %}
+  {% else %}
+    {% set t = "" %}
+  {% endif %}
+  {% if t and t != config.site_name %}
+    <title>{{ t }} - {{ config.site_name }}</title>
+  {% else %}
+    <title>{{ config.site_name }}</title>
+  {% endif %}
+{% endblock %}
