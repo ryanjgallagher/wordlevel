@@ -1,6 +1,8 @@
 from random import randint, sample
 
+import duckdb
 import polars as pl
+import pyarrow as pa
 import pytest
 from polars.testing import assert_frame_equal
 
@@ -207,6 +209,74 @@ class TestConstructors:
         null_counts = catalog._df.select(pl.col(*freq_cols).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dataframe])
+    def test_from_dataframe_pandas(self, df_mock, token_col, freq_cols, constructor):
+        """Test initialization from a pandas dataframe."""
+        catalog = constructor(df_mock.collect().to_pandas(), token_col=token_col, corpora=freq_cols)
+
+        assert_frame_equal(
+            catalog._df.select(token_col, *freq_cols).collect(),
+            df_mock.collect(),
+            check_row_order=False,
+            check_column_order=False,
+        )
+
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dataframe])
+    def test_from_dataframe_pyarrow(self, df_mock, token_col, freq_cols, constructor):
+        """Test initialization from a PyArrow table."""
+        catalog = constructor(df_mock.collect().to_arrow(), token_col=token_col, corpora=freq_cols)
+
+        assert_frame_equal(
+            catalog._df.select(token_col, *freq_cols).collect(),
+            df_mock.collect(),
+            check_row_order=False,
+            check_column_order=False,
+        )
+
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dataframe])
+    def test_from_dataframe_duckdb(self, df_mock, token_col, freq_cols, constructor):
+        """Test initialization from a DuckDB relation, a lazy backend that must be materialized."""
+        # DuckDB resolves the table name against the local scope of the calling frame
+        df_native = df_mock.collect()  # ruff: ignore[F841]
+        catalog = constructor(
+            duckdb.sql("SELECT * FROM df_native"), token_col=token_col, corpora=freq_cols
+        )
+
+        assert_frame_equal(
+            catalog._df.select(token_col, *freq_cols).collect(),
+            df_mock.collect(),
+            check_row_order=False,
+            check_column_order=False,
+        )
+
+    @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dataframe])
+    def test_from_dataframe_arrow_c_stream(self, df_mock, token_col, freq_cols, constructor):
+        """
+        Test initialization from an object that only produces an Arrow C stream. Narwhals has no
+        dedicated backend for a RecordBatchReader, so this exercises the `from_arrow` fallback.
+        """
+        table = df_mock.collect().to_arrow()
+        reader = pa.RecordBatchReader.from_batches(table.schema, table.to_batches())
+
+        catalog = constructor(reader, token_col=token_col, corpora=freq_cols)
+
+        assert_frame_equal(
+            catalog._df.select(token_col, *freq_cols).collect(),
+            df_mock.collect(),
+            check_row_order=False,
+            check_column_order=False,
+        )
+
+    def test_from_dataframe_preserves_polars_lazy(self, df_mock, token_col, freq_cols, monkeypatch):
+        """A Polars LazyFrame is used as given, so it is never materialized during construction."""
+        monkeypatch.setattr(
+            pl.LazyFrame, "collect", lambda *args, **kwargs: pytest.fail("LazyFrame was collected")
+        )
+
+        catalog = Catalog.from_dataframe(df_mock, token_col=token_col, corpora=freq_cols)
+
+        assert isinstance(catalog._df, pl.LazyFrame)
+
     @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_list_of_freqs])
     @pytest.mark.parametrize("corpora", [None, ["ref", "comp1", "comp2"]])
     def test_from_list_of_freqs(self, get_mock_freqs, corpora, constructor):
@@ -342,6 +412,20 @@ class TestConstructorValidation:
 
         with pytest.raises(KeyError, match="Token column not in provided dataframe"):
             Catalog(data=df_mock, token_col="wordcol", corpora=freq_cols)
+
+    def test_from_dataframe_unsupported_type(self, freq_cols, token_col):
+        """Objects that are not dataframes are rejected by `from_dataframe`."""
+        with pytest.raises(TypeError, match="Input type not supported"):
+            Catalog.from_dataframe(
+                "not a dataframe",  # type: ignore[arg-type]
+                token_col=token_col,
+                corpora=freq_cols,
+            )
+
+    def test_from_dataframe_invalid_token_col(self, df_mock, freq_cols, token_col):
+        """Column validation is applied after the dataframe is converted to Polars."""
+        with pytest.raises(KeyError, match="Token column not in provided dataframe"):
+            Catalog(data=df_mock.collect().to_pandas(), token_col="wordcol", corpora=freq_cols)
 
     def test_from_list_of_freqs_invalid(self, get_mock_freqs):
         """Test that from_list_of_freqs raises errors for invalid inputs"""
