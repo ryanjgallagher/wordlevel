@@ -5,16 +5,19 @@ from functools import cached_property
 from types import MappingProxyType
 
 import polars as pl
+from narwhals.typing import IntoFrame
 
 from wordlevel.api.catalog.constructors import (
     CatalogData,
     DictOfFreqs,
     ListOfFreqs,
     from_catalog,
+    from_dataframe,
     from_dict_of_freqs,
     from_list_of_freqs,
     from_polars,
     from_wl_dataset,
+    is_dataframe,
 )
 from wordlevel.api.catalog.plot import Plotter
 from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
@@ -29,20 +32,20 @@ class Catalog:
 
     Args:
         data:
-            The corpora token-frequency data. Accepts a Polars DataFrame or LazyFrame,
+            The corpora token-frequency data. Accepts a Polars DataFrame or LazyFrame, a dataframe
+            from any other backend supported by Narwhals,
             [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs],
             [`DictOfFreqs`][wordlevel.api.catalog.constructors.DictOfFreqs], or an existing
             `Catalog`. The class will attempt to infer the structure of the data and use the
             appropriate constructor.
         token_col:
-            If the `data` is a Polars dataframe, the column that contains the tokens (words,
-            subwords, n-grams, etc.). Ignored otherwise
+            If the `data` is a dataframe, the column that contains the tokens (words, subwords,
+            n-grams, etc.). Ignored otherwise
         corpora:
             If the `data` is a [`ListOfFreqs`][wordlevel.api.catalog.constructors.ListOfFreqs], the
             names of the corpora, listed in the same order as `data`. If not provided, will default
-            to `corpus1`, `corpus2`, etc. If the `data` is a Polars Dataframe or Lazyframe, the
-            names of the columns containing token frequencies, which must be provided. Ignored
-            otherwise
+            to `corpus1`, `corpus2`, etc. If the `data` is a dataframe, the names of the columns
+            containing token frequencies, which must be provided. Ignored otherwise
 
     Raises:
         TypeError: If `data` is not one of the supported types.
@@ -52,6 +55,7 @@ class Catalog:
         self,
         data: pl.DataFrame
         | pl.LazyFrame
+        | IntoFrame
         | Catalog
         | CatalogData
         | DictOfFreqs
@@ -72,6 +76,16 @@ class Catalog:
             if corpora is None:
                 raise ValueError("`corpora` must be specified if providing a DataFrame")
             init_data = from_polars(
+                df=data,
+                token_col=token_col,
+                freq_cols=corpora,
+            )
+        elif is_dataframe(data):
+            if token_col is None:
+                raise ValueError("`token_col` must be specified if providing a DataFrame")
+            if corpora is None:
+                raise ValueError("`corpora` must be specified if providing a DataFrame")
+            init_data = from_dataframe(
                 df=data,
                 token_col=token_col,
                 freq_cols=corpora,
@@ -154,6 +168,61 @@ class Catalog:
             ValueError: If fewer than two columns are provided in `corpora`.
         """
         init_data = from_polars(
+            df=df,
+            token_col=token_col,
+            freq_cols=corpora,
+            normalize=normalize,
+        )
+
+        return cls(data=init_data)
+
+    @classmethod
+    def from_dataframe(
+        cls,
+        df: IntoFrame,
+        token_col: str,
+        corpora: Collection[str],
+        normalize: bool = True,
+    ) -> Catalog:
+        """
+        Creates a `Catalog` of corpora from any dataframe supported by Narwhals.
+
+        The dataframe is converted to Polars before the catalog is constructed.
+
+        Warning:
+            The catalog's engine is backed by Polars. Any dataframe it returns is a Polars
+            dataframe, regardless of the backend that the data came from.
+
+            Polars dataframes are used as given, so a LazyFrame stays lazy. Dataframes from other
+            lazy backends, like DuckDB and PySpark, are materialized in memory.
+
+        Example:
+            ```python
+            --8<-- "snippets/catalog/catalog.py:from_dataframe"
+            ```
+
+        Args:
+            df:
+                A dataframe containing corpus information, from any backend supported by Narwhals.
+                Rows are tokens and columns are their frequencies in different corpora
+            token_col:
+                The column that contains the tokens (words, subwords, n-grams, etc.)
+            corpora:
+                The columns that include the token frequencies for each corpus
+            normalize:
+                Whether to normalize the corpus frequencies for each corpus so that they are in the
+                range $[0, 1]$ and sum to 1. The original corpus frequencies will be preserved
+
+        Returns:
+            A `Catalog` of corpora representing the provided tokens and frequencies
+
+        Raises:
+            TypeError: If `df` is not a dataframe that can be converted to Polars.
+            KeyError: If `token_col` is not a column in `df`.
+            KeyError: If any column in `corpora` is not a column in `df`.
+            ValueError: If fewer than two columns are provided in `corpora`.
+        """
+        init_data = from_dataframe(
             df=df,
             token_col=token_col,
             freq_cols=corpora,

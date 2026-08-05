@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, TypeGuard
 
+import narwhals as nw
 import polars as pl
+from narwhals.typing import IntoFrame
 from polars import col
 
 from wordlevel.constants import NORMALIZATION_SUFFIX, TOKEN
@@ -71,6 +73,26 @@ Example:
     }
     ```
 """
+
+
+def is_dataframe(data: object) -> TypeGuard[IntoFrame]:
+    """
+    Checks whether an object is a dataframe that can be converted to a Polars dataframe.
+
+    Recognizes any dataframe from a backend supported by Narwhals, as well as any object that
+    produces an Arrow C stream.
+
+    Args:
+        data: Any object
+
+    Returns:
+        Whether the object is a convertible dataframe
+    """
+    if isinstance(nw.from_native(data, pass_through=True), (nw.DataFrame, nw.LazyFrame)):
+        return True
+
+    # Producers of an Arrow C stream that Narwhals has no dedicated backend for
+    return hasattr(data, "__arrow_c_stream__")
 
 
 def from_catalog(catalog: Catalog) -> CatalogData:
@@ -161,6 +183,62 @@ def from_polars(
         freq_cols=deduped_freq_cols,
         normalization_suffix=normalization_suffix,
         comparisons={},
+    )
+
+
+def from_dataframe(
+    df: IntoFrame,
+    token_col: str,
+    freq_cols: Collection[str],
+    normalize: bool = True,
+) -> CatalogData:
+    """
+    Creates the data for a new catalog from any dataframe supported by Narwhals.
+
+    The dataframe is converted to Polars before the catalog is constructed. Polars dataframes are
+    used as given, so a LazyFrame stays lazy. Dataframes from other lazy backends, like DuckDB and
+    PySpark, are materialized in memory.
+
+    Args:
+        df:
+            A dataframe containing corpus information, from any backend supported by Narwhals.
+            Rows are tokens and columns are their frequencies in different corpora
+        token_col:
+            The column that contains the tokens (words, subwords, n-grams, etc.)
+        freq_cols:
+            The columns that include the token frequencies for each corpus
+        normalize:
+            Whether to normalize the corpus frequencies for each corpus so that they are in the
+            range $[0, 1]$ and sum to 1. The original corpus frequencies will be preserved
+
+    Returns:
+        The `CatalogData` needed to initialize a new catalog
+
+    Raises:
+        TypeError: If `df` is not a dataframe that can be converted to Polars.
+        KeyError: If `token_col` is not a column in `df`.
+        KeyError: If any column in `freq_cols` is not a column in `df`.
+        ValueError: If fewer than two columns are provided in `freq_cols`.
+    """
+    df_pl: pl.DataFrame | pl.LazyFrame
+    df_nw = nw.from_native(df, pass_through=True)
+
+    if isinstance(df, (pl.DataFrame, pl.LazyFrame)):
+        df_pl = df
+    elif isinstance(df_nw, (nw.DataFrame, nw.LazyFrame)):
+        # Narwhals has no lazy-to-lazy bridge into Polars, so lazy backends are materialized
+        df_pl = df_nw.lazy().collect(backend="polars").to_polars()
+    elif hasattr(df, "__arrow_c_stream__"):
+        # Producers of an Arrow C stream that Narwhals also supports
+        df_pl = nw.from_arrow(df, backend=pl).to_polars()
+    else:
+        raise TypeError(f"Input type not supported: {type(df)}")
+
+    return from_polars(
+        df=df_pl,
+        token_col=token_col,
+        freq_cols=freq_cols,
+        normalize=normalize,
     )
 
 
