@@ -23,3 +23,4 @@ strip-sources:
 	find site -name "*.py" -delete
 	find site -type d -name "__pycache__" -exec rm -rf {} +
 	rm -rf site/overrides
+	find site -type d -empty -delete
