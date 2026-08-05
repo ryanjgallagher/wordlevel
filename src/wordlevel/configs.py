@@ -72,7 +72,7 @@ class ShiftBarConfig:
 
     The bars indicate the kind of contribution each token makes. The prefixes `more_of_*` and
     `less_of_*` indicate whether a token was used more or less in the comparison corpus versus the
-    referenc corpus. The suffixes `*_positive` and `*_negative` indicate whether a token is
+    reference corpus. The suffixes `*_positive` and `*_negative` indicate whether a token is
     relatively positive or negative compared to the specified reference score. The bars
     `higher_score` and `lower_score` indicate whether the token's score is higher or lower in the
     comparison corpus. Each of these six primary bars also have a `*_counteracted` variant for when

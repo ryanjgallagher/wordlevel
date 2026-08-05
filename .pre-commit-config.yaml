@@ -14,6 +14,11 @@ repos:
         exclude: ^docs/snippets/
       - id: ruff-format
         exclude: ^docs/snippets/
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        exclude: ^(lexicons/[^/]+/data/|docs/documentation/api/)
   - repo: local
     hooks:
       - id: pyright

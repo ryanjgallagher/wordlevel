@@ -28,7 +28,7 @@ def shift_scales(
 ) -> alt.LayerChart:
     """
     Creates a (mostly invisible) Altair chart that adjusts the score axis scale of a shift plot such
-    that the limits accomodate bars, labels, and padding, such that they fit within the borders/axes
+    that the limits accommodate bars, labels, and padding, such that they fit within the borders/axes
     of the plot.
 
     Assumes a dataframe which has one row per word per type of contribution
@@ -94,7 +94,7 @@ def get_bar_lengths(
     df: pl.DataFrame, score_col: str, rank_col: str, token_col: str
 ) -> pl.DataFrame:
     """
-    Gets each token's positiion, and takes the absolute value to get the magnitude of each token's
+    Gets each token's position, and takes the absolute value to get the magnitude of each token's
     bar
     """
     df_positions = get_label_positions(
@@ -118,14 +118,14 @@ def get_scale_limits(
 ) -> pl.DataFrame:
     """
     Creates a dataframe with one row, which indicates the limits that should be set for the score
-    axis to accomodate all bars, labels, and padding. The dataframe has three columns: `rank_col`
+    axis to accommodate all bars, labels, and padding. The dataframe has three columns: `rank_col`
     (the position for plotting the limits), "positive_limit", and "negative_limit". If there are
     positive and negative scores, then the limits will be symmetric in the domain [-L, L]. If all
     scores are positive, then the domain will be [0, L]
 
     This function estimates the limit L that needs to be set.
 
-    To do, note that the user passes the size, in pixels. If all scores are positive, the
+    To do so, note that the user passes the size, in pixels. If all scores are positive, the
     maximum_available_px for bars, labels, and pads is the same as the size. Otherwise,
     maximum_available_px = size / 2.
 
@@ -190,7 +190,7 @@ def get_scale_limits(
     # We can determine L by taking the largest L_i
     positive_limit = col("total_width").max().alias("positive_limit")
 
-    # If there are any any negative scores, then the domain is [-L, L]. Otherwise, it's [0, L]
+    # If there are any negative scores, then the domain is [-L, L]. Otherwise, it's [0, L]
     if any_negative_scores:
         negative_limit = (-1 * positive_limit).alias("negative_limit")
     else:
