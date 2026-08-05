@@ -350,7 +350,7 @@ def _from_freqs(
         freqs:
             A sequence of tuples, one per corpus. Each tuple is `(corpus, {token: frequency})`
         token:
-            The name the use for the column representing tokens in the produced catalog dataframe
+            The name to use for the column representing tokens in the produced catalog dataframe
 
     Returns:
         The `CatalogData` needed to initialize a new catalog

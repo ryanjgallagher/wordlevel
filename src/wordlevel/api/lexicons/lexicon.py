@@ -85,7 +85,7 @@ class LexiconLoader:
         A set of English sentiment lexicons constructed for each decade from 1850 to 2000.
 
         Each lexicon represents the inferred sentiment of the top 5,000 non-stop
-        words from the [Corpus of Historical American English](https://www.english-corpora.org//coha/).
+        words from the [Corpus of Historical American English](https://www.english-corpora.org/coha/).
 
         Example:
             ```python
@@ -102,7 +102,7 @@ class LexiconLoader:
             > Hamilton, W. L., Clark, K., Leskovec, J., & Jurafsky, D. (2016). [Inducing
             domain-specific sentiment lexicons from unlabeled
             corpora](https://aclanthology.org/D16-1057/). In Proceedings of the 2016 Conference on
-            Empirical Methods in Natural Nanguage Processing (pp. 595-605).
+            Empirical Methods in Natural Language Processing (pp. 595-605).
 
         Args:
             year: The year of the lexicon

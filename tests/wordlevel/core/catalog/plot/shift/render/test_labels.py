@@ -123,7 +123,7 @@ def test_returns_chart(make_mock_df, score_col, rank_col, token_col):
 
 def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, token_col):
     """
-    Tests that the chart contains the correct data and the correct encondings are used
+    Tests that the chart contains the correct data and the correct encodings are used
     """
     df = make_mock_df(n=50)
 

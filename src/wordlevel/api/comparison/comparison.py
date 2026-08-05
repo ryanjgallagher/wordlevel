@@ -186,7 +186,7 @@ class ComparisonResult:
             weighted averages
         is_nonnegative:
             Whether the scoring method is inherently non-negative, i.e. all token-level
-            contributionso are non-negative
+            contributions are non-negative
         attributed_by:
             The attribution type used to split token contributions between the two bars of a bar
             plot. `"frequency"` and `"rank"` attribute each token to a corpus; `"score_sign"`
@@ -194,7 +194,7 @@ class ComparisonResult:
         attribution_labels:
             The pair of labels the attribution produces, determined by `attributed_by`
         parameters:
-            Any parameters specfic to the scoring method when making the comparison
+            Any parameters specific to the scoring method when making the comparison
         exclusions:
             The exclusions applied to the vocabulary, keyed by the kind of exclusion. Each value
             describes what that kind of exclusion removed, e.g. `{"tokens": {"the", "a"}}`

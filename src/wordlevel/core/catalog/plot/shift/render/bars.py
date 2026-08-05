@@ -122,8 +122,8 @@ class InternalBarConfig:
     @classmethod
     def from_shift_bar_config(cls, config: ShiftBarConfig | dict | None) -> Self:
         """
-        Creats an InternalBarConfig from a ShiftBarConfig. The key different from `from_bar_config`
-        is that it enforces the order of the different bar types
+        Creates an InternalBarConfig from a ShiftBarConfig. The key difference from
+        `from_bar_config` is that it enforces the order of the different bar types
         """
         resolved_config = cls._resolve_config(config, ShiftBarConfig)
         colors, symbols = cls._get_colors_and_symbols(resolved_config)
