@@ -1,0 +1,209 @@
+.md-grid {
+  max-width: 70rem;
+}
+
+.md-sidebar--primary {
+  width: 16rem;
+}
+
+/* Material caps the inner sidebar content with `padding-right: calc(100% - 11.5rem)`
+   to reserve a fixed-width scrollbar lane. Override so the nav fills the wider
+   sidebar set above. */
+[dir=ltr] .md-sidebar__inner,
+[dir=rtl] .md-sidebar__inner {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.md-nav,
+.md-nav__link .md-typeset {
+  font-size: 0.65rem;
+}
+
+/* Widen the header source slot from Material's default 11.5rem to match the
+   body's right sidebar (12.1rem) so the right margin lines up. */
+.md-header__source {
+  width: 12.1rem;
+  max-width: 12.1rem;
+}
+
+/* `[Source]` chip injected by the SourceLinkExtension Griffe extension.
+   The link is appended to the docstring (so it doesn't clobber summary
+   tables), then absolutely positioned to the top-right of the entire
+   doc-object (the wrapper around heading + signature + contents) so it
+   sits on the heading line. */
+.md-typeset .doc-object {
+  position: relative;
+}
+
+.md-typeset .doc-object a.source-link {
+  position: absolute;
+  top: 0.6em;
+  right: 0;
+  font-size: 0.85em;
+  padding: 0.2em 0.6em;
+  background: var(--md-default-fg-color--lightest);
+  border-radius: 0.25em;
+  color: var(--md-default-fg-color--light);
+  text-decoration: none;
+}
+
+.md-typeset .doc-object a.source-link:hover {
+  background: var(--md-default-fg-color--lighter);
+  color: var(--md-default-fg-color);
+}
+
+.md-header,
+.md-tabs {
+  background-color: #1f335f;
+  color: #ffffff;
+}
+
+.md-header .md-icon:not(:disabled) {
+  color: hsla(0, 0%, 100%, 0.7);
+}
+
+.md-header .md-icon:hover {
+  color: #ffffff;
+}
+
+.md-tabs__link {
+  color: hsla(0, 0%, 100%, 0.7);
+}
+
+.md-tabs__link--active,
+.md-tabs__link:hover,
+.md-tabs__link:focus {
+  color: #ffffff;
+}
+
+.md-search__button {
+  background-color: hsla(0, 0%, 100%, 0.07);
+  color: #ffffff;
+}
+
+.md-search__button:hover,
+.md-search__button:focus {
+  background-color: hsla(0, 0%, 100%, 0.12);
+  color: #ffffff;
+}
+
+.md-search__button::before {
+  background-color: #ffffff;
+}
+
+.md-search__button::after {
+  background: hsla(0, 0%, 100%, 0.12);
+  color: #ffffff;
+}
+
+.md-search__input,
+.md-search__icon {
+  color: #ffffff;
+}
+
+.md-search__input::placeholder {
+  color: hsla(0, 0%, 100%, 0.7);
+}
+
+/* Hide the auto-generated page heading on pages without an explicit `#` title
+   (currently the home page). Zensical only assigns id="__skip" to these
+   auto-titles; pages with an explicit heading get a slug ID and aren't affected. */
+.md-content h1#__skip {
+  display: none;
+}
+
+/* ===========================================================================
+   Custom admonition types: Citation, License, Reference, See Also.
+   Section names like `Citation:`, `License:`, etc. in docstrings render as
+   <details class="<name>"> blocks. Each variable defines the title-bar icon
+   (mask-image), and the border/background colors tint the block.
+   Icons live in stylesheets/icons/ — swap by replacing the SVG file.
+   =========================================================================== */
+
+:root {
+  --md-admonition-icon--citation: url("icons/citation.svg");
+  --md-admonition-icon--example:  url("icons/example.svg");
+  --md-admonition-icon--license:  url("icons/license.svg");
+  --md-admonition-icon--reference: url("icons/reference.svg");
+  --md-admonition-icon--see-also: url("icons/see-also.svg");
+}
+
+/* --- Citation: light green ------------------------------------------------ */
+.md-typeset .admonition.citation,
+.md-typeset details.citation {
+  border-color: rgb(76, 175, 80);
+  background-color: rgba(76, 175, 80, 0.1);
+}
+.md-typeset .citation > .admonition-title,
+.md-typeset .citation > summary {
+  background-color: transparent;
+}
+.md-typeset .citation > .admonition-title::before,
+.md-typeset .citation > summary::before {
+  background-color: rgb(76, 175, 80);
+  -webkit-mask-image: var(--md-admonition-icon--citation);
+          mask-image: var(--md-admonition-icon--citation);
+}
+
+/* --- Example: navy (#1f335f) --------------------------------------------- */
+.md-typeset .admonition.example,
+.md-typeset details.example {
+  border-color: #1f335f;
+  background-color: rgba(31, 51, 95, 0.1);
+}
+.md-typeset .example > .admonition-title,
+.md-typeset .example > summary {
+  background-color: transparent;
+  color: var(--md-default-fg-color);
+}
+.md-typeset .example > .admonition-title::before,
+.md-typeset .example > summary::before {
+  background-color: #1f335f;
+  -webkit-mask-image: var(--md-admonition-icon--example);
+          mask-image: var(--md-admonition-icon--example);
+}
+.md-typeset .example > summary::after {
+  background-color: var(--md-default-fg-color);
+}
+
+/* --- License: light yellow ------------------------------------------------ */
+.md-typeset .admonition.license,
+.md-typeset details.license {
+  border-color: rgb(245, 193, 7);
+  background-color: rgba(245, 193, 7, 0.1);
+}
+.md-typeset .license > .admonition-title,
+.md-typeset .license > summary {
+  background-color: transparent;
+}
+.md-typeset .license > .admonition-title::before,
+.md-typeset .license > summary::before {
+  background-color: rgb(245, 193, 7);
+  -webkit-mask-image: var(--md-admonition-icon--license);
+          mask-image: var(--md-admonition-icon--license);
+}
+
+/* --- Reference: light green ----------------------------------------------- */
+.md-typeset .admonition.reference,
+.md-typeset details.reference {
+  border-color: rgb(76, 175, 80);
+  background-color: rgba(76, 175, 80, 0.1);
+}
+.md-typeset .reference > .admonition-title,
+.md-typeset .reference > summary {
+  background-color: transparent;
+}
+.md-typeset .reference > .admonition-title::before,
+.md-typeset .reference > summary::before {
+  background-color: rgb(76, 175, 80);
+  -webkit-mask-image: var(--md-admonition-icon--reference);
+          mask-image: var(--md-admonition-icon--reference);
+}
+
+/* --- See Also: default block color, custom icon only --------------------- */
+.md-typeset .see-also > .admonition-title::before,
+.md-typeset .see-also > summary::before {
+  -webkit-mask-image: var(--md-admonition-icon--see-also);
+          mask-image: var(--md-admonition-icon--see-also);
+}
