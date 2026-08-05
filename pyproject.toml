@@ -42,8 +42,7 @@ save = [
 ]
 
 [project.urls]
-#Homepage = ""
-#Documentation = ""
+Homepage = "https://wordlevel.dev"
 Repository = "https://github.com/ryanjgallagher/wordlevel"
 
 # Development
