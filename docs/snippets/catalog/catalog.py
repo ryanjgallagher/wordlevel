@@ -26,6 +26,22 @@ cl = wl.Catalog.from_polars(df, token_col="token", corpora=["before", "after"])
 # --8<-- [end:from_polars]
 
 
+# --8<-- [start:from_dataframe]
+import pandas as pd
+import wordlevel as wl
+
+df = pd.DataFrame(
+    {
+        "token": ["good", "bad", "happy", "sad"],
+        "before": [12, 8, 6, 4],
+        "after": [5, 7, 3, 9],
+    }
+)
+
+cl = wl.Catalog.from_dataframe(df, token_col="token", corpora=["before", "after"])
+# --8<-- [end:from_dataframe]
+
+
 # --8<-- [start:from_list_of_freqs]
 import wordlevel as wl
 
