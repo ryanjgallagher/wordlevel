@@ -301,7 +301,7 @@ class ComparisonExcluder:
             ```
 
         Exactly one of `less_than`, `greater_than`, and `between` gives the range to exclude. To
-        exclude by multiple disjoint criteria, call the method multiple times with differnet
+        exclude by multiple disjoint criteria, call the method multiple times with different
         parameters.
 
         Warning:
@@ -321,7 +321,7 @@ class ComparisonExcluder:
                 `"comparison"` evaluate against the lexicons associated with each corpus; `"both"`
                 excludes a token only when the range holds for the lexicons for both corpora;
                 `"either"` excludes a token when the condition holds for either lexicon. All four
-                specificiations are equivalent when a single lexicon scores both corpora
+                specifications are equivalent when a single lexicon scores both corpora
 
         Returns:
             A new `Comparison` whose vocabulary excludes tokens scoring in the given range
