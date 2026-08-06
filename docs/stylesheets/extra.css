@@ -2,17 +2,22 @@
   max-width: 70rem;
 }
 
-.md-sidebar--primary {
-  width: 16rem;
-}
+/* Below the 1220px breakpoint the primary sidebar becomes a fixed drawer that
+   hides by parking at `left: -12.1rem`, negative its own width. Widening it
+   there leaves the difference overlapping the content, so this is desktop-only. */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary {
+    width: 16rem;
+  }
 
-/* Material caps the inner sidebar content with `padding-right: calc(100% - 11.5rem)`
-   to reserve a fixed-width scrollbar lane. Override so the nav fills the wider
-   sidebar set above. */
-[dir=ltr] .md-sidebar__inner,
-[dir=rtl] .md-sidebar__inner {
-  padding-right: 0;
-  padding-left: 0;
+  /* Material caps the inner sidebar content with `padding-right: calc(100% - 11.5rem)`
+     to reserve a fixed-width scrollbar lane. Override so the nav fills the wider
+     sidebar set above. */
+  [dir=ltr] .md-sidebar__inner,
+  [dir=rtl] .md-sidebar__inner {
+    padding-right: 0;
+    padding-left: 0;
+  }
 }
 
 .md-nav,
