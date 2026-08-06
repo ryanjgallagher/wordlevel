@@ -12,7 +12,7 @@ from wordlevel.api.comparison.normalization import make_normalized_plan
 from wordlevel.api.comparison.score import Scorer
 from wordlevel.api.comparison.state import ComparisonState
 from wordlevel.constants import NORMALIZATION_CONSTANT_COL
-from wordlevel.core.comparison.normalization import NORMALIZE_BY
+from wordlevel.core.comparison.normalization import NormalizeBy
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
 
 
@@ -79,7 +79,7 @@ class Comparison:
         """
         return self._update_state(alias=name)
 
-    def normalize(self, by: NORMALIZE_BY) -> Comparison:
+    def normalize(self, by: NormalizeBy) -> Comparison:
         r"""
         Returns a new `Comparison` whose token contributions are normalized onto a common scale.
 

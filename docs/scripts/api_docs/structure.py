@@ -112,7 +112,7 @@ API: tuple[Section, ...] = (
         children=(
             page("wordlevel.api.catalog.constructors.DictOfFreqs"),
             page("wordlevel.api.catalog.constructors.ListOfFreqs"),
-            page("wordlevel.core.comparison.normalization.NORMALIZE_BY"),
+            page("wordlevel.core.comparison.normalization.NormalizeBy"),
         ),
     ),
 )

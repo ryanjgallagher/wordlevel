@@ -115,7 +115,7 @@ def test_companion_module_must_prefix_its_attributes_with_the_member_name() -> N
 
     problems = validate(mismatched, resolve(mismatched))
 
-    assert [problem for problem in problems if "NORMALIZE_BY" in problem]
+    assert [problem for problem in problems if "NormalizeBy" in problem]
 
 
 # =============================================================================
@@ -191,13 +191,12 @@ def test_splice_rejects_a_config_without_the_placeholder() -> None:
 
 def test_snake_case_slugs_the_names_that_become_filenames() -> None:
     """
-    Checks the identifier shapes the API tree actually contains: a method, a class, a type alias
-    and a constant
+    Checks the identifier shapes that become page filenames: a snake_case method, and a CamelCase
+    class or type alias. `SocialSent` is the case that `slug="verbatim"` exists to avoid.
     """
     assert snake_case("from_polars") == "from_polars"
     assert snake_case("ListOfFreqs") == "list_of_freqs"
     assert snake_case("SocialSent") == "social_sent"
-    assert snake_case("NORMALIZE_BY") == "normalize_by"
 
 
 def test_summary_takes_the_first_sentence_across_wrapped_lines() -> None:
@@ -224,7 +223,7 @@ def test_summary_escapes_characters_that_would_break_a_table_row() -> None:
     """
     Checks that a pipe in a docstring is escaped rather than read as a column separator
     """
-    assert r"\|" in summary("wordlevel.core.comparison.normalization.NORMALIZE_BY")
+    assert r"\|" in summary("wordlevel.core.comparison.normalization.NormalizeBy")
 
 
 def test_summary_is_empty_for_an_undocumented_object() -> None:

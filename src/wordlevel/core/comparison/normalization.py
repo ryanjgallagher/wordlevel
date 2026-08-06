@@ -6,7 +6,7 @@ import polars.selectors as cs
 from polars import col
 
 
-NORMALIZE_BY: TypeAlias = Literal["sum_abs", "abs_sum"]
+NormalizeBy: TypeAlias = Literal["sum_abs", "abs_sum"]
 r"""
 The strategy for normalizing token contributions, dividing each contribution $\delta_\tau$ by a
 single constant:
@@ -16,7 +16,7 @@ single constant:
 """
 
 
-def normalization_constant_expr(by: NORMALIZE_BY, score_col: str) -> pl.Expr:
+def normalization_constant_expr(by: NormalizeBy, score_col: str) -> pl.Expr:
     """
     Builds the expression for the scalar by which token contributions are divided to normalize them.
 
@@ -40,7 +40,7 @@ def normalization_constant_expr(by: NORMALIZE_BY, score_col: str) -> pl.Expr:
 
 def normalize_scores(
     df: pl.DataFrame | pl.LazyFrame,
-    by: NORMALIZE_BY,
+    by: NormalizeBy,
     score_col: str,
     component_cols: Sequence[str],
     constant_alias: str,
