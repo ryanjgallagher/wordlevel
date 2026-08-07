@@ -5,7 +5,7 @@ from typing import Any, Protocol, get_args
 
 import polars as pl
 
-from wordlevel.core.comparison.normalization import NORMALIZE_BY
+from wordlevel.core.comparison.normalization import NormalizeBy
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
 from wordlevel.core.comparison.state import (
     renormalize_freqs,
@@ -85,7 +85,7 @@ class ComparisonState:
     is_nonnegative: bool | None = None
     attributed_by: ATTRIBUTION_TYPE | None = None
     parameters: dict[str, Any] = field(default_factory=dict)
-    normalized_by: NORMALIZE_BY | None = None
+    normalized_by: NormalizeBy | None = None
     exclusions: dict[str, Any] = field(default_factory=dict)
     lexicon_join_plan: PlanStage | None = None
     exclusion_plan: PlanStage | None = None
@@ -185,7 +185,7 @@ class ComparisonState:
 
         return resolved_plan
 
-    def validate_normalization(self, by: NORMALIZE_BY) -> None:
+    def validate_normalization(self, by: NormalizeBy) -> None:
         """
         Checks that a normalization strategy is valid for how the comparison is scored.
 
@@ -199,8 +199,8 @@ class ComparisonState:
                 If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
                 zero by construction, so the absolute sum is always zero.
         """
-        if by not in get_args(NORMALIZE_BY):
-            raise ValueError(f"`by` must be one of {get_args(NORMALIZE_BY)}, got {by!r}")
+        if by not in get_args(NormalizeBy):
+            raise ValueError(f"`by` must be one of {get_args(NormalizeBy)}, got {by!r}")
         if by == "abs_sum" and self.method == "proportion":
             raise ValueError(
                 "Cannot normalize a 'proportion' comparison by 'abs_sum': proportions sum to one "

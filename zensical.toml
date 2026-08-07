@@ -56,11 +56,11 @@ nav = [
         {"Word Shift Graphs" = "documentation/user_guide/plots/shifts.md"}
       ]}
     ]},
-    # The "API" subtree below is a placeholder. docs/scripts/gen_api_docs.py
-    # reads this file as a template and writes the fully-populated nav to
+    # The "API" subtree below is a placeholder. docs/scripts/api_docs reads this
+    # file as a template and writes the fully-populated nav to
     # zensical-build.toml; that derived file is what `zensical build`/`serve`
-    # should read (via the `-f` flag). The placeholder exists only so the
-    # generator can find a span to replace — do not populate it by hand.
+    # should read (via the `-f` flag). The generator matches the placeholder
+    # exactly, on a line of its own — do not populate or comment it out by hand.
     {"API" = []}
   ]},
   {"Contributing" = [

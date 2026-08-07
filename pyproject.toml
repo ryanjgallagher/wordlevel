@@ -83,4 +83,4 @@ lines-after-imports = 2
 extra-standard-library = ["tomllib"]
 
 [tool.pyright]
-include = ["src", "lexicons"]
+include = ["src", "lexicons", "docs/scripts/api_docs"]

@@ -10,7 +10,7 @@ from wordlevel.constants import (
     SHIFT_SCORE_TYPES,
 )
 from wordlevel.core.comparison.normalization import (
-    NORMALIZE_BY,
+    NormalizeBy,
     normalization_constant_expr,
     normalize_scores,
 )
@@ -20,13 +20,13 @@ if TYPE_CHECKING:
     from wordlevel.api.comparison.state import PlanStage
 
 
-_ZERO_CONSTANT_DESCRIPTION: dict[NORMALIZE_BY, str] = {
+_ZERO_CONSTANT_DESCRIPTION: dict[NormalizeBy, str] = {
     "sum_abs": "the total absolute contribution is zero (the corpora are identical)",
     "abs_sum": "the net difference is zero",
 }
 
 
-def make_normalized_plan(by: NORMALIZE_BY) -> PlanStage:
+def make_normalized_plan(by: NormalizeBy) -> PlanStage:
     """
     Creates a plan that normalizes token contributions by a single scalar.
 

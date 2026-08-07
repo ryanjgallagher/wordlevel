@@ -46,6 +46,12 @@ class LexiconLoader:
             --8<-- "snippets/lexicons/lexicon.py:labmt"
             ```
 
+        Note:
+            The first call for a given language downloads that lexicon from
+            [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons). Later
+            calls for the same language read from the local cache, so each language is only ever
+            downloaded once.
+
         License:
             This data is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0
             International (CC BY-NC-SA 4.0) License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
@@ -91,6 +97,12 @@ class LexiconLoader:
             ```python
             --8<-- "snippets/lexicons/lexicon.py:socialsent"
             ```
+
+        Note:
+            The first call for a given year downloads that lexicon from
+            [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons). Later
+            calls for the same year read from the local cache, so each year is only ever
+            downloaded once.
 
         License:
             This data is made available under the [Public Domain Dedication and License
