@@ -1,6 +1,6 @@
 """The node types the API tree is declared with, and the passes that resolve and check it.
 
-A tree is *declared* in `structure.py` out of four kinds of child:
+A tree is declared in `structure.py` using four kinds of children:
 
     Page         one generated markdown file, named outright
     Discovery    expands to Pages, one per public member of a class or module
