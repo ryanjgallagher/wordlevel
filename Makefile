@@ -1,4 +1,4 @@
-.PHONY: zensical-serve zensical-build docs-build strip-sources
+.PHONY: zensical-serve zensical-build strip-sources
 
 zensical-serve:
 	uv run python -m docs.scripts.api_docs --output-config zensical-build.toml
@@ -6,14 +6,7 @@ zensical-serve:
 
 zensical-build:
 	uv run python -m docs.scripts.api_docs --output-config zensical-build.toml
-	uv run zensical build -f zensical-build.toml --clean
-	$(MAKE) strip-sources
-
-# Site without the API reference, built straight from zensical.toml. Used by CI.
-# TODO: retire this target once API generation runs in CI; point the workflow at
-# zensical-build instead.
-docs-build:
-	uv run zensical build --clean
+	uv run zensical build -f zensical-build.toml --clean --strict
 	$(MAKE) strip-sources
 
 # Zensical copies docs_dir verbatim, which would otherwise publish
