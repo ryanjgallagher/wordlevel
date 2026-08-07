@@ -12,6 +12,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/documentation/user-guide
     paths-ignore:
       - 'docs/**'
       - '!docs/scripts/**'
