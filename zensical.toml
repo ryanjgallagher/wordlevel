@@ -65,10 +65,10 @@ nav = [
   ]},
   {"Contributing" = [
     "contributing/index.md",
+    {"Getting Started" = "contributing/getting_started.md"},
     {"Implementing a Comparison Score" = "contributing/scores.md"},
     {"Adding a Lexicon" = "contributing/lexicons.md"}
   ]},
-  {"References" = "references.md"},
 ]
 
 # With the "extra_css" option you can add your own CSS styling to customize
