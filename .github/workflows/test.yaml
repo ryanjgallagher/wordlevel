@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '!docs/scripts/**'
+      - '!docs/snippets/**'
+      - 'zensical.toml'
+      - '.github/workflows/docs.yaml'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '!docs/scripts/**'
+      - '!docs/snippets/**'
+      - 'zensical.toml'
+      - '.github/workflows/docs.yaml'
   workflow_call:
   workflow_dispatch:
 
