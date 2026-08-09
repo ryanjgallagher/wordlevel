@@ -51,6 +51,7 @@ dev = [
   "altair[all]>=5.5.0",
   "duckdb>=1.0.0",
   "griffelib>=2.0.0",
+  "markdown-exec>=1.12.3",
   "mkdocstrings-python>=2.0.3",
   "pandas>=2.2.2",
   "pre-commit>=4.3.0",
@@ -59,7 +60,7 @@ dev = [
   "pytest>=8.0.0",
   "ruff==0.16.1",  # If this version is updated, update in .pre-commit-config.yaml too
   "tomlkit>=0.13.0",
-  "zensical>=0.0.40",
+  "zensical>=0.0.47",
 ]
 
 [tool.pytest.ini_options]

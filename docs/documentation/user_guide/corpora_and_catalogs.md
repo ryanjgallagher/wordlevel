@@ -81,7 +81,7 @@ dictionary mapping from tokens to their frequencies. Say that we have two corpor
 in general, and one about cats specifically. Their vocabularies will have some overlaps and some
 differences.
 
-```python
+```python exec="true" source="above" session="catalog"
 --8<-- "snippets/user_guide/catalog.py:setup"
 ```
 
@@ -93,7 +93,7 @@ convenient.
 We can create a `Catalog` by passing both corpora (represented as token-to-frequency dictionaries) 
 and giving them names. Note, the order of the dictionaries and corpus names needs to be the same. 
 
-```python
+```python exec="true" source="above" session="catalog"
 --8<-- "snippets/user_guide/catalog.py:from_multiple_dicts"
 ```
 
@@ -144,7 +144,7 @@ All of the above constructors create the same `Catalog` object. Regardless of wh
 corpora are now represented as a [Polars] dataframe under the hood. We can inspect that dataframe 
 directly through the `df` attribute.
 
-```python
+```python exec="true" source="material-block" result="text" session="catalog"
 --8<-- "snippets/user_guide/catalog.py:inspect"
 ```
 

@@ -33,5 +33,5 @@ cl = wl.Catalog(df_corpora, token_col="token", corpora=["animals", "cats"])
 
 
 # --8<-- [start:inspect]
-print(cl.df.head(n=10))
+print(cl.df.head(n=10).sort("token"))
 # --8<-- [end:inspect]
