@@ -25,10 +25,9 @@ The June 1st corpus and June 2nd corpus together are our corpora.
 
 ### Representing a corpus
 
-WordLevel represents a corpus as a set of tokens and their frequencies. The simplest way that we can
-represent a corpus is with a [bag-of-words] model,
-which breaks documents down into tokens and their frequencies, ignoring their original order. This 
-can be constructed using a dictionary mapping:
+WordLevel represents a corpus as a set of tokens and their frequencies. The simplest representation 
+is the [bag-of-words] model, which breaks documents down into tokens and their frequencies, ignoring 
+their original order. This can be constructed using a dictionary mapping:
 
 ```python
 corpus = {
@@ -58,14 +57,14 @@ import polars as pl
 
 corpus = pl.DataFrame({
     "token": ["the", "and", "sad", "happy"],
-    "frequency: [100, 88, 24, 35]
+    "frequency": [100, 88, 24, 35]
 })
 ```
 
 !!! tip
     Currently, WordLevel does not have any built-in functionality for tokenizing documents and
-    counting the frequencies of tokens. For tools that handle tokenization, consider using other 
-    packages like [NLTK], [spaCy], or [scikit-learn].
+    counting token frequencies. For tools that handle tokenization, consider using other packages 
+    like [NLTK], [spaCy], or [scikit-learn].
 
 ## Catalog
 
@@ -83,8 +82,7 @@ in general, and one about cats specifically. Their vocabularies will have some o
 differences.
 
 ```python
-animals = {"the": 92, "and": 74, "duck": 20, "dog": 14, "cat": 11, "lion": 4}
-cats = {"the": 90, "and": 78, "cat": 55, "lion": 38, "tabby": 20, "tuxedo": 19}
+--8<-- "snippets/user_guide/catalog.py:setup"
 ```
 
 If these are our corpora, we can create a `Catalog` in several ways, depending on which is the most
@@ -96,9 +94,7 @@ We can create a `Catalog` by passing both corpora (represented as token-to-frequ
 and giving them names. Note, the order of the dictionaries and corpus names needs to be the same. 
 
 ```python
-import wordlevel as wl
-
-ctl = wl.Catalog([animals, cats], corpora=["animals", "cats"])
+--8<-- "snippets/user_guide/catalog.py:from_multiple_dicts"
 ```
 
 #### From a single dictionary
@@ -106,34 +102,29 @@ ctl = wl.Catalog([animals, cats], corpora=["animals", "cats"])
 We can also pass a single dictionary which names each token-to-frequency corpus explicitly:
 
 ```python
-ctl = wl.Catalog({"animals": animals, "cats": cats})
+--8<-- "snippets/user_guide/catalog.py:from_single_dict"
 ```
 
 #### From a dataframe
-Finally, if we already have our data formatted as a dataframe, we can create a `Catalog` directly
-from it. First, let's create a dataframe from our example corpora.
+If we already have our corpora formatted as a dataframe, we can create a `Catalog` directly
+from it. First, let's create a dataframe from our example data.
 
 ```python
-# To create a dataframe, we need ordered columns, filling in 0s if a token doesn't appear in a corpus
-tokens = sorted(list(set(animals) | set(cats)))
-animal_freqs = [animals[token] if token in animals else 0 for token in tokens]
-cat_freqs = [cats[token] if token in cats else 0 for token in tokens]
-
-df_corpora = pl.DataFrame({"token": tokens, "animals": animal_freqs, "cats", cat_freqs})
+--8<-- "snippets/user_guide/catalog.py:build_dataframe"
 ```
 
-To create the `Catalog`, we need to provide the column indicating the names of the tokens, the 
+To create a `Catalog`, we need to provide the column indicating the names of the tokens, the 
 `token_col`, and the names of the columns indicating frequencies of tokens, the `corpora`. Note,
-with a list of dictionaries, we use `corpora` to name the corpora—here, we use it to select them.
+with a list of dictionaries, we use the `corpora` parameter to name the corpora—here, we use it to 
+select them.
 
 ```python
-ctl = wl.Catalog(df_corpora, token_col="token", corpora=["animals", "cats"])
+--8<-- "snippets/user_guide/catalog.py:from_dataframe"
 ```
 
 !!! note
     WordLevel can create a `Catalog` from any [Narwhals]-supported dataframe, including Pandas,
-    DuckDB, PySpark, PyArrow, and others. You simply pass the dataframe and WordLevel handles the
-    rest.
+    DuckDB, PySpark, and others.
 
     Polars is the internal engine for WordLevel. This means that even if you _provide_ a 
     non-Polars dataframe, any dataframe you _receive_ back from WordLevel will be a Polars 
@@ -149,12 +140,12 @@ details.
 
 ### Working with catalogs
 
-All of the above constructors create effectively the same `Catalog` object. Regardless of which one
-we used, the corpora are now represented as a [Polars] dataframe under the hood. We can inspect it
+All of the above constructors create the same `Catalog` object. Regardless of which one we used, the 
+corpora are now represented as a [Polars] dataframe under the hood. We can inspect that dataframe 
 directly through the `df` attribute.
 
 ```python
-print(ctl.df.head(n=10))
+--8<-- "snippets/user_guide/catalog.py:inspect"
 ```
 
 The output shows that there is one row per token, and there is one column for each corpus: one for
