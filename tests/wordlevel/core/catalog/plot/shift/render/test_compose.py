@@ -267,12 +267,23 @@ class TestFrameConsistency:
         assert {(mark["color"], mark["strokeWidth"]) for mark in marks} == {("blue", 3)}
 
     @pytest.mark.parametrize("vertical", [True, False])
+    # The border box is off at width 0, so its outer edges are not drawn. The seams are structural
+    # and are drawn either way
+    @pytest.mark.parametrize("border_width, expected_outer", [(2, 1), (0, 0)])
     def test_every_score_direction_boundary_drawn_once(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
+        border_width,
+        expected_outer,
     ):
-        """Along the score-axis direction (where the panels are stacked), each outer edge and each
-        inter-panel seam is drawn exactly once — catching both a missing divider and a doubled
-        edge — in either orientation."""
+        """Along the score-axis direction (where the panels are stacked), each inter-panel seam is
+        drawn exactly once — catching both a missing divider and a doubled edge — in either
+        orientation, whether or not the border box encloses the stack."""
         chart = _shift(
             make_mock_df(n=50),
             score_col=score_col,
@@ -281,7 +292,7 @@ class TestFrameConsistency:
             score_type_col=score_type_col,
             show_totals=True,
             vertical=vertical,
-            border_config=BorderConfig(color="red", width=2),
+            border_config=BorderConfig(color="red", width=border_width),
         )
 
         panels = _panels(chart)
@@ -289,9 +300,51 @@ class TestFrameConsistency:
         # Panels stack near -> far along the score axis (top->bottom vertical, left->right horizontal)
         near, far = ("top", "bottom") if vertical else ("left", "right")
 
-        # The two outer edges of the stack
-        assert counts[0].get(near, 0) == 1
+        # The two outer edges of the stack. The far edge is the main chart's score axis when
+        # vertical, so it is always drawn; the near edge belongs to the border box
+        assert counts[0].get(near, 0) == expected_outer
         assert counts[-1].get(far, 0) == 1
         # Each flush seam between adjacent panels is drawn by exactly one of the two
         for upper, lower in itertools.pairwise(counts):
             assert upper.get(far, 0) + lower.get(near, 0) == 1
+
+    @pytest.mark.parametrize("vertical", [True, False])
+    def test_seams_take_score_axis_width_when_border_hidden(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+    ):
+        """With the border box off, the seams that survive are drawn at the score axis width, so
+        they match the score-axis domain that separates the two totals panels."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+            vertical=vertical,
+            border_config=BorderConfig(width=0),
+            score_axis={"width": 3},
+        )
+
+        edges = set().union(*(_border_edges(panel) for panel in _panels(chart)))
+        assert {width for _, width in edges} == {3}
+
+    @pytest.mark.parametrize("vertical", [True, False])
+    def test_no_border_edges_without_totals_when_border_hidden(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+    ):
+        """Without totals panels there are no seams, so a hidden border box leaves the chart with
+        no border edges at all — only the two native axes."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=False,
+            vertical=vertical,
+            border_config=BorderConfig(width=0),
+        )
+
+        # layer[0] is the base group of components; any border edges follow it
+        assert len(cast(alt.LayerChart, chart).layer) == 1
