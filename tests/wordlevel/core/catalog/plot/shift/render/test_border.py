@@ -2,7 +2,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import RankAxisConfig, ScoreAxisConfig
+from wordlevel.configs import BorderConfig, RankAxisConfig, ScoreAxisConfig
 from wordlevel.core.catalog.plot.shift.render.bars import shift_bars
 from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, shift_borders
 
@@ -168,3 +168,14 @@ def test_base_layers_grouped_not_flattened(base_chart, df_mock):
     assert isinstance(base_group, alt.LayerChart)
     assert len(base_group.layer) == 2  # both inputs grouped together, not flattened
     assert len(chart.layer) - 1 == 2  # two border edges layered after the group
+
+
+@pytest.mark.parametrize("width, expected_width", [(None, 4), (2, 2)])
+def test_from_config_width_override(width, expected_width):
+    """
+    `from_config` takes its width from the user-facing config, unless a caller overrides it to draw
+    an edge that a zero-width border box would otherwise leave invisible
+    """
+    border = InternalBorderConfig.from_config(BorderConfig(width=4), width=width)
+
+    assert border.width == expected_width

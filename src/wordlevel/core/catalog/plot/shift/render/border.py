@@ -41,6 +41,7 @@ class InternalBorderConfig(BorderConfig):
         draw_rank_axis: bool = True,
         draw_border_opposite_score_axis: bool = False,
         draw_border_opposite_rank_axis: bool = False,
+        width: float | None = None,
     ) -> Self:
         """
         Derives an internal config from a user-facing border config
@@ -56,10 +57,13 @@ class InternalBorderConfig(BorderConfig):
                 Whether to draw the border opposite the score axis
             draw_border_opposite_rank_axis:
                 Whether to draw the border opposite the rank axis
+            width:
+                Width of the drawn edges, in pixels. Overrides `config.width` when given, letting a
+                caller draw an edge that the user-facing border width would otherwise leave at zero
         """
         return cls(
             color=config.color,
-            width=config.width,
+            width=config.width if width is None else width,
             draw_score_axis=draw_score_axis,
             draw_rank_axis=draw_rank_axis,
             draw_border_opposite_score_axis=draw_border_opposite_score_axis,

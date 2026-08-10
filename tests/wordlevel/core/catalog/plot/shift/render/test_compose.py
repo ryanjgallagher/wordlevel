@@ -47,31 +47,30 @@ def _border_edges(panel: dict) -> set[tuple]:
     return edges
 
 
-def _score_side_line_counts(panel: dict, score_col: str, vertical: bool) -> dict[str, int]:
-    """Counts frame lines on each side of a panel along the score-axis direction, keyed by side
-    ('left'/'right' when horizontal, 'top'/'bottom' when vertical).
+def _score_side_lines(panel: dict, score_col: str, vertical: bool) -> dict[str, list[float]]:
+    """The widths of the frame lines on each side of a panel along the score-axis direction, keyed
+    by side ('left'/'right' when horizontal, 'top'/'bottom' when vertical).
 
     A side gets a line from the panel's native score-axis domain and/or an opposite-score border
-    edge; counting both catches a missing seam (count 0) and a doubled edge (count 2).
+    edge; collecting both catches a missing seam (no line) and a doubled edge (two lines).
     """
     score_channel = "y" if not vertical else "x"
     default_orient = "left" if not vertical else "bottom"
-    counts: dict[str, int] = {}
+    lines: dict[str, list[float]] = {}
 
     # Native score-axis domain (drawn on `orient`, which may be flipped to the opposite side)
     score_axis = panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
     if score_axis.get("domain"):
         side = score_axis.get("orient", default_orient)
-        counts[side] = counts.get(side, 0) + 1
+        lines.setdefault(side, []).append(score_axis["domainWidth"])
 
     # Opposite-score border edges (the frame layers encoding the score field)
     for layer in panel["layer"][1:]:
         pos = layer["encoding"].get("x") or layer["encoding"].get("y")
         if pos["field"].startswith(score_col):
-            side = pos["axis"]["orient"]
-            counts[side] = counts.get(side, 0) + 1
+            lines.setdefault(pos["axis"]["orient"], []).append(pos["axis"]["domainWidth"])
 
-    return counts
+    return lines
 
 
 def _zero_line_mark(panel: dict) -> dict:
@@ -267,12 +266,23 @@ class TestFrameConsistency:
         assert {(mark["color"], mark["strokeWidth"]) for mark in marks} == {("blue", 3)}
 
     @pytest.mark.parametrize("vertical", [True, False])
+    # The border box is off at width 0, so its outer edges are not drawn. The seams are structural
+    # and are drawn either way
+    @pytest.mark.parametrize("border_width, expected_outer", [(2, 1), (0, 0)])
     def test_every_score_direction_boundary_drawn_once(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
+        border_width,
+        expected_outer,
     ):
-        """Along the score-axis direction (where the panels are stacked), each outer edge and each
-        inter-panel seam is drawn exactly once — catching both a missing divider and a doubled
-        edge — in either orientation."""
+        """Along the score-axis direction (where the panels are stacked), each inter-panel seam is
+        drawn exactly once — catching both a missing divider and a doubled edge — in either
+        orientation, whether or not the border box encloses the stack."""
         chart = _shift(
             make_mock_df(n=50),
             score_col=score_col,
@@ -281,17 +291,86 @@ class TestFrameConsistency:
             score_type_col=score_type_col,
             show_totals=True,
             vertical=vertical,
-            border_config=BorderConfig(color="red", width=2),
+            border_config=BorderConfig(color="red", width=border_width),
         )
 
         panels = _panels(chart)
-        counts = [_score_side_line_counts(panel, score_col, vertical) for panel in panels]
+        lines = [_score_side_lines(panel, score_col, vertical) for panel in panels]
         # Panels stack near -> far along the score axis (top->bottom vertical, left->right horizontal)
         near, far = ("top", "bottom") if vertical else ("left", "right")
 
-        # The two outer edges of the stack
-        assert counts[0].get(near, 0) == 1
-        assert counts[-1].get(far, 0) == 1
+        # The two outer edges of the stack. The far edge is the main chart's score axis, so it is
+        # always drawn; the near edge belongs to the border box
+        assert len(lines[0].get(near, [])) == expected_outer
+        assert len(lines[-1].get(far, [])) == 1
         # Each flush seam between adjacent panels is drawn by exactly one of the two
-        for upper, lower in itertools.pairwise(counts):
-            assert upper.get(far, 0) + lower.get(near, 0) == 1
+        for upper, lower in itertools.pairwise(lines):
+            assert len(upper.get(far, [])) + len(lower.get(near, [])) == 1
+
+    @pytest.mark.parametrize("vertical", [True, False])
+    def test_seams_share_one_width(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+    ):
+        """Every seam is drawn by a border edge rather than a panel's own score-axis domain, so a
+        border box wider than the score axis cannot leave one divider thicker than another."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+            vertical=vertical,
+            border_config=BorderConfig(width=3),  # wider than the default score axis
+        )
+
+        lines = [_score_side_lines(panel, score_col, vertical) for panel in _panels(chart)]
+        near, far = ("top", "bottom") if vertical else ("left", "right")
+
+        seam_widths = {
+            width
+            for upper, lower in itertools.pairwise(lines)
+            for width in upper.get(far, []) + lower.get(near, [])
+        }
+        assert seam_widths == {3}
+
+    @pytest.mark.parametrize("vertical", [True, False])
+    def test_seams_take_score_axis_width_when_border_hidden(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+    ):
+        """With the border box off, the seams that survive are drawn at the score axis width, so
+        they match the score-axis domain that separates the two totals panels."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+            vertical=vertical,
+            border_config=BorderConfig(width=0),
+            score_axis={"width": 3},
+        )
+
+        edges = set().union(*(_border_edges(panel) for panel in _panels(chart)))
+        assert {width for _, width in edges} == {3}
+
+    @pytest.mark.parametrize("vertical", [True, False])
+    def test_no_border_edges_without_totals_when_border_hidden(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+    ):
+        """Without totals panels there are no seams, so a hidden border box leaves the chart with
+        no border edges at all — only the two native axes."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=False,
+            vertical=vertical,
+            border_config=BorderConfig(width=0),
+        )
+
+        # layer[0] is the base group of components; any border edges follow it
+        assert len(cast(alt.LayerChart, chart).layer) == 1
