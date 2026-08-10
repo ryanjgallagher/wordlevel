@@ -144,6 +144,11 @@ All of the above constructors create the same `Catalog` object. Regardless of wh
 corpora are now represented as a [Polars] dataframe under the hood. We can inspect that dataframe 
 directly through the `df` attribute.
 
+<!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
+```python exec="true" session="catalog"
+--8<-- "snippets/user_guide/catalog.py:display_config"
+```
+
 ```python exec="true" source="material-block" result="text" session="catalog"
 --8<-- "snippets/user_guide/catalog.py:inspect"
 ```

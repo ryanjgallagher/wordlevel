@@ -32,6 +32,11 @@ cl = wl.Catalog(df_corpora, token_col="token", corpora=["animals", "cats"])
 # --8<-- [end:from_dataframe]
 
 
+# Hide printing the shape
+# --8<-- [start:display_config]
+pl.Config.set_tbl_hide_dataframe_shape(True)
+# --8<-- [end:display_config]
+
 # --8<-- [start:inspect]
 print(cl.df.head(n=10).sort("token"))
 # --8<-- [end:inspect]
