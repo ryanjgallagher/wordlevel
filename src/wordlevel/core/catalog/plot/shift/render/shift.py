@@ -223,8 +223,9 @@ def shift(
                 border_config,
                 draw_score_axis=False,
                 draw_rank_axis=True,
-                # Only the seam with the main chart, which the main chart draws when vertical
-                draw_border_opposite_score_axis=score_axis_on_far_side,
+                # Vertical: the seam with the per-type totals. Horizontal: the seam with the main
+                # chart
+                draw_border_opposite_score_axis=True,
                 draw_border_opposite_rank_axis=border_is_visible,
                 width=seam_width,
             ),
@@ -245,8 +246,9 @@ def shift(
             label_config=label_config,
             border_config=InternalBorderConfig.from_config(
                 border_config,
-                # Vertical: the seam with the grand-total panel. Horizontal: an outer edge
-                draw_score_axis=border_is_visible or not score_axis_on_far_side,
+                # Vertical: falls on the seam that the grand-total panel draws. Horizontal: an
+                # outer edge
+                draw_score_axis=border_is_visible and score_axis_on_far_side,
                 draw_rank_axis=True,
                 # Vertical: an outer edge. Horizontal: the seam with the grand-total panel
                 draw_border_opposite_score_axis=border_is_visible or score_axis_on_far_side,
