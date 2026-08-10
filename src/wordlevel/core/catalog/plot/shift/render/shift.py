@@ -139,12 +139,23 @@ def shift(
     # grand-total panel draws the seam between them instead
     score_axis_on_far_side = show_totals and not vertical
 
+    # The seams separating the totals panels from the main chart are structural, so they are drawn
+    # even when the border box is off. They then take the score axis width, matching the score-axis
+    # domain that already separates the two totals panels. Note, `border_is_visible` is derived from
+    # the user-facing width above, so this override cannot turn the border box back on
+    seam_width = border_config.width if border_is_visible else score_axis.width
+
     main_border = InternalBorderConfig.from_config(
         border_config,
         draw_score_axis=True,
         draw_rank_axis=True,
-        draw_border_opposite_score_axis=border_is_visible and not score_axis_on_far_side,
+        # Vertical: the top edge is the seam with the grand-total panel.
+        # Horizontal: the score axis has moved, so the grand total panel draws that seam instead
+        draw_border_opposite_score_axis=(
+            (border_is_visible or show_totals) and not score_axis_on_far_side
+        ),
         draw_border_opposite_rank_axis=border_is_visible,
+        width=seam_width,
     )
 
     bars = shift_bars(
@@ -212,8 +223,11 @@ def shift(
                 border_config,
                 draw_score_axis=False,
                 draw_rank_axis=True,
-                draw_border_opposite_score_axis=border_is_visible and score_axis_on_far_side,
+                # Vertical: the seam with the per-type totals. Horizontal: the seam with the main
+                # chart
+                draw_border_opposite_score_axis=True,
                 draw_border_opposite_rank_axis=border_is_visible,
+                width=seam_width,
             ),
             total_shift_config=total_shift_config,
             zero_line_config=zero_line_config,
@@ -232,10 +246,14 @@ def shift(
             label_config=label_config,
             border_config=InternalBorderConfig.from_config(
                 border_config,
-                draw_score_axis=True,
+                # Vertical: falls on the seam that the grand-total panel draws. Horizontal: an
+                # outer edge
+                draw_score_axis=border_is_visible and score_axis_on_far_side,
                 draw_rank_axis=True,
-                draw_border_opposite_score_axis=border_is_visible,
+                # Vertical: an outer edge. Horizontal: the seam with the grand-total panel
+                draw_border_opposite_score_axis=border_is_visible or score_axis_on_far_side,
                 draw_border_opposite_rank_axis=border_is_visible,
+                width=seam_width,
             ),
             total_shift_config=total_shift_config,
             zero_line_config=zero_line_config,
