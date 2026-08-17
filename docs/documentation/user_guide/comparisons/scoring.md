@@ -35,35 +35,27 @@ measure.
 <!-- TODO: add documentation link to shift plots above -->
 
 
-## Example Dataset
+## Example dataset
 
 To work with comparisons, we will use an example dataset of presidential speeches. Each document is 
 a speech by a US president, and each corpus is the set of all speeches by a particular president. 
 We will use the speeches by Presidents Joe Biden and Franklin D. Roosevelt.
 
-```python
-import wordlevel as wl
-
-speeches = wl.Dataset("presidential_speeches")
-cl = wl.Catalog(speeches, corpora=["Joe Biden", "Franklin D. Roosevelt"])
+```python exec="true" source="above" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:setup"
 ```
 
 If you want to see which other corpora are available, you can run `speeches.as_df().columns`.
 
 
-
-## Scoring
-
-### Scoring a comparison
+## Scoring a comparison
 
 Let's compare Roosevelt and Biden's speeches by measuring the differences in the
 [normalized frequencies](../../api/comparison/score/proportion.md) of each token. Roosevelt's
 speeches will be our reference corpus, and Biden's speeches will be our comparison corpus.
 
-```python
-cl = cl.with_comparisons(
-    wl.comp("Franklin D. Roosevelt", "Joe Biden").score.proportion().alias("roosevelt_biden")
-)
+```python exec="true" source="above" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:proportion"
 ```
 
 Let's break this down:
@@ -83,26 +75,19 @@ refer to the comparison later.
     Remember, `wl.comp()` does not do anything by itself—it is a lazily evaluated plan for how to
     make the comparison. Attaching it to the `Catalog` is how the comparison is actually executed.
 
-### Inspecting a comparison
+
+## Inspecting a comparison
 
 We've made our first comparison! We can access it from the `Catalog` using the alias
 `"roosevelt_biden"` we gave it.
 
-```python
-roosevelt_biden = cl.comparisons["roosevelt_biden"]
+<!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
+```python exec="true" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:display_config"
+```
 
-print(
-    roosevelt_biden.df.select(
-        "token",
-        "Franklin D. Roosevelt__wl_normed",
-        "Joe Biden__wl_normed",
-        "comparison_score",
-        "score_rank",
-        "attribution"
-    )
-    .sort("score_rank")
-    .head(n=10)
-)
+```python exec="true" source="material-block" result="text" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:inspect"
 ```
 
 The comparison dataframe `df` contains a variety of information. Above, we can see some of the most
@@ -124,33 +109,26 @@ comparison corpus, the scoring method, the method's parameters, and more. See th
 [documentation](../../api/comparison/comparison_result.md) for all of the tracked metadata.
 
 
-### Making multiple comparisons
+## Making multiple comparisons
 
 Let's compare Roosevelt and Biden's speeches with other measures, the 
 [rank turbulence divergence](../../api/comparison/score/rank_divergence.md), and the
 [Shannon entropy](../../api/comparison/score/shannon_entropy.md). Note how we can simply 
 add them as additional comparisons under different aliases.
 
-```python
-cl = cl.with_comparisons(
-    wl.comp("Franklin D. Roosevelt", "Joe Biden")
-        .score.rank_divergence(alpha=1/3)
-        .alias("roosevelt_biden_rank_divergence"),
-    wl.comp("Franklin D. Roosevelt", "Joe Biden")
-        .score.shannon_entropy()
-        .alias("roosevelt_biden_entropy")
-)
+```python exec="true" source="above" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:multiple_comparisons"
 ```
 
 All of the comparisons are stored in our catalog, including the original comparison we made using 
 the proportions.
 
-```python
-print(cl.comparisons.keys())
+```python exec="true" source="material-block" result="text" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:comparison_keys"
 ```
 
 
-### Normalizing comparison scores
+## Normalizing comparison scores
 
 It can sometimes be difficult to interpret the individual token-level scores. To make them more
 interpretable, we can normalize them in different ways. 
@@ -163,13 +141,8 @@ makes up 5% of the total difference between the corpora. A score of -0.05 also m
 makes up 5% of the total difference, but contributes in the negative direction. The absolute values 
 of the normalized scores sum to 1.
 
-```python hl_lines="4"
-cl = cl.with_comparisons(
-    wl.comp("Franklin D. Roosevelt", "Joe Biden")
-        .score.rank_divergence(alpha=1/3)
-        .normalize(by="sum_abs")
-        .alias("roosevelt_biden_rank_divergence_normed"),
-)
+```python exec="true" source="above" session="scoring" hl_lines="4"
+--8<-- "snippets/user_guide/comparisons/scoring.py:normalize_sum_abs"
 ```
 
 We can also normalize by the magnitude of the overall score, $| \sum \delta |$. This is the _net_
@@ -180,24 +153,15 @@ a score of 0.05 means that a token's contribution is 5% the size of the net diff
 in the negative direction. Even though individual normalized scores can exceed 1 in magnitude,
 they still sum to $\pm 1$ because opposing contributions can cancel one another out.
 
-```python hl_lines="4"
-cl = cl.with_comparisons(
-    wl.comp("Franklin D. Roosevelt", "Joe Biden")
-        .score.shannon_entropy()
-        .normalize(by="abs_sum")
-        .alias("roosevelt_biden_entropy_normed"),
-)
+```python exec="true" source="above" session="scoring" hl_lines="4"
+--8<-- "snippets/user_guide/comparisons/scoring.py:normalize_abs_sum"
 ```
 
 Regardless of the normalization method, the reproducibility metadata is stored in the comparison
 under the attributes `normalized`, `normalized_by`, and `normalization_constant`.
 
-```python
-comparison = cl.comparisons["roosevelt_biden_rank_divergence_normed"]
-
-print(f"Comparison is normalized: {comparison.normalized}")
-print(f"Normalization method:     {comparison.normalized_by}")
-print(f"Normalization constant:   {comparison.normalization_constant}")
+```python exec="true" source="material-block" result="text" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:normalization_metadata"
 ```
 
 !!! note
@@ -215,28 +179,6 @@ print(f"Normalization constant:   {comparison.normalization_constant}")
 !!! warning
     Normalizing scores causes them to be eagerly evaluated because the normalization needs to verify
     that the normalization constant is nonzero. 
-
-
-
-## Exclusions
-
-Now, let's look at the top 10 most distinguishing words according to the rank divergence.
-
-```python
-print(
-    cl.comparisons["roosevelt_biden_rank_divergence_normed"].df
-    .sort("score_rank")
-    .select(
-        "token",
-        "comparison_score",
-        "attribution"
-    )
-    .head(n=10)
-)
-```
-
-
-
 
 
   [Polars]: https://pola.rs/
