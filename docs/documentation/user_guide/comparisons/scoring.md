@@ -1,4 +1,4 @@
-# Comparisons
+# Working with Comparisons
 
 ## What is a comparison?
 

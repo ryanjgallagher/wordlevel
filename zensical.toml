@@ -47,7 +47,7 @@ nav = [
       {"Install" = "documentation/user_guide/install.md"},
       {"Corpora & Catalogs" = "documentation/user_guide/corpora_and_catalogs.md"},
       {"Comparisons" = [
-        {"Scoring Comparisons" = "documentation/user_guide/comparisons/scoring.md"},
+        {"Working with Comparisons" = "documentation/user_guide/comparisons/scoring.md"},
         {"Lexicons & Sentiment Analysis" = "documentation/user_guide/comparisons/lexicons.md"},
         {"Exclusions" = "documentation/user_guide/comparisons/exclusions.md"}
       ]},
