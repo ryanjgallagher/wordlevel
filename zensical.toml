@@ -47,8 +47,8 @@ nav = [
       {"Install" = "documentation/user_guide/install.md"},
       {"Corpora & Catalogs" = "documentation/user_guide/corpora_and_catalogs.md"},
       {"Comparisons" = [
-        {"Working with Comparisons" = "documentation/user_guide/comparisons/scoring.md"},
-        {"Lexicons & Sentiment Analysis" = "documentation/user_guide/comparisons/lexicons.md"},
+        {"Comparisons" = "documentation/user_guide/comparisons/scoring.md"},
+        {"Lexicons" = "documentation/user_guide/comparisons/lexicons.md"},
         {"Exclusions" = "documentation/user_guide/comparisons/exclusions.md"}
       ]},
       {"Plots" = [
@@ -63,12 +63,12 @@ nav = [
     # exactly, on a line of its own — do not populate or comment it out by hand.
     {"API" = []}
   ]},
-  {"Contributing" = [
-    "contributing/index.md",
-    {"Getting Started" = "contributing/getting_started.md"},
-    {"Implementing a Comparison Score" = "contributing/scores.md"},
-    {"Adding a Lexicon" = "contributing/lexicons.md"}
-  ]},
+  # {"Contributing" = [
+  #   "contributing/index.md",
+  #   {"Getting Started" = "contributing/getting_started.md"},
+  #   {"Implementing a Comparison Score" = "contributing/scores.md"},
+  #   {"Adding a Lexicon" = "contributing/lexicons.md"}
+  # ]},
 ]
 
 # With the "extra_css" option you can add your own CSS styling to customize

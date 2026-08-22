@@ -1,4 +1,4 @@
-# Working with Comparisons
+# Comparisons
 
 ## What is a comparison?
 
@@ -11,14 +11,17 @@ to transform and analyze columns in a dataframe.
 The core of every comparison is a _scoring method_ for quantifying the token-level differences. 
 WordLevel implements a [full suite of measures](../../api/comparison/score/index.md), including 
 basic frequency differences, entropy-based metrics like the Kullback-Leibler and Jensen-Shannon 
-ivergences, and other advanced measures.
+divergences, and other advanced measures.
 
-Each comparison has two corpora: a _reference_ corpus and a _comparison_ corpus. The reference
-corpus can be considered the baseline from which the comparison corpus deviates. It is
+Each comparison has two corpora: a **_reference_** corpus and a **_comparison_** corpus. The 
+reference corpus can be considered the baseline from which the comparison corpus deviates. It is
 important to be mindful of which corpus is which, since it can affect the interpretation of the
-results. For example, say Roosevelt's speeches are the reference corpus and Biden's are the
-comparison corpus, and we want to simply measure the difference in how often different words appear.
-Since Roosevelt is our reference, this means we are calculating 
+results. 
+
+For example, say we have two corpora: the speeches of President Franklin D. Roosevelt and
+the speeches of President Joe Biden. Suppose Roosevelt's speeches are the reference corpus and 
+Biden's are the comparison corpus, and we want to simply measure the difference in how often 
+different words appear. Since Roosevelt is our reference, this means we are calculating 
 $f^{(\text{Biden})}_\tau - f^{(\text{Roosevelt})}_\tau$, where $f^{(C)}_\tau$ is the frequency of 
 token $\tau$ in corpus $C$. If the difference is positive, then it means that the word was used more 
 by Biden. Similarly, if it is negative, then it means it was used less by Biden (more by Roosevelt).
@@ -78,6 +81,8 @@ refer to the comparison later.
 
 ## Inspecting a comparison
 
+### Scores
+
 We've made our first comparison! We can access it from the `Catalog` using the alias
 `"roosevelt_biden"` we gave it.
 
@@ -102,6 +107,8 @@ the larger the difference is between the corpora.
 - The `attribution` indicates which corpus each token is more closely "associated" with. For
 example, because Roosevelt used the word "the" relatively more than Biden (a negative
 `comparison_score`), it is associated with the reference corpus (which is Roosevelt).
+
+### Reproducibility Metadata
 
 There is also useful information on the comparison `roosevelt_biden` itself. It tracks all of the
 relevant information needed for scientific reproducibility, including the reference corpus, the 
@@ -133,6 +140,8 @@ the proportions.
 It can sometimes be difficult to interpret the individual token-level scores. To make them more
 interpretable, we can normalize them in different ways. 
 
+### By Total Difference
+
 One way is to normalize by the sum of the absolute scores—if each score is represented by $\delta$, 
 then we normalize by $\sum | \delta |$. This is the _total_ difference between the corpora, 
 regardless of the score signs. We can interpret each normalized score as the share of that total 
@@ -145,6 +154,8 @@ of the normalized scores sum to 1.
 --8<-- "snippets/user_guide/comparisons/scoring.py:normalize_sum_abs"
 ```
 
+### By Net Difference
+
 We can also normalize by the magnitude of the overall score, $| \sum \delta |$. This is the _net_
 difference between the corpora. We can interpret each normalized score as how large a token's
 contribution is relative to the overall, net difference—it is the ratio between them. For example,
@@ -155,13 +166,6 @@ they still sum to $\pm 1$ because opposing contributions can cancel one another 
 
 ```python exec="true" source="above" session="scoring" hl_lines="4"
 --8<-- "snippets/user_guide/comparisons/scoring.py:normalize_abs_sum"
-```
-
-Regardless of the normalization method, the reproducibility metadata is stored in the comparison
-under the attributes `normalized`, `normalized_by`, and `normalization_constant`.
-
-```python exec="true" source="material-block" result="text" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:normalization_metadata"
 ```
 
 !!! note
@@ -179,6 +183,15 @@ under the attributes `normalized`, `normalized_by`, and `normalization_constant`
 !!! warning
     Normalizing scores causes them to be eagerly evaluated because the normalization needs to verify
     that the normalization constant is nonzero. 
+
+### Reproducibility Metadata
+
+Regardless of the normalization method, the reproducibility metadata is stored in the comparison
+under the attributes `normalized`, `normalized_by`, and `normalization_constant`.
+
+```python exec="true" source="material-block" result="text" session="scoring"
+--8<-- "snippets/user_guide/comparisons/scoring.py:normalization_metadata"
+```
 
 
   [Polars]: https://pola.rs/
