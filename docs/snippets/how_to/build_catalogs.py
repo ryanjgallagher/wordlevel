@@ -32,6 +32,15 @@ cl = wl.Catalog(df_corpora, token_col="token", corpora=["animals", "cats"])
 # --8<-- [end:from_dataframe]
 
 
+# --8<-- [start:from_pandas]
+import pandas as pd
+
+df_pandas = pd.DataFrame({"token": tokens, "animals": animal_freqs, "cats": cat_freqs})
+
+cl = wl.Catalog(df_pandas, token_col="token", corpora=["animals", "cats"])
+# --8<-- [end:from_pandas]
+
+
 # Hide printing the shape
 # --8<-- [start:display_config]
 pl.Config.set_tbl_hide_dataframe_shape(True)

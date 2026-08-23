@@ -71,15 +71,16 @@ and giving them names. Note, the order of the dictionaries and corpus names need
 
 We can also pass a single dictionary which names each token-to-frequency corpus explicitly:
 
-```python
+```python exec="true" source="above" session="build_catalogs"
 --8<-- "snippets/how_to/build_catalogs.py:from_single_dict"
 ```
 
-### From a dataframe
+### From a Polars dataframe
+
 If we already have our corpora formatted as a dataframe, we can create a `Catalog` directly
 from it. First, let's create a dataframe from our example data.
 
-```python
+```python exec="true" source="above" session="build_catalogs"
 --8<-- "snippets/how_to/build_catalogs.py:build_dataframe"
 ```
 
@@ -88,14 +89,20 @@ To create a `Catalog`, we need to provide the column indicating the names of the
 with a list of dictionaries, we use the `corpora` parameter to name the corpora—here, we use it to 
 select them.
 
-```python
+```python exec="true" source="above" session="build_catalogs"
 --8<-- "snippets/how_to/build_catalogs.py:from_dataframe"
 ```
 
-!!! note
-    WordLevel can create a `Catalog` from any [Narwhals]-supported dataframe, including Pandas,
-    DuckDB, PySpark, and others.
+### From a non-Polars dataframe
 
+WordLevel can create a `Catalog` from any [Narwhals]-supported dataframe, including Pandas, DuckDB,
+PySpark, and others. The arguments are the same.
+
+```python exec="true" source="above" session="build_catalogs"
+--8<-- "snippets/how_to/build_catalogs.py:from_pandas"
+```
+
+!!! note
     Polars is the internal engine for WordLevel. This means that even if you _provide_ a 
     non-Polars dataframe, any dataframe you _receive_ back from WordLevel will be a Polars 
     dataframe. See the [Polars] documentation to learn more about how to manipulate such dataframes.
