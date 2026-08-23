@@ -81,8 +81,8 @@ dictionary mapping from tokens to their frequencies. Say that we have two corpor
 in general, and one about cats specifically. Their vocabularies will have some overlaps and some
 differences.
 
-```python exec="true" source="above" session="catalog"
---8<-- "snippets/user_guide/catalog.py:setup"
+```python exec="true" source="above" session="build_catalogs"
+--8<-- "snippets/how_to/build_catalogs.py:setup"
 ```
 
 If these are our corpora, we can create a `Catalog` in several ways, depending on which is the most
@@ -93,8 +93,8 @@ convenient.
 We can create a `Catalog` by passing both corpora (represented as token-to-frequency dictionaries) 
 and giving them names. Note, the order of the dictionaries and corpus names needs to be the same. 
 
-```python exec="true" source="above" session="catalog"
---8<-- "snippets/user_guide/catalog.py:from_multiple_dicts"
+```python exec="true" source="above" session="build_catalogs"
+--8<-- "snippets/how_to/build_catalogs.py:from_multiple_dicts"
 ```
 
 #### From a single dictionary
@@ -102,7 +102,7 @@ and giving them names. Note, the order of the dictionaries and corpus names need
 We can also pass a single dictionary which names each token-to-frequency corpus explicitly:
 
 ```python
---8<-- "snippets/user_guide/catalog.py:from_single_dict"
+--8<-- "snippets/how_to/build_catalogs.py:from_single_dict"
 ```
 
 #### From a dataframe
@@ -110,7 +110,7 @@ If we already have our corpora formatted as a dataframe, we can create a `Catalo
 from it. First, let's create a dataframe from our example data.
 
 ```python
---8<-- "snippets/user_guide/catalog.py:build_dataframe"
+--8<-- "snippets/how_to/build_catalogs.py:build_dataframe"
 ```
 
 To create a `Catalog`, we need to provide the column indicating the names of the tokens, the 
@@ -119,7 +119,7 @@ with a list of dictionaries, we use the `corpora` parameter to name the corporaâ
 select them.
 
 ```python
---8<-- "snippets/user_guide/catalog.py:from_dataframe"
+--8<-- "snippets/how_to/build_catalogs.py:from_dataframe"
 ```
 
 !!! note
@@ -145,12 +145,12 @@ corpora are now represented as a [Polars] dataframe under the hood. We can inspe
 directly through the `df` attribute.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
-```python exec="true" session="catalog"
---8<-- "snippets/user_guide/catalog.py:display_config"
+```python exec="true" session="build_catalogs"
+--8<-- "snippets/how_to/build_catalogs.py:display_config"
 ```
 
-```python exec="true" source="material-block" result="text" session="catalog"
---8<-- "snippets/user_guide/catalog.py:inspect"
+```python exec="true" source="material-block" result="text" session="build_catalogs"
+--8<-- "snippets/how_to/build_catalogs.py:inspect"
 ```
 
 The output shows that there is one row per token, and there is one column for each corpus: one for

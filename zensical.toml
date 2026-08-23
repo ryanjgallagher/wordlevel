@@ -43,17 +43,15 @@ nav = [
   {"Home" = "index.md"},
   {"Documentation" = [
     "documentation/index.md",
-    {"User Guide" = [
-      {"Install" = "documentation/user_guide/install.md"},
-      {"Corpora & Catalogs" = "documentation/user_guide/corpora_and_catalogs.md"},
-      {"Comparisons" = [
-        {"Comparisons" = "documentation/user_guide/comparisons/scoring.md"},
-        {"Lexicons" = "documentation/user_guide/comparisons/lexicons.md"},
-        {"Exclusions" = "documentation/user_guide/comparisons/exclusions.md"}
-      ]},
+    {"Install" = "documentation/install.md"},
+    {"How-To Guides" = [
+      {"Build Catalogs" = "documentation/how_to/build_catalogs.md"},
+      {"Score Comparisons" = "documentation/how_to/score_comparisons.md"},
+      {"Exclude Tokens" = "documentation/how_to/exclude_tokens.md"},
+      {"Use Lexicons" = "documentation/how_to/use_lexicons.md"},
       {"Plots" = [
-        {"Bar Graphs" = "documentation/user_guide/plots/bars.md"},
-        {"Word Shift Graphs" = "documentation/user_guide/plots/shifts.md"}
+        {"Bar Graphs" = "documentation/how_to/plots/bar_graphs.md"},
+        {"Word Shift Graphs" = "documentation/how_to/plots/word_shift_graphs.md"}
       ]}
     ]},
     # The "API" subtree below is a placeholder. docs/scripts/api_docs reads this

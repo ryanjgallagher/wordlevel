@@ -17,8 +17,8 @@ If you have any questions or find any errors, please open an issue on [GitHub].
 
 ## Getting started
 
-The User Guide introduces the fundamentals of WordLevel, with examples you can run as you go. Get 
-started by [installing the package](user_guide/install.md).
+The How-To Guides cover WordLevel task by task, with examples you can run as you go. Get 
+started by [installing the package](install.md).
 
 ## API reference
 

@@ -9,7 +9,7 @@ and more. If you are familiar with [Polars], this is similar to how
 to transform and analyze columns in a dataframe.
 
 The core of every comparison is a _scoring method_ for quantifying the token-level differences. 
-WordLevel implements a [full suite of measures](../../api/comparison/score/index.md), including 
+WordLevel implements a [full suite of measures](../api/comparison/score/index.md), including 
 basic frequency differences, entropy-based metrics like the Kullback-Leibler and Jensen-Shannon 
 divergences, and other advanced measures.
 
@@ -27,12 +27,12 @@ token $\tau$ in corpus $C$. If the difference is positive, then it means that th
 by Biden. Similarly, if it is negative, then it means it was used less by Biden (more by Roosevelt).
 
 Some scoring methods, like the 
-[Jensen-Shannon divergence](../../api/comparison/score/jensen_shannon_divergence.md) or 
-[rank turbulence divergence](../../api/comparison/score/rank_divergence.md), are symmetric by 
+[Jensen-Shannon divergence](../api/comparison/score/jensen_shannon_divergence.md) or 
+[rank turbulence divergence](../api/comparison/score/rank_divergence.md), are symmetric by 
 default, meaning that the token-level difference is the same regardless of which corpus is the 
 reference and which is the comparison. However, it can still be important to track which corpus is 
 which, particularly for interpreting shift plots. See the 
-[scoring documentation](../../api/comparison/score/index.md) for details on how to interpret each 
+[scoring documentation](../api/comparison/score/index.md) for details on how to interpret each 
 measure.
 
 <!-- TODO: add documentation link to shift plots above -->
@@ -44,8 +44,8 @@ To work with comparisons, we will use an example dataset of presidential speeche
 a speech by a US president, and each corpus is the set of all speeches by a particular president. 
 We will use the speeches by Presidents Joe Biden and Franklin D. Roosevelt.
 
-```python exec="true" source="above" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:setup"
+```python exec="true" source="above" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:setup"
 ```
 
 If you want to see which other corpora are available, you can run `speeches.as_df().columns`.
@@ -54,11 +54,11 @@ If you want to see which other corpora are available, you can run `speeches.as_d
 ## Scoring a comparison
 
 Let's compare Roosevelt and Biden's speeches by measuring the differences in the
-[normalized frequencies](../../api/comparison/score/proportion.md) of each token. Roosevelt's
+[normalized frequencies](../api/comparison/score/proportion.md) of each token. Roosevelt's
 speeches will be our reference corpus, and Biden's speeches will be our comparison corpus.
 
-```python exec="true" source="above" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:proportion"
+```python exec="true" source="above" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:proportion"
 ```
 
 Let's break this down:
@@ -68,7 +68,7 @@ first argument is the reference corpus (Roosevelt) and the second argument is th
 (Biden). We can use the names of any two corpora in our `Catalog` to create our comparison.
 - `score.proportion()` specifies that we want to compare the normalized frequencies (proportions) of
 the two corpora in our comparison. All scoring methods are called from the `score` namespace; see
-the [documentation](../../api/comparison/score/index.md) for other measures.
+the [documentation](../api/comparison/score/index.md) for other measures.
 - `alias("roosevelt_biden")` gives the comparison the name `"roosevelt_biden"`, which we can use to
 refer to the comparison later.
 - `cl.with_comparisons(...)` attaches the comparison to the `Catalog`. If you are familiar with 
@@ -87,12 +87,12 @@ We've made our first comparison! We can access it from the `Catalog` using the a
 `"roosevelt_biden"` we gave it.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
-```python exec="true" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:display_config"
+```python exec="true" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:display_config"
 ```
 
-```python exec="true" source="material-block" result="text" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:inspect"
+```python exec="true" source="material-block" result="text" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:inspect"
 ```
 
 The comparison dataframe `df` contains a variety of information. Above, we can see some of the most
@@ -113,25 +113,25 @@ example, because Roosevelt used the word "the" relatively more than Biden (a neg
 There is also useful information on the comparison `roosevelt_biden` itself. It tracks all of the
 relevant information needed for scientific reproducibility, including the reference corpus, the 
 comparison corpus, the scoring method, the method's parameters, and more. See the
-[documentation](../../api/comparison/comparison_result.md) for all of the tracked metadata.
+[documentation](../api/comparison/comparison_result.md) for all of the tracked metadata.
 
 
 ## Making multiple comparisons
 
 Let's compare Roosevelt and Biden's speeches with other measures, the 
-[rank turbulence divergence](../../api/comparison/score/rank_divergence.md), and the
-[Shannon entropy](../../api/comparison/score/shannon_entropy.md). Note how we can simply 
+[rank turbulence divergence](../api/comparison/score/rank_divergence.md), and the
+[Shannon entropy](../api/comparison/score/shannon_entropy.md). Note how we can simply 
 add them as additional comparisons under different aliases.
 
-```python exec="true" source="above" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:multiple_comparisons"
+```python exec="true" source="above" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:multiple_comparisons"
 ```
 
 All of the comparisons are stored in our catalog, including the original comparison we made using 
 the proportions.
 
-```python exec="true" source="material-block" result="text" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:comparison_keys"
+```python exec="true" source="material-block" result="text" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:comparison_keys"
 ```
 
 
@@ -150,8 +150,8 @@ makes up 5% of the total difference between the corpora. A score of -0.05 also m
 makes up 5% of the total difference, but contributes in the negative direction. The absolute values 
 of the normalized scores sum to 1.
 
-```python exec="true" source="above" session="scoring" hl_lines="4"
---8<-- "snippets/user_guide/comparisons/scoring.py:normalize_sum_abs"
+```python exec="true" source="above" session="score_comparisons" hl_lines="4"
+--8<-- "snippets/how_to/score_comparisons.py:normalize_sum_abs"
 ```
 
 ### By Net Difference
@@ -164,14 +164,14 @@ a score of 0.05 means that a token's contribution is 5% the size of the net diff
 in the negative direction. Even though individual normalized scores can exceed 1 in magnitude,
 they still sum to $\pm 1$ because opposing contributions can cancel one another out.
 
-```python exec="true" source="above" session="scoring" hl_lines="4"
---8<-- "snippets/user_guide/comparisons/scoring.py:normalize_abs_sum"
+```python exec="true" source="above" session="score_comparisons" hl_lines="4"
+--8<-- "snippets/how_to/score_comparisons.py:normalize_abs_sum"
 ```
 
 !!! note
     For scoring measures that produce token-level scores that are always non-negative, like the 
-    [rank divergence](../../api/comparison/score/rank_divergence.md) and 
-    [Jensen-Shannon divergence](../../api/comparison/score/jensen_shannon_divergence.md), the
+    [rank divergence](../api/comparison/score/rank_divergence.md) and 
+    [Jensen-Shannon divergence](../api/comparison/score/jensen_shannon_divergence.md), the
     different forms of normalization produce the same result. For other measures, where tokens' 
     scores can be positive or negative, the normalizations can produce different results.
 
@@ -189,8 +189,8 @@ they still sum to $\pm 1$ because opposing contributions can cancel one another 
 Regardless of the normalization method, the reproducibility metadata is stored in the comparison
 under the attributes `normalized`, `normalized_by`, and `normalization_constant`.
 
-```python exec="true" source="material-block" result="text" session="scoring"
---8<-- "snippets/user_guide/comparisons/scoring.py:normalization_metadata"
+```python exec="true" source="material-block" result="text" session="score_comparisons"
+--8<-- "snippets/how_to/score_comparisons.py:normalization_metadata"
 ```
 
 
