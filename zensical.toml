@@ -45,7 +45,8 @@ nav = [
     "documentation/index.md",
     {"Install" = "documentation/install.md"},
     {"Quick Start Guide" = [
-      {"Your First Comparison" = "documentation/quick_start/first_comparison.md"}
+      {"Your First Comparison" = "documentation/quick_start/first_comparison.md"},
+      {"Your First Word Shift Graph" = "documentation/quick_start/first_word_shift_graph.md"}
     ]},
     {"How-To Guides" = [
       {"Build Catalogs" = "documentation/how_to/build_catalogs.md"},

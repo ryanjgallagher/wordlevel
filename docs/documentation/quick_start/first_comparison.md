@@ -79,3 +79,5 @@ of Ukraine.
 - To apply this to your own data, see [Building Catalogs](../how_to/build_catalogs.md).
 - For other ways to measure a difference, see the
   [scoring methods](../api/comparison/score/index.md).
+
+Or continue to [Your First Word Shift Graph](first_word_shift_graph.md).
