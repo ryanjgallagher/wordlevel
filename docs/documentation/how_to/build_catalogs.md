@@ -1,33 +1,11 @@
-# Corpora & Catalogs
+# Building Catalogs
 
-## Corpus
+For what a corpus and a catalog *are*, see
+[Corpora & Catalogs](../concepts/corpora_and_catalogs.md).
 
-### What is a corpus?
+## Representing a corpus
 
-A **corpus** is a collection of documents, where each document contains an ordered sequence of
-tokens. A **token** is the smallest unit of text that we care about. Often, tokens are individual
-words separated by white space. For example, we can break the sentence "WordLevel is a Python
-package" into the tokens `("WordLevel", "is", "a", "Python", "package")`. In other cases, "tokens"
-may refer to *n*-grams (*n* consecutive words) or subword pieces. We refer to the full set of unique
-tokens as the **vocabulary.**
-
-If we have multiple collections of documents across more than one corpus, then we have 
-**corpora.** For example, we may say that all of the social media posts made on June 1st are one 
-corpus (where each post is a document), and all of the posts made on June 2nd are another corpus. 
-The June 1st corpus and June 2nd corpus together are our corpora. 
-
-!!! warning
-    A corpus is meant to be a relatively _large_ collection of text containing at least several
-    thousand tokens. While what constitutes a "document" or "corpus" may differ depending on the 
-    context, a single short document with only tens or hundreds of tokens is _not_ a corpus. 
-    WordLevel's methods are only scientifically suited for corpora that have large, stable frequency 
-    distributions across the vocabulary, and they are not recommended for comparing short documents individually.
-
-### Representing a corpus
-
-WordLevel represents a corpus as a set of tokens and their frequencies. The simplest representation 
-is the [bag-of-words] model, which breaks documents down into tokens and their frequencies, ignoring 
-their original order. This can be constructed using a dictionary mapping:
+A corpus can be constructed as a dictionary mapping each token to its frequency:
 
 ```python
 corpus = {
@@ -66,15 +44,7 @@ corpus = pl.DataFrame({
     counting token frequencies. For tools that handle tokenization, consider using other packages 
     like [NLTK], [spaCy], or [scikit-learn].
 
-## Catalog
-
-### What is a catalog?
-
-A **catalog** is WordLevel's interface for working with multiple corpora. It is the workbench for
-transforming, manipulating, and comparing corpora in the same way that a dataframe is a workbench
-for manipulating columns. 
-
-### Creating a catalog
+## Creating a catalog
 
 As described [above](#representing-a-corpus), one way to represent a corpus is as a [bag-of-words]
 dictionary mapping from tokens to their frequencies. Say that we have two corpora, one about animals 
@@ -88,7 +58,7 @@ differences.
 If these are our corpora, we can create a `Catalog` in several ways, depending on which is the most
 convenient. 
 
-#### From multiple dictionaries
+### From multiple dictionaries
 
 We can create a `Catalog` by passing both corpora (represented as token-to-frequency dictionaries) 
 and giving them names. Note, the order of the dictionaries and corpus names needs to be the same. 
@@ -97,7 +67,7 @@ and giving them names. Note, the order of the dictionaries and corpus names need
 --8<-- "snippets/how_to/build_catalogs.py:from_multiple_dicts"
 ```
 
-#### From a single dictionary
+### From a single dictionary
 
 We can also pass a single dictionary which names each token-to-frequency corpus explicitly:
 
@@ -105,7 +75,7 @@ We can also pass a single dictionary which names each token-to-frequency corpus 
 --8<-- "snippets/how_to/build_catalogs.py:from_single_dict"
 ```
 
-#### From a dataframe
+### From a dataframe
 If we already have our corpora formatted as a dataframe, we can create a `Catalog` directly
 from it. First, let's create a dataframe from our example data.
 
@@ -138,7 +108,7 @@ See the documentation of `Catalog` [constructors](../api/catalog/construct/index
 details.
 
 
-### Working with catalogs
+## Working with catalogs
 
 All of the above constructors create the same `Catalog` object. Regardless of which one we used, the 
 corpora are now represented as a [Polars] dataframe under the hood. We can inspect that dataframe 
