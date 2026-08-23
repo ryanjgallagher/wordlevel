@@ -64,6 +64,7 @@ account for.
 ## Where to go next
 
 - To work with lexicons in more depth, see [Using Lexicons](../how_to/use_lexicons.md).
-- To shape the graph, see [Word Shift Graphs](../how_to/word_shift_graphs.md).
+- To shape the graph, see
+  [Making a word shift graph](../how_to/plots.md#making-a-word-shift-graph).
 - For the measures behind these plots, see the
   [scoring methods](../api/comparison/score/index.md).
