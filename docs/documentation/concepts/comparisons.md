@@ -43,5 +43,26 @@ measure.
 
 <!-- TODO: add documentation link to shift plots above -->
 
+## How tokens are attributed
+
+Every comparison splits its tokens into two groups, and which two depends on the scoring measure. A
+comparison records which it used under its `attributed_by` attribute.
+
+**Frequency- and rank-based measures**, such as proportions and the rank-turbulence divergence,
+attribute each token to the corpus for which it is most characteristic, that is, whichever corpus it
+appears in more.
+
+**Measures where attribution is based on the sign of the contribution**, such as lexicon-weighted
+averages and the entropies, instead attribute each token by whether it reinforces or offsets the
+overall difference.
+
+A contribution with the same sign as the overall difference reinforces it, making its magnitude
+larger; a contribution with the opposite sign offsets it, pulling the difference back toward zero.
+For a lexicon-weighted average, if the comparison corpus has the higher average, positive
+contributions reinforce the difference and negative contributions offset it; the interpretation flips
+when the comparison corpus has the lower average.
+
+This is what the two sides of a [bar graph](../how_to/plots.md) mean, and why the same plot reads
+differently depending on the measure behind it.
 
   [Polars]: https://pola.rs/

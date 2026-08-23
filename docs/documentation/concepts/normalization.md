@@ -1,9 +1,18 @@
 # Normalization
 
-Each scoring measure produces a per-token contribution. Normalizing rescales every contribution by a
-single constant, so that the scores can be read on a common scale. There are two ways to do it, and
-they answer different questions. For the code, see
-[Normalizing Scores](../how_to/normalize_scores.md).
+Each scoring measure produces a per-token contribution $\delta_\tau$. Normalization rescales every
+contribution by a single constant so that scores become interpretable and comparable across measures.
+There are two strategies, and they answer different questions:
+
+- `"sum_abs"` divides by the sum of absolute contributions, $\sum_\tau |\delta_\tau|$. The
+  absolute values of the normalized contributions then sum to 1.
+- `"abs_sum"` divides by the absolute sum of contributions, $|\sum_\tau \delta_\tau|$. The
+  normalized contributions then sum to $\pm 1$.
+
+Normalizing again by the same strategy is a no-op; normalizing by a different strategy raises an
+error, since the contributions are already on a normalized scale.
+
+For the code, see [Normalizing Scores](../how_to/normalize_scores.md).
 
 ## By total difference
 
