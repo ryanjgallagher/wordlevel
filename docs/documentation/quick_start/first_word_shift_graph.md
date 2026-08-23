@@ -53,9 +53,9 @@ difference between the corpora, rather than a raw quantity. See
 ```
 
 Each bar is one word's contribution to the overall difference in sentiment, and the bars are ordered
-by how much they contribute. A word can push the difference in either direction, and the symbols on
-each bar record why: whether the word is relatively positive or negative, and whether Biden used it
-more or less often than Roosevelt did.
+by how much they contribute. A word can push the difference in either direction, and the two bars are
+colored by why: whether the word is relatively positive or negative and used more or less often, and
+whether its score is higher or lower.
 
 The panels above the bars are the totals. They accumulate the individual contributions into the
 overall difference between the two presidents, so you can see how much of it the words on display

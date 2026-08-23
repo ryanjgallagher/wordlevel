@@ -48,9 +48,9 @@ rather than relying on a default.
 --8<-- "snippets/how_to/plots.py:render"
 ```
 
-Each word gets two stacked bars, and the symbols on them record why the word contributes as it does:
-whether it is relatively positive or negative, and whether the comparison corpus used it more or less
-than the reference did.
+Each word gets two stacked bars, colored by what each part of its contribution represents: whether
+the word is relatively positive or negative and used more or less often, and whether its score is
+higher or lower. Pass `show_legend=True` to name the colors.
 
 A lexicon is not the only option. The Shannon entropy is also a weighted average, so it shifts too,
 measuring how the diversity of the two corpora differs rather than their sentiment.
@@ -102,8 +102,8 @@ On a bar graph the totals are split by the corpus each token is attributed to.
 --8<-- "snippets/how_to/plots.py:render"
 ```
 
-On a word shift they are split by contribution type instead, matching the symbols on the bars, with a
-grand total beneath them.
+On a word shift they are split by contribution type instead, each labelled with the symbol for that
+type, with a grand total beneath them. The symbols appear only here, not on the individual bars.
 
 ```python exec="true" source="above" session="plots"
 --8<-- "snippets/how_to/plots.py:shift_totals"
@@ -115,7 +115,7 @@ grand total beneath them.
 
 ## Sizing and legends
 
-`scale_factor` scales the whole figure and `show_legend` adds a legend naming what each colour means.
+`scale_factor` scales the whole figure and `show_legend` adds a legend naming what each color means.
 
 Sizing follows the score axis rather than the screen: when the chart is vertical the bars run across,
 so `width` sets their length, and when it is horizontal the bars run up the page, so `height` does.
@@ -140,15 +140,15 @@ the rank axis is the space per token, so the chart grows or shrinks with the num
 --8<-- "snippets/how_to/plots.py:render"
 ```
 
-The rank axis has more options than this, and so do the other parts of the figure. See the
-[plot configuration documentation](../api/configuration/plots/index.md).
+The rank axis has more options than this, and so do the other parts of the figure. See
+[Customizing Plots](customize_plots.md).
 
 ## Non-negative measures
 
 Some measures, such as the rank turbulence divergence, only ever produce non-negative scores. By
 default WordLevel still points each bar left or right according to which corpus the token is
 attributed to, so the plot reads like any other. Pass `split_nonnegative_by_corpus=False` to keep
-every bar on one side and distinguish the corpora by colour alone. This applies to bar graphs, since
+every bar on one side and distinguish the corpora by color alone. This applies to bar graphs, since
 a word shift always has a direction.
 
 ```python exec="true" source="above" session="plots"
@@ -159,5 +159,5 @@ a word shift always has a direction.
 --8<-- "snippets/how_to/plots.py:render"
 ```
 
-For every parameter, including axis, label, border, and colour configuration, see the
+For every parameter, including axis, label, border, and color configuration, see the
 [bar plot](../api/catalog/plot/bar.md) and [word shift](../api/catalog/plot/shift.md) documentation.
