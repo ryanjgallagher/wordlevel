@@ -64,8 +64,7 @@ dev = [
 ]
 
 [tool.codespell]
-# Corpus tokens; docs snippets render verbatim, so they cannot carry inline pragmas
-ignore-words-list = "thats"
+ignore-words-list = "thats"  # Used in lexicon exclusion example because it's a word from a corpus
 
 [tool.pytest.ini_options]
 pythonpath = [".", ".github/scripts"]
