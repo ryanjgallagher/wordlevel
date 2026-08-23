@@ -51,10 +51,8 @@ nav = [
       {"Track Reproducibility" = "documentation/how_to/reproducibility.md"},
       {"Exclude Tokens" = "documentation/how_to/exclude_tokens.md"},
       {"Use Lexicons" = "documentation/how_to/use_lexicons.md"},
-      {"Plots" = [
-        {"Bar Graphs" = "documentation/how_to/plots/bar_graphs.md"},
-        {"Word Shift Graphs" = "documentation/how_to/plots/word_shift_graphs.md"}
-      ]}
+      {"Bar Graphs" = "documentation/how_to/bar_graphs.md"},
+      {"Word Shift Graphs" = "documentation/how_to/word_shift_graphs.md"}
     ]},
     {"Concepts" = [
       {"Corpora & Catalogs" = "documentation/concepts/corpora_and_catalogs.md"},
