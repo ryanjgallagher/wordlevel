@@ -54,32 +54,3 @@ cl = cl.with_comparisons(
 # --8<-- [start:comparison_keys]
 print(cl.comparisons.keys())
 # --8<-- [end:comparison_keys]
-
-
-# --8<-- [start:normalize_sum_abs]
-cl = cl.with_comparisons(
-    wl.comp("Franklin D. Roosevelt", "Joe Biden")
-        .score.rank_divergence(alpha=1/3)
-        .normalize(by="sum_abs")
-        .alias("roosevelt_biden_rank_divergence_normed"),
-)
-# --8<-- [end:normalize_sum_abs]
-
-
-# --8<-- [start:normalize_abs_sum]
-cl = cl.with_comparisons(
-    wl.comp("Franklin D. Roosevelt", "Joe Biden")
-        .score.shannon_entropy()
-        .normalize(by="abs_sum")
-        .alias("roosevelt_biden_entropy_normed"),
-)
-# --8<-- [end:normalize_abs_sum]
-
-
-# --8<-- [start:normalization_metadata]
-comparison = cl.comparisons["roosevelt_biden_rank_divergence_normed"]
-
-print(f"Comparison is normalized: {comparison.normalized}")
-print(f"Normalization method:     {comparison.normalized_by}")
-print(f"Normalization constant:   {comparison.normalization_constant}")
-# --8<-- [end:normalization_metadata]
