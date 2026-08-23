@@ -63,6 +63,10 @@ dev = [
   "zensical>=0.0.47",
 ]
 
+[tool.codespell]
+# Corpus tokens; docs snippets render verbatim, so they cannot carry inline pragmas
+ignore-words-list = "thats"
+
 [tool.pytest.ini_options]
 pythonpath = [".", ".github/scripts"]
 testpaths = ["tests"]
