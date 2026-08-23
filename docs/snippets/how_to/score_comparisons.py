@@ -11,6 +11,7 @@ cl = wl.Catalog(speeches, corpora=["Joe Biden", "Franklin D. Roosevelt"])
 import polars as pl
 
 pl.Config.set_tbl_hide_dataframe_shape(True)
+pl.Config.set_fmt_str_lengths(40)
 # --8<-- [end:display_config]
 
 
