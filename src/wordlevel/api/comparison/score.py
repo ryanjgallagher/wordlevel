@@ -351,12 +351,11 @@ class Scorer:
         corpora.
 
         The supplied lexicon associates a score with each token. The user can provide a single
-        lexicon to use for both corpora, or one lexicon for each. The overall score for each corpus
-        individually is the lexicon-weighted average. Specifically, if $p_\tau$ is the normalized
-        frequency of a token $\tau$ in a corpus, and $\phi_\tau$ is the score assigned to it by
-        the lexicon, then the corpus-level score is $\Phi = \sum_\tau p_\tau \phi_\tau$. This method
-        takes the difference in weighted averages between the reference and comparison corpora,
-        $\Phi^{(C)} - \Phi^{(R)}$.
+        lexicon to use for both corpora, or one lexicon for each. The corpus-level score is the
+        lexicon-weighted average $\Phi = \sum_\tau p_\tau \phi_\tau$, where $p_\tau$ is the
+        normalized frequency of a token $\tau$ in a corpus and $\phi_\tau$ is the score the lexicon
+        assigns it. This method takes the difference in weighted averages between the reference
+        corpus $R$ and the comparison corpus $C$, $\Phi^{(C)} - \Phi^{(R)}$.
 
         Example:
             ```python
