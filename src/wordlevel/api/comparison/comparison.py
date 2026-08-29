@@ -83,24 +83,20 @@ class Comparison:
         r"""
         Returns a new `Comparison` whose token contributions are normalized onto a common scale.
 
-        Each scoring measure produces a per-token contribution $\delta_\tau$. Normalization
-        rescales every contribution by a single constant so that scores become interpretable
-        and comparable across measures. There are two normalization strategies:
-
-        - `"sum_abs"` divides by the sum of absolute contributions, $\sum_\tau |\delta_\tau|$. The
-          absolute values of the normalized contributions then sum to 1.
-        - `"abs_sum"` divides by the absolute sum of contributions, $|\sum_\tau \delta_\tau|$. The
-          normalized contributions then sum to $\pm 1$.
-
-        Normalizing again by the same strategy is a no-op; normalizing by a different strategy
-        raises an error, since the contributions are already on a normalized scale.
-
         Example:
             ```python
             --8<-- "snippets/comparison/normalization.py:setup"
 
             --8<-- "snippets/comparison/normalization.py:normalize"
             ```
+
+        Each scoring measure produces a per-token contribution $\delta_\tau$. Normalization divides
+        every contribution by a single constant, either the total difference between the corpora
+        $\sum_\tau |\delta_\tau|$ or their net difference $|\sum_\tau \delta_\tau|$, so that scores
+        become interpretable and comparable across measures.
+
+        For what each strategy means and how to read a normalized score, see
+        [Normalization](https://wordlevel.dev/documentation/concepts/normalization/).
 
         Warning:
             Using this method forces the comparison to be evaluated eagerly rather than lazily,
@@ -243,12 +239,7 @@ class ComparisonResult:
 
     @property
     def attribution_labels(self) -> tuple[str, str]:
-        """
-        The pair of labels the attribution produces, determined by `attributed_by`.
-
-        Corpus attribution names each token's bucket by corpus; score-sign attribution names it by
-        whether the token reinforces or offsets the overall difference.
-        """
+        """The pair of labels the attribution produces, determined by `attributed_by`."""
         return ATTRIBUTION_LABELS[self.attributed_by]
 
     @property
