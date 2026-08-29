@@ -9,7 +9,7 @@ and more. If you are familiar with [Polars], this is similar to how
 to transform and analyze columns in a dataframe.
 
 The core of every comparison is a _scoring method_ for quantifying the token-level differences. 
-WordLevel implements a [full suite of measures](../api/comparison/score/index.md), including 
+WordLevel implements a [full suite of measures](measures/index.md), including 
 basic frequency differences, entropy-based metrics like the Kullback-Leibler and Jensen-Shannon 
 divergences, and other advanced measures.
 
@@ -33,36 +33,29 @@ by Biden. Similarly, if it is negative, then it means it was used less by Biden 
 ## Symmetric measures
 
 Some scoring methods, like the 
-[Jensen-Shannon divergence](../api/comparison/score/jensen_shannon_divergence.md) or 
-[rank turbulence divergence](../api/comparison/score/rank_divergence.md), are symmetric by 
+[Jensen-Shannon divergence](measures/divergences.md#jensen-shannon-divergence) or 
+[rank turbulence divergence](measures/divergences.md#rank-turbulence-divergence), are symmetric by 
 default, meaning that the token-level difference is the same regardless of which corpus is the 
 reference and which is the comparison. However, it can still be important to track which corpus is 
-which, particularly for interpreting shift plots. See the 
-[scoring documentation](../api/comparison/score/index.md) for details on how to interpret each 
-measure.
-
-<!-- TODO: add documentation link to shift plots above -->
+which, particularly for interpreting a [word shift graph](word_shift_graphs.md). See
+[Measures](measures/index.md) for details on how to interpret each measure.
 
 ## How tokens are attributed
 
-Every comparison splits its tokens into two groups, and which two depends on the scoring measure. A
-comparison records which it used under its `attributed_by` attribute.
+Every comparison splits its tokens into two groups. What those groups mean depends on the plot.
 
-**Frequency- and rank-based measures**, such as proportions and the rank-turbulence divergence,
-attribute each token to the corpus for which it is most characteristic, that is, whichever corpus it
-appears in more.
+A [word shift graph](word_shift_graphs.md) reads the same way whatever the measure. It breaks each
+token's contribution into its parts, and every bar says how the comparison corpus differs from the
+reference: whether the token was used more or less, and whether it scored higher or lower.
 
-**Measures where attribution is based on the sign of the contribution**, such as lexicon-weighted
-averages and the entropies, instead attribute each token by whether it reinforces or offsets the
-overall difference.
+A [bar graph](../how_to/plots.md) does not decompose anything, so its two sides mean one of two
+things. Under some measures each token is attributed to a **corpus**, the one it is most
+characteristic of. Under others each token is attributed by whether it **reinforces or offsets** the
+overall difference: a contribution with the same sign as the overall difference reinforces it, making
+its magnitude larger, while a contribution with the opposite sign offsets it, pulling the difference
+back toward zero.
 
-A contribution with the same sign as the overall difference reinforces it, making its magnitude
-larger; a contribution with the opposite sign offsets it, pulling the difference back toward zero.
-For a lexicon-weighted average, if the comparison corpus has the higher average, positive
-contributions reinforce the difference and negative contributions offset it; the interpretation flips
-when the comparison corpus has the lower average.
-
-This is what the two sides of a [bar graph](../how_to/plots.md) mean, and why the same plot reads
-differently depending on the measure behind it.
+A comparison records which of the two it uses under its `attributed_by` attribute, which is also what
+decides the [configuration](../how_to/customize_plots.md) a bar graph takes.
 
   [Polars]: https://pola.rs/
