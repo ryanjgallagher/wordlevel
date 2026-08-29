@@ -1,14 +1,14 @@
 ---
-title: Documentation
+title: User Guide
 hide:
   - footer
 ---
 
-# Documentation
+# User Guide
 
 Welcome! WordLevel is a Python package for analyzing how texts differ at the word level. This
 documentation provides a detailed overview of how to work with the package's core data structures, 
-them using its declarative API, and produce publication-ready visualizations of your
+compare them using its declarative API, and produce publication-ready visualizations of your
 results.
 
 If you have any questions or find any errors, please open an issue on [GitHub].
@@ -17,10 +17,10 @@ If you have any questions or find any errors, please open an issue on [GitHub].
 
 ## Getting started
 
-The How-To Guides cover WordLevel task by task, with examples you can run as you go. Get 
+The Cookbooks cover WordLevel task by task, with examples you can run as you go. Get 
 started by [installing the package](install.md).
 
 ## API reference
 
-The API reference documents every public class, method, and configuration, generated directly from 
-the source code. Browse it from the navigation for details and examples.
+The [API reference](api/index.md) documents every public class, method, and configuration, 
+generated directly from the source code. Browse it for details and examples.

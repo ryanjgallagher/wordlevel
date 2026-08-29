@@ -25,6 +25,10 @@ ZENSICAL_CONFIG = REPO_ROOT / "zensical.toml"
 DEFAULT_OUTPUT_CONFIG = REPO_ROOT / "zensical-build.toml"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / structure.API_DIR
 
+# Pages under the output directory that are written by hand rather than generated, relative to it.
+# They are the only files there tracked in git, and the orphan pass has to leave them alone.
+HANDWRITTEN = (PurePosixPath("index.md"),)
+
 
 def main() -> int:
     args = _parse_args()
@@ -94,11 +98,14 @@ def _write_pages(output_dir: Path, pages: dict[PurePosixPath, str]) -> int:
 
 
 def _remove_orphans(output_dir: Path, pages: dict[PurePosixPath, str]) -> int:
-    """Delete markdown the tree no longer describes, then any directory it emptied."""
+    """Delete markdown the tree no longer describes, then any directory it emptied.
+
+    Hand-written pages are not described by the tree but must survive, so they are spared too.
+    """
     if not output_dir.exists():
         return 0
 
-    expected = {output_dir / relative for relative in pages}
+    expected = {output_dir / relative for relative in (*pages, *HANDWRITTEN)}
 
     removed = 0
     for markdown in list(output_dir.rglob("*.md")):

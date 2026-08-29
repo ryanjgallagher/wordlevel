@@ -215,8 +215,9 @@ src/wordlevel/_version.py
 # Lexicon data
 lexicons/*/data/
 
-# Auto-generated documentation
-/docs/documentation/api/
+# Auto-generated documentation, apart from the hand-written landing page
+/docs/documentation/api/*
+!/docs/documentation/api/index.md
 /zensical-build.toml
 
 # Local drafting/scratch data
