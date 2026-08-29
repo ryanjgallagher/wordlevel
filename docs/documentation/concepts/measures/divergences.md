@@ -30,12 +30,12 @@ a synthetic **mixture** corpus $M$ representing the combination of the two, and 
 results. Each token is scored by how far its own corpus sits from that mixture:
 
 $$
-\phi_\tau^{(R)} = w_R \log_b \frac{p_\tau^{(M)}}{p_\tau^{(R)}}
+\phi_\tau^{(R)} = \pi_R \log_b \frac{p_\tau^{(M)}}{p_\tau^{(R)}}
 \qquad
-\phi_\tau^{(C)} = w_C \log_b \frac{p_\tau^{(C)}}{p_\tau^{(M)}}
+\phi_\tau^{(C)} = \pi_C \log_b \frac{p_\tau^{(C)}}{p_\tau^{(M)}}
 $$
 
-where $w_R$ and $w_C$ are the weights given to each corpus in the mixture.
+where $\pi_R$ and $\pi_C$ are the weights given to each corpus in the mixture.
 
 Because the mixture contains every word either corpus uses, $p_\tau^{(M)}$ is never zero where a
 token occurs. That is what makes the Jensen-Shannon divergence well-defined even when the two

@@ -102,7 +102,7 @@ On a bar graph the totals are split by the corpus each token is attributed to.
 --8<-- "snippets/how_to/plots.py:render"
 ```
 
-On a word shift they are split by contribution type instead, each labelled with the symbol for that
+On a word shift they are split by contribution type instead, each labeled with the symbol for that
 type, with a grand total beneath them. The symbols appear only here, not on the individual bars.
 
 ```python exec="true" source="above" session="plots"

@@ -96,24 +96,19 @@ class Plotter:
         """
         Makes a bar chart of the top contributing tokens distinguishing two compared corpora.
 
-        Bars show the contribution of each token to the overall comparison score, ordered by
-        the magnitude. How the contributions are attributed and interpreted depends on the scoring
-        measure. For frequency- and rank-based measures—such as
-        [proportions][wordlevel.api.comparison.score.Scorer.proportion] and
-        [rank-turbulence divergence][wordlevel.api.comparison.score.Scorer.rank_divergence]—each
-        token is attributed to the corpus for which it is most characteristic, i.e. which corpus it
-        appears more in. For measures where attribution is based on the sign of the
-        contribution—such as [lexicon-weighted averages][wordlevel.api.comparison.score.Scorer.lexicon]
-        and [Shannon entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy]—a token's
-        contribution is interpreted in terms of whether it reinforces or offsets the difference
-        between the corpora. See the per-measure scoring documentation for details.
-
         Example:
             ```python
             --8<-- "snippets/catalog/plot.py:setup"
 
             --8<-- "snippets/catalog/plot.py:bar"
             ```
+
+        Bars show the contribution of each token to the overall comparison score, ordered by
+        magnitude. Which two groups the tokens are split into, and how each side reads, depends on
+        the scoring measure.
+
+        For how each measure attributes its tokens, see
+        [Comparisons](https://wordlevel.dev/documentation/concepts/comparisons/#how-tokens-are-attributed).
 
         Reference:
             For more details, see the following paper:
@@ -140,9 +135,11 @@ class Plotter:
                 bars extend horizontally. If `False`, tokens are listed left-to-right and bars
                 extend vertically
             height:
-                The height of the chart, in pixels
+                The height of the chart, in pixels. Ignored if `vertical`, see
+                `RankAxisConfig.bar_width` to control the height
             width:
-                The width of the chart, in pixels
+                The width of the chart, in pixels. Ignored if horizontal (`vertical=False`), see
+                `RankAxisConfig.bar_width` to control the width
             show_totals:
                 Whether to show the overall total contributions of each score type and overall as an
                 additional chart appended to the main chart
@@ -153,8 +150,8 @@ class Plotter:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
                 the same fields
             bar_config:
-                Configuration for the bars. Accepts a `BarConfig`for corpus-attributed measures or
-                an `ScoreSignBarConfig`for sign-attributed measures. Also accepts a dict keyed by
+                Configuration for the bars. Accepts a `BarConfig` for corpus-attributed measures or
+                a `ScoreSignBarConfig` for sign-attributed measures. Also accepts a dict keyed by
                 the same corresponding attribution labels
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
@@ -246,13 +243,9 @@ class Plotter:
         scale_factor: float = 1.0,
         show_legend: bool = False,
     ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
-        r"""
+        """
         Makes a word shift plot (a stacked bar chart) of the top contributing tokens distinguishing
         two compared corpora.
-
-        Word shift plots can only be used with scores derived from weighted averages. For comparing
-        corpora using measures that are not weighted averages, use
-        [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
 
         Example:
             ```python
@@ -261,62 +254,14 @@ class Plotter:
             --8<-- "snippets/catalog/plot.py:shift"
             ```
 
-        All bars are interpreted in terms of how the comparison corpus differs from the reference
-        corpus. For details, see the [scoring
-        documentation][wordlevel.api.comparison.score.Scorer.lexicon]. For each token, there are
-        two stacked bars. One bar shows whether the token is relatively positive or negative and
-        whether it was used more or less in the comparison versus the reference. The other bar shows
-        whether the token's score is higher or lower in the comparison versus the reference. Tokens
-        are ranked by the magnitude of both stacked bars together.
+        There are two stacked bars per token: one indicating the difference in relative frequency,
+        one indicating the difference in score. Tokens are ranked by the magnitude of both bars
+        stacked together. For what each bar means and how to read the plot, see
+        [Reading a Word Shift Graph](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
 
-        Mathematically, the bars are derived from the following formula. Let $\tau$ be a token,
-        and let $p_\tau^{(\mathcal{C})}$ and $\phi_\tau^{(\mathcal{C})}$ be the normalized frequency
-        and score of $\tau$ in corpus $\mathcal{C}$ respectively. Then the contribution
-        $\delta_\tau$ of the token is:
-
-        $$
-        \delta_\tau
-            =
-            \overbrace{
-                \biggl(
-                    p_\tau^{(C)} - p_\tau^{(R)}
-                \biggr)
-            }^{
-                \uparrow / \downarrow
-            }
-            \overbrace{
-                \biggl[
-                    \frac{1}{2}
-                    \left(
-                        \phi_\tau^{(C)} + \phi_\tau^{(R)} - \Phi^{(\text{ref})}
-                    \right)
-                \biggr]
-            }^{
-                + / -
-            }
-            +
-            \underbrace{
-                \frac{1}{2}
-                \biggl(
-                    p_\tau^{(C)} + p_\tau^{(R)}
-                \biggr)
-                \biggl(
-                    \phi_\tau^{(C)} - \phi_\tau^{(R)}
-                \biggr)
-            }_{
-                \bigtriangleup / \bigtriangledown
-            }
-        $$
-
-        where $R$ and $C$ are the reference and comparison corpora respectively, and
-        $\Phi^{(\text{ref})}$ is the user-provided reference score.
-
-        The stacked bars represent the two parts of the summand. The first bar is whether a word is
-        relatively positive $(+ / -)$ and appears more or less in the comparison corpus
-        $(\uparrow / \downarrow)$. The second bar is whether the score is more or less positive in
-        the comparison corpus $(\bigtriangleup / \bigtriangledown)$. Note, the bars may counteract
-        one another if the two summand terms are different signs: this is shown visually with
-        faded bars in the word shift plot when that is the case.
+        Word shift plots can only be used with scores derived from weighted averages. For comparing
+        corpora using measures that are not weighted averages, use
+        [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
 
         Reference:
             For more details, see the following paper:

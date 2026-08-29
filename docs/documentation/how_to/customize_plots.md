@@ -96,7 +96,7 @@ each bar: their color, size, weight, rotation, and the padding between a bar and
 The rank axis lists the tokens and the score axis carries their contributions. Both
 [`RankAxisConfig`](../api/configuration/plots/rank_axis_config.md) and
 [`ScoreAxisConfig`](../api/configuration/plots/score_axis_config.md) take titles, colors, font sizes,
-and grid settings. `label_tick_step` sets how often the rank axis is labelled, and `bar_width` on the
+and grid settings. `label_tick_step` sets how often the rank axis is labeled, and `bar_width` on the
 rank axis is what sizes the figure along that direction.
 
 ```python exec="true" source="above" session="customize_plots"

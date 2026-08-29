@@ -70,7 +70,7 @@ $\Phi^{(\text{ref})}$ is the baseline each token's score is measured against. It
 a token count as relatively positive or relatively negative, so it decides which side of a comparison
 the token falls on.
 
-When a measure has a natural neutral point, such as the centre of a lexicon's scale, that is usually
+When a measure has a natural neutral point, such as the center of a lexicon's scale, that is usually
 the right choice. Whatever the measure, set it deliberately and report it.
 
 ## The order parameter
