@@ -1,13 +1,13 @@
-# Your First Word Shift Graph
+# Make a Word Shift Graph
 
-[Your First Comparison](first_comparison.md) found the words that most distinguish two presidents.
+[Make a Comparison](make_a_comparison.md) found the words that most distinguish two presidents.
 This guide asks a different question: not just *which* words differ, but *how* they add up to an
 overall difference. The answer is a **word shift graph**, WordLevel's signature plot.
 
 We pick up with the same two corpora.
 
-```python exec="true" source="above" session="first_word_shift_graph"
---8<-- "snippets/quick_start/first_word_shift_graph.py:setup"
+```python exec="true" source="above" session="make_a_word_shift_graph"
+--8<-- "snippets/quick_start/make_a_word_shift_graph.py:setup"
 ```
 
 ## Load a sentiment lexicon
@@ -16,8 +16,8 @@ A **lexicon** assigns a score to each word. WordLevel ships with several; we wil
 rates words for how happy or unhappy they feel, from 1 at the most negative to 9 at the most
 positive.
 
-```python exec="true" source="above" session="first_word_shift_graph"
---8<-- "snippets/quick_start/first_word_shift_graph.py:load_lexicon"
+```python exec="true" source="above" session="make_a_word_shift_graph"
+--8<-- "snippets/quick_start/make_a_word_shift_graph.py:load_lexicon"
 ```
 
 The first time you load a lexicon it is downloaded and cached, so later loads are instant.
@@ -26,8 +26,8 @@ The first time you load a lexicon it is downloaded and cached, so later loads ar
 
 Now we compare the two presidents by average sentiment, and ask which words drive the difference.
 
-```python exec="true" source="above" session="first_word_shift_graph"
---8<-- "snippets/quick_start/first_word_shift_graph.py:comparison"
+```python exec="true" source="above" session="make_a_word_shift_graph"
+--8<-- "snippets/quick_start/make_a_word_shift_graph.py:comparison"
 ```
 
 Two arguments are doing real work here.
@@ -43,13 +43,13 @@ difference between the corpora, rather than a raw quantity. See
 
 ## Plot the shift
 
-```python exec="true" source="above" session="first_word_shift_graph"
---8<-- "snippets/quick_start/first_word_shift_graph.py:shift_chart"
+```python exec="true" source="above" session="make_a_word_shift_graph"
+--8<-- "snippets/quick_start/make_a_word_shift_graph.py:shift_chart"
 ```
 
 <!-- Renders the chart: omitting `source` hides the plumbing that converts it to an SVG. -->
-```python exec="true" html="true" session="first_word_shift_graph"
---8<-- "snippets/quick_start/first_word_shift_graph.py:shift_chart_render"
+```python exec="true" html="true" session="make_a_word_shift_graph"
+--8<-- "snippets/quick_start/make_a_word_shift_graph.py:shift_chart_render"
 ```
 
 Each bar is one word's contribution to the overall difference in sentiment, and the bars are ordered
@@ -63,8 +63,8 @@ account for.
 
 ## Where to go next
 
-- To work with lexicons in more depth, see [Using Lexicons](../how_to/use_lexicons.md).
+- To work with lexicons in more depth, see [Scoring with Lexicons](../cookbooks/scoring_with_lexicons.md).
 - To shape the graph, see
-  [Making a word shift graph](../how_to/plots.md#making-a-word-shift-graph).
+  [Making a word shift graph](../cookbooks/plots.md#making-a-word-shift-graph).
 - For the measures behind these plots, see the
   [scoring methods](../api/comparison/score/index.md).

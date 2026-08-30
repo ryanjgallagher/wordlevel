@@ -38,4 +38,4 @@ scored.
     A token missing from one of the corpora has a frequency and a proportion of zero, so
     `corpus="either"` paired with `less_than` removes every token that the two corpora do not share.
 
-For how to apply each of these, see [Excluding Tokens](../how_to/exclude_tokens.md).
+For how to apply each of these, see [Excluding Tokens from Scoring](../cookbooks/excluding_tokens.md).

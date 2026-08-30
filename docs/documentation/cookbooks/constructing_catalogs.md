@@ -1,4 +1,4 @@
-# Building Catalogs
+# Constructing Catalogs
 
 For what a corpus and a catalog *are*, see
 [Corpora & Catalogs](../concepts/corpora_and_catalogs.md).
@@ -51,8 +51,8 @@ dictionary mapping from tokens to their frequencies. Say that we have two corpor
 in general, and one about cats specifically. Their vocabularies will have some overlaps and some
 differences.
 
-```python exec="true" source="above" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:setup"
+```python exec="true" source="above" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:setup"
 ```
 
 If these are our corpora, we can create a `Catalog` in several ways, depending on which is the most
@@ -63,16 +63,16 @@ convenient.
 We can create a `Catalog` by passing both corpora (represented as token-to-frequency dictionaries) 
 and giving them names. Note, the order of the dictionaries and corpus names needs to be the same. 
 
-```python exec="true" source="above" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:from_multiple_dicts"
+```python exec="true" source="above" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:from_multiple_dicts"
 ```
 
 ### From a single dictionary
 
 We can also pass a single dictionary which names each token-to-frequency corpus explicitly:
 
-```python exec="true" source="above" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:from_single_dict"
+```python exec="true" source="above" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:from_single_dict"
 ```
 
 ### From a Polars dataframe
@@ -80,8 +80,8 @@ We can also pass a single dictionary which names each token-to-frequency corpus 
 If we already have our corpora formatted as a dataframe, we can create a `Catalog` directly
 from it. First, let's create a dataframe from our example data.
 
-```python exec="true" source="above" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:build_dataframe"
+```python exec="true" source="above" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:build_dataframe"
 ```
 
 To create a `Catalog`, we need to provide the column indicating the names of the tokens, the 
@@ -89,8 +89,8 @@ To create a `Catalog`, we need to provide the column indicating the names of the
 with a list of dictionaries, we use the `corpora` parameter to name the corpora—here, we use it to 
 select them.
 
-```python exec="true" source="above" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:from_dataframe"
+```python exec="true" source="above" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:from_dataframe"
 ```
 
 ### From a non-Polars dataframe
@@ -98,8 +98,8 @@ select them.
 WordLevel can create a `Catalog` from any [Narwhals]-supported dataframe, including Pandas, DuckDB,
 PySpark, and others. The arguments are the same.
 
-```python exec="true" source="above" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:from_pandas"
+```python exec="true" source="above" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:from_pandas"
 ```
 
 !!! note
@@ -122,12 +122,12 @@ corpora are now represented as a [Polars] dataframe under the hood. We can inspe
 directly through the `df` attribute.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
-```python exec="true" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:display_config"
+```python exec="true" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:display_config"
 ```
 
-```python exec="true" source="material-block" result="text" session="build_catalogs"
---8<-- "snippets/how_to/build_catalogs.py:inspect"
+```python exec="true" source="material-block" result="text" session="constructing_catalogs"
+--8<-- "snippets/cookbooks/constructing_catalogs.py:inspect"
 ```
 
 The output shows that there is one row per token, and there is one column for each corpus: one for

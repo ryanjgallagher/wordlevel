@@ -8,7 +8,7 @@ This page covers appearance. For rank limits, orientation, totals, and figure si
 [Plotting Comparisons](plots.md).
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:setup"
+--8<-- "snippets/cookbooks/customize_plots.py:setup"
 ```
 
 The colors below come from a palette chosen to stay distinguishable with color vision deficiency.
@@ -23,12 +23,12 @@ frequency differences, take [`BarConfig`](../api/configuration/plots/bar_config.
 symbol fields label the totals panels, so they only appear when totals are shown.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:bar_config"
+--8<-- "snippets/cookbooks/customize_plots.py:bar_config"
 ```
 
 <!-- Renders the chart: omitting `source` hides the plumbing that converts it to an SVG. -->
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 Measures that attribute by the **sign of the contribution**, such as lexicon scores and the
@@ -37,11 +37,11 @@ instead. They name whether a token reinforces or offsets the overall difference 
 corpus.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:score_sign_bar_config"
+--8<-- "snippets/cookbooks/customize_plots.py:score_sign_bar_config"
 ```
 
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 !!! tip
@@ -57,11 +57,11 @@ corpus used it more or less. Each also has a `_counteracted` variant, used when 
 point in opposite directions.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:shift_bar_config"
+--8<-- "snippets/cookbooks/customize_plots.py:shift_bar_config"
 ```
 
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 ## The totals bar
@@ -71,11 +71,11 @@ set the color and glyph of the grand total bar. The per-type panels above it tak
 the bar config.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:total_shift_config"
+--8<-- "snippets/cookbooks/customize_plots.py:total_shift_config"
 ```
 
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 ## Labels
@@ -84,11 +84,11 @@ the bar config.
 each bar: their color, size, weight, rotation, and the padding between a bar and its label.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:label_config"
+--8<-- "snippets/cookbooks/customize_plots.py:label_config"
 ```
 
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 ## Axes
@@ -100,11 +100,11 @@ and grid settings. `label_tick_step` sets how often the rank axis is labeled, an
 rank axis is what sizes the figure along that direction.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:axis_config"
+--8<-- "snippets/cookbooks/customize_plots.py:axis_config"
 ```
 
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 ## Borders and the zero line
@@ -114,11 +114,11 @@ rank axis is what sizes the figure along that direction.
 origin. A border width of `0` draws only the native axis lines; anything larger closes the frame.
 
 ```python exec="true" source="above" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:border_config"
+--8<-- "snippets/cookbooks/customize_plots.py:border_config"
 ```
 
 ```python exec="true" html="true" session="customize_plots"
---8<-- "snippets/how_to/customize_plots.py:render"
+--8<-- "snippets/cookbooks/customize_plots.py:render"
 ```
 
 For every field on every config, see the

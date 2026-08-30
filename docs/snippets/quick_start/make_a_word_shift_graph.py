@@ -1,4 +1,4 @@
-# Mirrors the setup on the "Your First Comparison" page: markdown-exec sessions do not
+# Mirrors the setup on the "Make a Comparison" page: markdown-exec sessions do not
 # cross page boundaries, so every page rebuilds its own catalog.
 # --8<-- [start:setup]
 import wordlevel as wl

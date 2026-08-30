@@ -21,7 +21,7 @@ contributions reinforce the divergence and negative contributions offset it.
     The Kullback-Leibler divergence is only well-defined when every word in the comparison corpus
     also appears in the reference. A word the reference never uses has $p_\tau^{(R)} = 0$, and the
     divergence goes to infinity. Either
-    [exclude the unshared tokens](../../how_to/exclude_tokens.md) or use a symmetric measure.
+    [exclude the unshared tokens](../../cookbooks/excluding_tokens.md) or use a symmetric measure.
 
 ## Jensen-Shannon divergence
 
@@ -57,7 +57,7 @@ that they are maximally divergent.
 Unlike the two divergences above, rank-turbulence divergence is **not a weighted average**. It has no
 per-token score $\phi_\tau$, so [the decomposition](index.md#how-a-contribution-decomposes) does not
 apply and it cannot be drawn as a [word shift graph](../word_shift_graphs.md). Use a
-[bar graph](../../how_to/plots.md) instead.
+[bar graph](../../cookbooks/plots.md) instead.
 
 Working on ranks rather than frequencies has two consequences worth knowing. The corpora do not need
 to be comparable in size, because a ranking is already relative to its own corpus. And the result is

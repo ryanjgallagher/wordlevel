@@ -257,7 +257,7 @@ class Plotter:
         There are two stacked bars per token: one indicating the difference in relative frequency,
         one indicating the difference in score. Tokens are ranked by the magnitude of both bars
         stacked together. For what each bar means and how to read the plot, see
-        [Reading a Word Shift Graph](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
+        [Word Shift Graphs](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
 
         Word shift plots can only be used with scores derived from weighted averages. For comparing
         corpora using measures that are not weighted averages, use

@@ -12,7 +12,7 @@ There are two strategies, and they answer different questions:
 Normalizing again by the same strategy is a no-op; normalizing by a different strategy raises an
 error, since the contributions are already on a normalized scale.
 
-For the code, see [Normalizing Scores](../how_to/normalize_scores.md).
+For the code, see [Normalizing Scores](../cookbooks/normalizing_scores.md).
 
 ## By total difference
 

@@ -1,19 +1,19 @@
-# Using Lexicons
+# Scoring with Lexicons
 
 A **lexicon** assigns a score to each token, so a corpus can be summarized by the average score of
 the words in it. Comparing two corpora then asks how that average differs, and which words drive the
 difference.
 
-```python exec="true" source="above" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:setup"
+```python exec="true" source="above" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:setup"
 ```
 
 ## Loading a pre-defined lexicon
 
 WordLevel publishes several lexicons. Here is [labMT], which rates how happy or unhappy words feel.
 
-```python exec="true" source="above" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:load_labmt"
+```python exec="true" source="above" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:load_labmt"
 ```
 
 Lexicons are downloaded the first time they are used and cached afterwards, so later loads do not
@@ -24,12 +24,12 @@ need a network connection.
 A lexicon holds its scores in a dataframe, along with the `center` of its scale.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
-```python exec="true" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:display_config"
+```python exec="true" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:display_config"
 ```
 
-```python exec="true" source="material-block" result="text" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:inspect_lexicon"
+```python exec="true" source="material-block" result="text" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:inspect_lexicon"
 ```
 
 ## Scoring a comparison
@@ -38,8 +38,8 @@ Pass the lexicon to `score.lexicon`. The `reference_score` sets the neutral poin
 measured against, and determines which side of the comparison a word falls on, so set it
 deliberately. Here we use the lexicon's own center.
 
-```python exec="true" source="above" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:score_with_lexicon"
+```python exec="true" source="above" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:score_with_lexicon"
 ```
 
 ## Using your own scores
@@ -48,8 +48,8 @@ A lexicon does not have to be one of the pre-defined ones. Any mapping from toke
 as does a Polars dataframe with a token column and a score column. Set the `reference_score` to
 whatever counts as neutral on your scale.
 
-```python exec="true" source="above" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:custom_lexicon"
+```python exec="true" source="above" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:custom_lexicon"
 ```
 
 ## A different lexicon per corpus
@@ -63,8 +63,8 @@ words are scored by `scores_before`, and `"after"` is the comparison corpus, so 
 by `scores_after`. The same word can therefore carry a different score in each corpus, which is the
 point of scoring them separately.
 
-```python exec="true" source="above" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:per_corpus_lexicons"
+```python exec="true" source="above" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:per_corpus_lexicons"
 ```
 
 ## Borrowed and dropped tokens
@@ -77,8 +77,8 @@ A token missing from *both* lexicons is a different case: there is no score to b
 dropped from the comparison entirely. That is why `"the"` does not appear below, even though it is
 the most frequent token in both corpora.
 
-```python exec="true" source="material-block" result="text" session="use_lexicons"
---8<-- "snippets/how_to/use_lexicons.py:scored_tokens"
+```python exec="true" source="material-block" result="text" session="scoring_with_lexicons"
+--8<-- "snippets/cookbooks/scoring_with_lexicons.py:scored_tokens"
 ```
 
 !!! warning

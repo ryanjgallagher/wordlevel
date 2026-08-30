@@ -4,8 +4,8 @@ Normalizing rescales every token's contribution by a single constant, putting th
 common scale. For how to choose between the two methods and how to read the results, see
 [Normalization](../concepts/normalization.md).
 
-```python exec="true" source="above" session="normalize_scores"
---8<-- "snippets/how_to/normalize_scores.py:setup"
+```python exec="true" source="above" session="normalizing_scores"
+--8<-- "snippets/cookbooks/normalizing_scores.py:setup"
 ```
 
 ## By Total Difference
@@ -13,8 +13,8 @@ common scale. For how to choose between the two methods and how to read the resu
 Normalize by $\sum | \delta |$, so that each score is a token's share of the _total_ difference
 between the corpora.
 
-```python exec="true" source="above" session="normalize_scores" hl_lines="4"
---8<-- "snippets/how_to/normalize_scores.py:normalize_sum_abs"
+```python exec="true" source="above" session="normalizing_scores" hl_lines="4"
+--8<-- "snippets/cookbooks/normalizing_scores.py:normalize_sum_abs"
 ```
 
 ## By Net Difference
@@ -22,8 +22,8 @@ between the corpora.
 Normalize by $| \sum \delta |$, so that each score is sized relative to the _net_ difference
 between the corpora.
 
-```python exec="true" source="above" session="normalize_scores" hl_lines="4"
---8<-- "snippets/how_to/normalize_scores.py:normalize_abs_sum"
+```python exec="true" source="above" session="normalizing_scores" hl_lines="4"
+--8<-- "snippets/cookbooks/normalizing_scores.py:normalize_abs_sum"
 ```
 
 !!! warning
@@ -36,4 +36,4 @@ between the corpora.
     that the normalization constant is nonzero. 
 
 The normalization method used is recorded on the comparison itself; see
-[Tracking Reproducibility](reproducibility.md).
+[Recording Steps for Reproducibility](recording_reproducibility.md).

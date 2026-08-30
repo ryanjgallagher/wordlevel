@@ -48,7 +48,7 @@ A [word shift graph](word_shift_graphs.md) reads the same way whatever the measu
 token's contribution into its parts, and every bar says how the comparison corpus differs from the
 reference: whether the token was used more or less, and whether it scored higher or lower.
 
-A [bar graph](../how_to/plots.md) does not decompose anything, so its two sides mean one of two
+A [bar graph](../cookbooks/plots.md) does not decompose anything, so its two sides mean one of two
 things. Under some measures each token is attributed to a **corpus**, the one it is most
 characteristic of. Under others each token is attributed by whether it **reinforces or offsets** the
 overall difference: a contribution with the same sign as the overall difference reinforces it, making
@@ -56,6 +56,6 @@ its magnitude larger, while a contribution with the opposite sign offsets it, pu
 back toward zero.
 
 A comparison records which of the two it uses under its `attributed_by` attribute, which is also what
-decides the [configuration](../how_to/customize_plots.md) a bar graph takes.
+decides the [configuration](../cookbooks/customize_plots.md) a bar graph takes.
 
   [Polars]: https://pola.rs/

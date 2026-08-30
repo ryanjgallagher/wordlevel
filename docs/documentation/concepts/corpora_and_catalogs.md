@@ -28,7 +28,7 @@ is the [bag-of-words] model, which breaks documents down into tokens and their f
 their original order.
 
 For the concrete ways to get your data into that form, see
-[Building Catalogs](../how_to/build_catalogs.md).
+[Constructing Catalogs](../cookbooks/constructing_catalogs.md).
 
 ## What is a catalog?
 

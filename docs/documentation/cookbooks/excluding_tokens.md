@@ -1,25 +1,25 @@
-# Excluding Tokens
+# Excluding Tokens from Scoring
 
 Excluding narrows a comparison to the vocabulary you are interested in. Tokens are removed from both
 corpora before they are scored, so the frequencies the scoring measure works with are normalized over
 whatever vocabulary remains.
 
-We will pick up where [Scoring Comparisons](score_comparisons.md) left off, with the rank divergence
+We will pick up where [Scoring Comparisons](scoring_comparisons.md) left off, with the rank divergence
 between Roosevelt and Biden's speeches.
 
-```python exec="true" source="above" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:setup"
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:setup"
 ```
 
 Here are the 10 most distinguishing words, before excluding anything.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
-```python exec="true" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:display_config"
+```python exec="true" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:display_config"
 ```
 
-```python exec="true" source="material-block" result="text" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:top_tokens"
+```python exec="true" source="material-block" result="text" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:top_tokens"
 ```
 
 Most of them are function words and contractions. They genuinely distinguish the two presidents, but
@@ -30,14 +30,14 @@ they may not be what you are asking about.
 Pass the tokens to drop. Exclusions are part of the comparison, so they chain before the scoring
 method.
 
-```python exec="true" source="above" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:tokens"
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:tokens"
 ```
 
 The same measure now surfaces a different vocabulary.
 
-```python exec="true" source="material-block" result="text" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:tokens_effect"
+```python exec="true" source="material-block" result="text" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:tokens_effect"
 ```
 
 !!! warning
@@ -49,8 +49,8 @@ The same measure now surfaces a different vocabulary.
 Give a range of raw counts to drop. Exactly one of `less_than`, `greater_than`, and `between` sets
 the range; call the method again to exclude by a second, separate criterion.
 
-```python exec="true" source="above" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:by_frequency"
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:by_frequency"
 ```
 
 By default a token is only excluded if it falls in the range in **both** corpora. Pass
@@ -61,8 +61,8 @@ By default a token is only excluded if it falls in the range in **both** corpora
 A raw count means different things in corpora of different sizes. `by_proportion` uses each token's
 share of its own corpus instead, so the same bounds mean the same thing on either side.
 
-```python exec="true" source="above" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:by_proportion"
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:by_proportion"
 ```
 
 Proportions are taken over each corpus as the catalog gave it, before anything the comparison
@@ -74,12 +74,12 @@ excludes, so the bounds mean the same thing no matter what else is excluded.
 
 ## Excluding by lexicon score
 
-When a comparison is scored by a [lexicon](use_lexicons.md), tokens can be excluded by the score the
+When a comparison is scored by a [lexicon](scoring_with_lexicons.md), tokens can be excluded by the score the
 lexicon gives them. Dropping the middle of the scale keeps only the words that carry a strong
 sentiment either way.
 
-```python exec="true" source="above" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:by_lexicon_score"
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:by_lexicon_score"
 ```
 
 ## Keeping only shared vocabulary
@@ -88,8 +88,8 @@ sentiment either way.
 Kullback-Leibler divergence well defined, since it is infinite when the comparison corpus uses a word
 the reference never does.
 
-```python exec="true" source="above" session="exclude_tokens"
---8<-- "snippets/how_to/exclude_tokens.py:unshared_tokens"
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:unshared_tokens"
 ```
 
 !!! warning

@@ -1,6 +1,6 @@
 # Lexicons
 
-A [lexicon](../../how_to/use_lexicons.md) assigns a score to each token, so a corpus can be
+A [lexicon](../../cookbooks/scoring_with_lexicons.md) assigns a score to each token, so a corpus can be
 summarized by the average score of the words in it.
 
 $$

@@ -9,8 +9,8 @@ To work with comparisons, we will use an example dataset of presidential speeche
 a speech by a US president, and each corpus is the set of all speeches by a particular president. 
 We will use the speeches by Presidents Joe Biden and Franklin D. Roosevelt.
 
-```python exec="true" source="above" session="score_comparisons"
---8<-- "snippets/how_to/score_comparisons.py:setup"
+```python exec="true" source="above" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:setup"
 ```
 
 If you want to see which other corpora are available, you can run `speeches.as_df().columns`.
@@ -22,8 +22,8 @@ Let's compare Roosevelt and Biden's speeches by measuring the differences in the
 [normalized frequencies](../api/comparison/score/proportion.md) of each token. Roosevelt's
 speeches will be our reference corpus, and Biden's speeches will be our comparison corpus.
 
-```python exec="true" source="above" session="score_comparisons"
---8<-- "snippets/how_to/score_comparisons.py:proportion"
+```python exec="true" source="above" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:proportion"
 ```
 
 Let's break this down:
@@ -50,12 +50,12 @@ We've made our first comparison! We can access it from the `Catalog` using the a
 `"roosevelt_biden"` we gave it.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
-```python exec="true" session="score_comparisons"
---8<-- "snippets/how_to/score_comparisons.py:display_config"
+```python exec="true" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:display_config"
 ```
 
-```python exec="true" source="material-block" result="text" session="score_comparisons"
---8<-- "snippets/how_to/score_comparisons.py:inspect"
+```python exec="true" source="material-block" result="text" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:inspect"
 ```
 
 The comparison dataframe `df` contains a variety of information. Above, we can see some of the most
@@ -72,7 +72,7 @@ example, because Roosevelt used the word "the" relatively more than Biden (a neg
 `comparison_score`), it is associated with the reference corpus (which is Roosevelt).
 
 The comparison also carries metadata describing how it was made. See
-[Tracking Reproducibility](reproducibility.md).
+[Recording Steps for Reproducibility](recording_reproducibility.md).
 
 
 ## Making multiple comparisons
@@ -82,20 +82,20 @@ Let's compare Roosevelt and Biden's speeches with other measures, the
 [Shannon entropy](../api/comparison/score/shannon_entropy.md). Note how we can simply 
 add them as additional comparisons under different aliases.
 
-```python exec="true" source="above" session="score_comparisons"
---8<-- "snippets/how_to/score_comparisons.py:multiple_comparisons"
+```python exec="true" source="above" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:multiple_comparisons"
 ```
 
 All of the comparisons are stored in our catalog, including the original comparison we made using 
 the proportions.
 
-```python exec="true" source="material-block" result="text" session="score_comparisons"
---8<-- "snippets/how_to/score_comparisons.py:comparison_keys"
+```python exec="true" source="material-block" result="text" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:comparison_keys"
 ```
 
 
 Comparison scores can also be rescaled onto a common scale; see
-[Normalizing Scores](normalize_scores.md).
+[Normalizing Scores](normalizing_scores.md).
 
 
   [Polars]: https://pola.rs/
