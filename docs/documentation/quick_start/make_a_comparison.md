@@ -1,24 +1,22 @@
 # Make a Comparison
 
-This guide compares the speeches of two US presidents and finds the words that most distinguish
-them. If you have not installed WordLevel yet, start with [Install](../install.md).
+This guide shows you how to get started comparing texts with WordLevel. To follow along, make sure that you first [install the package](../install.md).
 
-## Load some corpora
+## Load data
 
-WordLevel ships with an example dataset of presidential speeches. Each document is a speech, and each
-corpus is every speech by a particular president. We will use Franklin D. Roosevelt and Joe Biden.
+A collection of documents is known as a [corpus](../concepts/corpora_and_catalogs.md#what-is-a-corpus). We compare multiple corpora by loading them into a [catalog](../concepts/corpora_and_catalogs.md#what-is-a-catalog). We will use an example dataset of US presidential speeches. Each document is a speech, and each corpus contains all of the speeches by a particular president. We will compare the speeches of presidents Franklin D. Roosevelt and Joe Biden.
 
 ```python exec="true" source="above" session="make_a_comparison"
 --8<-- "snippets/quick_start/make_a_comparison.py:setup"
 ```
 
-A `Catalog` holds the corpora we want to work with. Everything else in WordLevel starts here.
 
-## Look at the data
+## Inspect the `Catalog`
 
-The `Catalog` stores the corpora as a dataframe, with one row per token.
+The `Catalog` stores the corpora together as a dataframe. There is one row per token, and one column per corpus, where the entry indicates the frequency of that token in that corpus. For example, the word "the" was used 9,559 times in speeches by Roosevelt.
 
-<!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
+Columns with the suffix `__wl_normed` contain the normalized frequencies of tokens in each corpus.
+
 ```python exec="true" session="make_a_comparison"
 --8<-- "snippets/quick_start/make_a_comparison.py:display_config"
 ```
@@ -27,38 +25,37 @@ The `Catalog` stores the corpora as a dataframe, with one row per token.
 --8<-- "snippets/quick_start/make_a_comparison.py:inspect_catalog"
 ```
 
-There is one column of frequencies per president, plus a `__wl_normed` column that WordLevel adds
-for each corpus, holding the token's frequency as a proportion of that corpus.
 
 ## Compare the corpora
 
-Now we ask how the two presidents differ. A **comparison** pairs two corpora and picks a measure to
-score them with. Here we use the rank turbulence divergence, which asks how differently the two
-presidents rank their words.
+WordLevel lets us quantify how two corpora differ token by token (at the "word level"). We do this by creating a [comparison](../concepts/comparisons.md) between them, and using a [measure](../concepts/measures/index.md) to score their token-level differences.
+
+We will use the [rank-turbulence divergence](../concepts/measures/divergences.md#rank-turbulence-divergence) as an example. Each token is ranked by frequency. The larger a token's difference in rank between the corpora, the more it contributes to the divergence.
+
+We give our comparison the alias `"roosevelt_biden"`, which we will use to retrieve it from our `Catalog`.
+
 
 ```python exec="true" source="above" session="make_a_comparison"
 --8<-- "snippets/quick_start/make_a_comparison.py:comparison"
 ```
 
-Roosevelt is the *reference* corpus and Biden is the *comparison* corpus. The order matters for
-interpreting the results, so it is worth being deliberate about it.
 
-## See which words differ
+## Retrieve the comparison scores
 
-The comparison is stored on the `Catalog` under the name we gave it.
+The comparison is stored on the `Catalog` under the alias we gave it, `"roosevelt_biden"`.
 
 ```python exec="true" source="material-block" result="text" session="make_a_comparison"
 --8<-- "snippets/quick_start/make_a_comparison.py:top_tokens"
 ```
 
-Each token gets a `comparison_score` measuring how much it contributes to the difference between the
-corpora, a `score_rank` ordering the tokens by that contribution, and an `attribution` naming which
-president the token is more characteristic of.
+There is one row per token. Each token has a `comparison_score`, measuring how much it contributes to the difference between the corpora. 
 
-## Plot it
+For the rank-turbulence divergence, the `attribution` indicates whether the token had a higher rank by frequency in the "reference" corpus or "comparison" corpus. Because we defined our comparison as `comp("Franklin D. Roosevelt", "Joe Biden")`, the reference corpus is Roosevelt's speeches, and the comparison corpus is Biden's speeches. For example, "ukraine" is attributed to Biden's speeches. See more about [attribution](../concepts/comparisons.md#how-tokens-are-attributed) and [reference and comparison corpora](../concepts/comparisons.md#reference-and-comparison-corpora).
 
-Reading a table of scores only goes so far. A bar graph shows the highest-contributing tokens and
-which corpus each belongs to.
+
+## Plot the scores
+
+We can visualize the comparison scores as a bar graph. There is one bar per token, and its direction indicates whether it is attributed to the reference corpus (Roosevelt, left) or the comparison corpus (Biden, right). 
 
 ```python exec="true" source="above" session="make_a_comparison"
 --8<-- "snippets/quick_start/make_a_comparison.py:bar_chart"
@@ -69,15 +66,8 @@ which corpus each belongs to.
 --8<-- "snippets/quick_start/make_a_comparison.py:bar_chart_render"
 ```
 
-The two sides separate the presidents. Roosevelt's speeches are marked by the vocabulary of the
-Second World War and industrial mobilization, while Biden's carry the language of the pandemic and
-of Ukraine.
+This provides a quick but effective summary of how the two corpora differ. For example, we see Roosevelt's speeches are characterized by words pertaining to World War II ("japanese", "germany", "british", "axis") and industrial mobilization ("industry", "ships", "labor", "production"), whereas Biden's speeches are characterized by the COVID-19 pandemic ("covid", "vaccinated", "pandemic") and the Russian invasion of Ukraine ("ukraine", "putin", "nato").
 
 ## Where to go next
 
-- To understand what you just computed, read [Comparisons](../concepts/comparisons.md).
-- To apply this to your own data, see [Constructing Catalogs](../cookbooks/constructing_catalogs.md).
-- For other ways to measure a difference, see the
-  [scoring methods](../api/comparison/score/index.md).
-
-Or continue to [Make a Word Shift Graph](make_a_word_shift_graph.md).
+Continue to learn how to conduct [sentiment analysis](../cookbooks/scoring_with_lexicons.md) of Roosevelt's and Biden's speeches and [make a word shift graph](make_a_word_shift_graph.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).
