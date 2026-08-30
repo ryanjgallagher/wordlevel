@@ -1,10 +1,8 @@
 # Make a Word Shift Graph
 
-[Make a Comparison](make_a_comparison.md) found the words that most distinguish two presidents.
-This guide asks a different question: not just *which* words differ, but *how* they add up to an
-overall difference. The answer is a **word shift graph**, WordLevel's signature plot.
+This guide shows you how to make a [word shift graph](../concepts/word_shift_graphs.md) with WordLevel. To follow along, make sure that you first [install the package](../install.md), and read the introduction on [making catalogs and comparisons](make_a_comparison.md).
 
-We pick up with the same two corpora.
+We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president.
 
 ```python exec="true" source="above" session="make_a_word_shift_graph"
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:setup"
@@ -12,36 +10,42 @@ We pick up with the same two corpora.
 
 ## Load a sentiment lexicon
 
-A **lexicon** assigns a score to each word. WordLevel ships with several; we will use labMT, which
-rates words for how happy or unhappy they feel, from 1 at the most negative to 9 at the most
-positive.
+A [lexicon](../concepts/measures/lexicons.md) assigns a "score" to each token. For example, the [labMT sentiment lexicon](../api/lexicons/labMT.md) maps each token to a score between 1 and 9, where 1 indicates that the word is associated with negativity ("sadness") and 9 indicates the word is associated with positivity ("happiness").
+
+WordLevel provides [several sentiment lexicons](../api/lexicons/index.md) previously constructed by researchers. We will use the English labMT lexicon as an example. Lexicons are loaded using `wl.lex`.
+
 
 ```python exec="true" source="above" session="make_a_word_shift_graph"
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:load_lexicon"
 ```
 
-The first time you load a lexicon it is downloaded and cached, so later loads are instant.
+!!! note
+    The first time that you load a lexicon it is downloaded from [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons). The lexicon is cached locally, so subsequent calls do not download it repeatedly.
 
-## Score the comparison
 
-Now we compare the two presidents by average sentiment, and ask which words drive the difference.
+## Score the corpora
+
+Like our [first comparison](make_a_comparison.md), we compare the presidential speeches using `wl.comp`. This time, we score them by passing the `labmt` sentiment lexicon to the `lexicon` method.
+
 
 ```python exec="true" source="above" session="make_a_word_shift_graph"
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:comparison"
 ```
 
-Two arguments are doing real work here.
+We pass a `reference_score` when scoring the words—in this case it is the center of labMT's 1-to-9 sentiment scale, which is 5. Each token's score is compared to this reference score: if it is greater than 5, then it is "relatively positive"; if it is less than 5 then it is "relatively negative." This is important for interpreting the word shift graph below.
 
-The **`reference_score`** is the neutral point each word is measured against. We pass the lexicon's
-own center, 5, so a word scoring 7 counts as positive and a word scoring 3 counts as negative. This
-is not an incidental setting: move the reference score and words change which side of the shift they
-fall on, and the graph tells a different story. It is worth choosing deliberately every time.
+We also [normalize](../concepts/normalization.md) the scores, so that we can interpret each token's contribution as a percent of the total difference between the corpora. 
 
-Calling **`normalize`** rescales each word's contribution so it reads as a share of the total
-difference between the corpora, rather than a raw quantity. See
-[Normalization](../concepts/normalization.md) for when to use each method.
 
-## Plot the shift
+## Plot the word shift
+
+A [comparison bar graph](make_a_comparison.md#plot-the-scores) shows _which_ words contribute to the difference between two corpora. A word shift graph also shows _how_ they contribute. Here, there are four types of contributions:
+
+- $\left(+ \uparrow \right)$ A relatively positive word is used more
+- $\left(+ \downarrow \right)$ A relatively positive word is used less
+- $\left(- \uparrow \right)$ A relatively negative word is used more
+- $\left(- \downarrow \right)$ A relatively negative word is used less
+
 
 ```python exec="true" source="above" session="make_a_word_shift_graph"
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:shift_chart"
@@ -52,19 +56,9 @@ difference between the corpora, rather than a raw quantity. See
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:shift_chart_render"
 ```
 
-Each bar is one word's contribution to the overall difference in sentiment, and the bars are ordered
-by how much they contribute. A word can push the difference in either direction, and the two bars are
-colored by why: whether the word is relatively positive or negative and used more or less often, and
-whether its score is higher or lower.
+The total difference $\left( \sum \right)$ is positive, which means that the comparison corpus (Biden) has a higher sentiment than the reference corpus (Roosevelt). The tokens are interpreted with respect to this difference. For example, Biden's speeches have a higher sentiment than Roosevelt's because they use relatively positive words more ("you", "america", "thank") and relatively negative words less ("war", "fighting"). The higher sentiment is partly offset by other words, such as Biden's speeches using some relatively positive words less ("great", "peace", "victory") and some relatively negative words more ("violence", "dont", "tax").
 
-The panels above the bars are the totals. They accumulate the individual contributions into the
-overall difference between the two presidents, so you can see how much of it the words on display
-account for.
 
 ## Where to go next
 
-- To work with lexicons in more depth, see [Scoring with Lexicons](../cookbooks/scoring_with_lexicons.md).
-- To shape the graph, see
-  [Making a word shift graph](../cookbooks/plots.md#making-a-word-shift-graph).
-- For the measures behind these plots, see the
-  [scoring methods](../api/comparison/score/index.md).
+Learn more about [word shift graphs](../concepts/word_shift_graphs.md) and how to [plot them](../cookbooks/plots.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).

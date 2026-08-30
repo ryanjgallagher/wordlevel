@@ -32,7 +32,7 @@ WordLevel lets us quantify how two corpora differ token by token (at the "word l
 
 We will use the [rank-turbulence divergence](../concepts/measures/divergences.md#rank-turbulence-divergence) as an example. Each token is ranked by frequency. The larger a token's difference in rank between the corpora, the more it contributes to the divergence.
 
-We give our comparison the alias `"roosevelt_biden"`, which we will use to retrieve it from our `Catalog`.
+We make comparisons by using `wl.comp` and providing the names of the corpora that we want to compare. We give this comparison the alias `"roosevelt_biden"`, which we will use to retrieve it from our `Catalog`.
 
 
 ```python exec="true" source="above" session="make_a_comparison"
@@ -70,4 +70,4 @@ This provides a quick but effective summary of how the two corpora differ. For e
 
 ## Where to go next
 
-Continue to learn how to conduct [sentiment analysis](../cookbooks/scoring_with_lexicons.md) of Roosevelt's and Biden's speeches and [make a word shift graph](make_a_word_shift_graph.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).
+Continue to learn how to conduct sentiment analysis of Roosevelt's and Biden's speeches and [make a word shift graph](make_a_word_shift_graph.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).
