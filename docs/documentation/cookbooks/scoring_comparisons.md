@@ -1,101 +1,77 @@
 # Scoring Comparisons
 
-For what a comparison is, how the reference and comparison corpora differ, and why that direction
-matters, see [Comparisons](../concepts/comparisons.md).
 
-## Example dataset
+## Example data
 
-To work with comparisons, we will use an example dataset of presidential speeches. Each document is 
-a speech by a US president, and each corpus is the set of all speeches by a particular president. 
-We will use the speeches by Presidents Joe Biden and Franklin D. Roosevelt.
+We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president.
 
 ```python exec="true" source="above" session="scoring_comparisons"
 --8<-- "snippets/cookbooks/scoring_comparisons.py:setup"
 ```
 
-If you want to see which other corpora are available, you can run `speeches.as_df().columns`.
-
 
 ## Scoring a comparison
 
-Let's compare Roosevelt and Biden's speeches by measuring the differences in the
-[normalized frequencies](../api/comparison/score/proportion.md) of each token. Roosevelt's
-speeches will be our reference corpus, and Biden's speeches will be our comparison corpus.
+We will compare Roosevelt's and Biden's speeches by measuring the difference in the [normalized frequency](../api/comparison/score/proportion.md) of each token. Roosevelt's speeches will be our reference corpus, and Biden's speeches will be our comparison corpus. This means that we are calculating the difference $p_\tau^{(\text{Biden})} - p_\tau^{(\text{Roosevelt})}$, where $p_\tau$ is the normalized frequency of token $\tau$.
+
+We make a comparison by using the constructor `wl.comp`, and providing it to the `Catalog's` method `with_comparisons`.
 
 ```python exec="true" source="above" session="scoring_comparisons"
 --8<-- "snippets/cookbooks/scoring_comparisons.py:proportion"
 ```
 
-Let's break this down:
+In the comparison above, `wl.comp("Franklin D. Roosevelt", "Joe Biden")` defines which corpora we want to compare. The first argument is the reference corpus (Roosevelt) and the second argument is the comparison corpus (Biden). We can use the names of any two corpora in our `Catalog` to create our comparison.
 
-- `wl.comp("Franklin D. Roosevelt", "Joe Biden")` defines which corpora we want to compare. The
-first argument is the reference corpus (Roosevelt) and the second argument is the comparison corpus
-(Biden). We can use the names of any two corpora in our `Catalog` to create our comparison.
-- `score.proportion()` specifies that we want to compare the normalized frequencies (proportions) of
-the two corpora in our comparison. All scoring methods are called from the `score` namespace; see
-the [documentation](../api/comparison/score/index.md) for other measures.
-- `alias("roosevelt_biden")` gives the comparison the name `"roosevelt_biden"`, which we can use to
-refer to the comparison later.
-- `cl.with_comparisons(...)` attaches the comparison to the `Catalog`. If you are familiar with 
-[Polars], this is similar to how `df.with_columns()` attaches expressions to a dataframe.
+The method `score.proportion()` specifies that we want to compare the tokens' normalized frequencies (proportions). All scoring methods are called from the `score` namespace; see the [API reference](../api/comparison/score/index.md) for other measures.
 
-!!! warning
-    Remember, `wl.comp()` does not do anything by itself—it is a lazily evaluated plan for how to
+We call the `alias` method to give our comparison the name `"roosevelt_biden"`. This is the name that we can use to refer to the comparison when working with the `Catalog`.
+
+!!! note
+    `wl.comp` does not do anything by itself: it is a lazily evaluated plan for how to
     make the comparison. Attaching it to the `Catalog` is how the comparison is actually executed.
 
 
 ## Inspecting a comparison
 
-We've made our first comparison! We can access it from the `Catalog` using the alias
-`"roosevelt_biden"` we gave it.
+The method `with_comparisons` stores the comparison in our `Catalog`. If you are familiar with [Polars], this is similar to how `df.with_columns()` attaches expressions (columns) to a dataframe. 
+
+We can access our comparison using the alias that we gave it, `"roosevelt_biden"`.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
 ```python exec="true" session="scoring_comparisons"
 --8<-- "snippets/cookbooks/scoring_comparisons.py:display_config"
 ```
 
+```python exec="true" source="above" session="scoring_comparisons"
+--8<-- "snippets/cookbooks/scoring_comparisons.py:get_comparison"
+```
+
+The comparison's dataframe `df` contains details about the token-by-token differences.
+
 ```python exec="true" source="material-block" result="text" session="scoring_comparisons"
 --8<-- "snippets/cookbooks/scoring_comparisons.py:inspect"
 ```
 
-The comparison dataframe `df` contains a variety of information. Above, we can see some of the most
-important columns for comparing proportions.
+The column `Joe Biden__wl_normed` is $p_\tau^{(\text{Biden})}$, the relative frequency of the token in Biden's speeches. Similarly, the column `Franklin D. Roosevelt__wl_normed` is $p_\tau^{(\text{Roosevelt})}$. The `comparison_score` is the difference $p_\tau^{(\text{Biden})} - p_\tau^{(\text{Roosevelt})}$.
 
-- `Franklin D. Roosevelt__wl_normed` and `Joe Biden__wl_normed` are the normalized frequencies
-that are automatically calculated for the comparison.
-- The `comparison_score` is the difference in normalized frequencies (proportions) that we
-calculated by calling `score.proportion()`.
-- The `score_rank` ranks the `comparison_score` by magnitude. The closer a token's rank is to 1, 
-the larger the difference is between the corpora.
-- The `attribution` indicates which corpus each token is more closely "associated" with. For
-example, because Roosevelt used the word "the" relatively more than Biden (a negative
-`comparison_score`), it is associated with the reference corpus (which is Roosevelt).
+The `attribution` is determined by whether the score is positive or negative. When it is positive, the token was used more in Biden's speeches, and so it is "attributed" to his corpus (the `comparison`). When the score is negative, the token was used more in Roosevelt's speeches, and so it is attributed to the `reference` corpus.
 
-The comparison also carries metadata describing how it was made. See
-[Recording Steps for Reproducibility](recording_reproducibility.md).
+The comparison also carries [metadata](recording_reproducibility.md) recording how it was made.
 
 
 ## Making multiple comparisons
 
-Let's compare Roosevelt and Biden's speeches with other measures, the 
-[rank turbulence divergence](../api/comparison/score/rank_divergence.md), and the
-[Shannon entropy](../api/comparison/score/shannon_entropy.md). Note how we can simply 
-add them as additional comparisons under different aliases.
+A `Catalog` can contain multiple comparisons, differentiated by their aliases. We can construct them by simply calling the method `with_comparisons` again.
 
 ```python exec="true" source="above" session="scoring_comparisons"
 --8<-- "snippets/cookbooks/scoring_comparisons.py:multiple_comparisons"
 ```
 
-All of the comparisons are stored in our catalog, including the original comparison we made using 
-the proportions.
+Now if we look at the catalog's comparisons, we see that the new ones are stored alongside the original comparison.
 
 ```python exec="true" source="material-block" result="text" session="scoring_comparisons"
 --8<-- "snippets/cookbooks/scoring_comparisons.py:comparison_keys"
 ```
-
-
-Comparison scores can also be rescaled onto a common scale; see
-[Normalizing Scores](normalizing_scores.md).
 
 
   [Polars]: https://pola.rs/

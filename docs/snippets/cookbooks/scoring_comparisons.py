@@ -22,9 +22,12 @@ cl = cl.with_comparisons(
 # --8<-- [end:proportion]
 
 
-# --8<-- [start:inspect]
+# --8<-- [start:get_comparison]
 roosevelt_biden = cl.comparisons["roosevelt_biden"]
+# --8<-- [end:get_comparison]
 
+
+# --8<-- [start:inspect]
 print(
     roosevelt_biden.df.select(
         "token",
