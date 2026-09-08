@@ -28,7 +28,7 @@ The first way that we can normalize scores is by the _total_ difference, which i
 The second way that we can normalize is by the _net_ difference, which is equivalent to dividing all of the scores by $\left| \sum \delta_\tau \right|$. This allows us to interpret each token's score as its size relative to that net difference.
 
 
-```python exec="true" source="above" session="normalizing_scores" hl_lines="4"
+```python exec="true" source="above" session="normalizing_scores" 
 --8<-- "snippets/cookbooks/normalizing_scores.py:normalize_abs_sum"
 ```
 
