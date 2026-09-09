@@ -23,7 +23,7 @@ cl = cl.with_comparisons(
 
 print(
     cl.comparisons["roosevelt_biden_rank_divergence"].df
-    .select("token", "score_rank")
+    .select("token", "score_rank", "Franklin D. Roosevelt", "Joe Biden")
     .sort("score_rank")
     .head(n=10)
 )
