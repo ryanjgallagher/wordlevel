@@ -60,7 +60,7 @@ class ScoreSignBarConfig:
     """
 
     reinforce: str = "#2F7CCE"
-    offset: str = "#FECC5D"
+    offset: str = "#E6E6E6"
     reinforce_symbol: str = "Reinforces"
     offset_symbol: str = "Offsets"
 
