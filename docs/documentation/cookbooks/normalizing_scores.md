@@ -1,6 +1,6 @@
 # Normalizing Scores
 
-We can put comparison scores on a common scale by normalizing them. This allows us to interpret the scores as percent contributions, rather than in terms of their raw units.
+We can put comparison scores on a common scale by normalizing them. This allows us to easily interpret the scores relative to one another, rather than in terms of their raw units.
 
 In a comparison, each token $\tau$ makes a contribution to the difference $\delta_\tau$. The overall difference between the two corpora is $\sum \delta_\tau$.
 
