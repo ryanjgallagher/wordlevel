@@ -51,14 +51,14 @@ def test_zero_line_color_falls_back_to_border():
 def test_zero_line_dict_form_and_default():
     """
     Dict configs are accepted; the default falls back to the border color (Altair's axis grey) at
-    width 0, so it matches the axes but draws nothing until given a width.
+    width 1.0
     """
     mark = zero_line({"color": "blue", "width": 2}).to_dict()["mark"]
     assert mark["color"] == "blue"
     assert mark["strokeWidth"] == 2
 
     default = zero_line().to_dict()["mark"]
-    assert default["strokeWidth"] == 0
+    assert default["strokeWidth"] == 1.0
     assert default["color"] == "#888"
 
 
@@ -79,7 +79,7 @@ def test_shift_appends_zero_line(make_mock_df, score_col, rank_col, token_col, s
     default_last = default_chart.layer[0].layer[-1].to_dict()
     assert default_last["mark"]["type"] == "rule"
     assert default_last["encoding"]["x"]["datum"] == 0
-    assert default_last["mark"]["strokeWidth"] == 0
+    assert default_last["mark"]["strokeWidth"] == 1.0
 
     configured_chart = shift(
         make_mock_df(),

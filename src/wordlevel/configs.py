@@ -358,7 +358,7 @@ class ZeroLineConfig:
     """
 
     color: str | None = None
-    width: float = 0
+    width: float = 1.0
 
 
 @dataclass
