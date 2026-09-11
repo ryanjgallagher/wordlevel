@@ -377,4 +377,4 @@ class TotalShiftConfig:
     """
 
     total: str = "#888"
-    total_symbol: str = "Σ"
+    total_symbol: str = "Total Diff."
