@@ -31,8 +31,8 @@ class BarConfig:
             Symbol labeling the comparison contribution in the totals panels
     """
 
-    reference: str = "#FECC5D"
-    comparison: str = "#2F7CCE"
+    reference: str = "#F09E2E"
+    comparison: str = "#016FBA"
     reference_symbol: str = "Reference"
     comparison_symbol: str = "Comparison"
 
@@ -59,7 +59,7 @@ class ScoreSignBarConfig:
             Symbol labeling the offsetting contribution in the totals panels
     """
 
-    reinforce: str = "#2F7CCE"
+    reinforce: str = "#016FBA"
     offset: str = "#E6E6E6"
     reinforce_symbol: str = "Reinforces"
     offset_symbol: str = "Offsets"
