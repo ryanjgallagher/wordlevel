@@ -343,7 +343,7 @@ class Scorer:
         | None = None,
         lexicon_token_col: str | None = None,
         lexicon_score_col: str | None = None,
-        reference_score: float | Literal["mean", "center"] | pl.Expr | None = None,
+        reference_score: float | Literal["mean", "center"] | pl.Expr = 0,
         impute: float | Literal["borrow", "mean"] | pl.Expr = "borrow",
     ) -> Comparison:
         r"""
@@ -467,17 +467,6 @@ class Scorer:
         """
         score_alias_ref = LEXICON_SCORE_REF_COL
         score_alias_cmp = LEXICON_SCORE_CMP_COL
-
-        if reference_score is None:
-            is_lexicon = (
-                isinstance(lexicon, Lexicon)
-                or isinstance(lexicon_reference, Lexicon)
-                or isinstance(lexicon_comparison, Lexicon)
-            )
-            if is_lexicon:
-                reference_score = "center"
-            else:
-                reference_score = 0
 
         if not isinstance(reference_score, pl.Expr) and (reference_score == "center"):
             if isinstance(lexicon, Lexicon):

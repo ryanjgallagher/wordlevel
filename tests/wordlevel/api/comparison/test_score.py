@@ -466,7 +466,7 @@ class TestLexiconScorer:
         assert SCORE_COL in df_result.columns
         assert df_result.height == df_mock.height
 
-    def test_default_reference_score_is_lexicon_center(self) -> None:
+    def test_default_reference_score_for_lexicons_is_zero(self) -> None:
         """When no reference_score is given, it defaults to lexicon.center."""
         lexicon = Lexicon(
             lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 5.0, -3.0]}),
@@ -475,7 +475,7 @@ class TestLexiconScorer:
         comparison = Comparison("ref", "cmp")
         result = comparison.score.lexicon(lexicon=lexicon)
 
-        assert result._state.parameters["reference_score"] == lexicon.center
+        assert result._state.parameters["reference_score"] == 0
 
     def test_explicit_center_resolves_to_lexicon_center(self) -> None:
         """reference_score='center' resolves to lexicon.center."""
