@@ -4,7 +4,7 @@ A word shift graph explains a difference between two corpora by breaking it into
 each word. It answers not just *which* words differ, but *how* they add up to the overall difference.
 
 Word shift graphs can only be used with scores derived from weighted averages. For comparing corpora
-using measures that are not weighted averages, use a [bar graph](../cookbooks/plots.md) instead.
+using measures that are not weighted averages, use a [bar graph](../cookbooks/plotting_comparisons.md) instead.
 
 ## How to read one
 

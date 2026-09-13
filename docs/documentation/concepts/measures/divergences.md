@@ -57,7 +57,7 @@ that they are maximally divergent.
 Unlike the two divergences above, rank-turbulence divergence is **not a weighted average**. It has no
 per-token score $\phi_\tau$, so [the decomposition](index.md#how-a-contribution-decomposes) does not
 apply and it cannot be drawn as a [word shift graph](../word_shift_graphs.md). Use a
-[bar graph](../../cookbooks/plots.md) instead.
+[bar graph](../../cookbooks/plotting_comparisons.md) instead.
 
 Working on ranks rather than frequencies has two consequences worth knowing. The corpora do not need
 to be comparable in size, because a ranking is already relative to its own corpus. And the result is

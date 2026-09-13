@@ -54,7 +54,7 @@ nav = [
       {"Scoring with Lexicons" = "documentation/cookbooks/scoring_with_lexicons.md"},
       {"Normalizing Scores" = "documentation/cookbooks/normalizing_scores.md"},
       {"Excluding Tokens" = "documentation/cookbooks/excluding_tokens.md"},
-      {"Plotting Comparisons" = "documentation/cookbooks/plots.md"},
+      {"Plotting Comparisons" = "documentation/cookbooks/plotting_comparisons.md"},
       {"Customizing Plots" = "documentation/cookbooks/customize_plots.md"},
       {"Recording Steps for Reproducibility" = "documentation/cookbooks/recording_reproducibility.md"}
     ]},
