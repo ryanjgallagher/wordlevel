@@ -9,8 +9,8 @@ In a comparison, each token $\tau$ makes a contribution to the difference $\delt
 
 We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president. See the [cookbook](constructing_catalogs.md) for more about working with catalogs.
 
-```python exec="true" source="above" session="scoring_comparisons"
---8<-- "snippets/cookbooks/scoring_comparisons.py:setup"
+```python exec="true" source="above" session="normalizing_scores"
+--8<-- "snippets/cookbooks/normalizing_scores.py:setup"
 ```
 
 
