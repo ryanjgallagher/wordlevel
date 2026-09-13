@@ -251,7 +251,7 @@ class Scorer:
             attributed_by="frequency",
         )
 
-    def proportion(self, reference_score: float | Literal["mean"] | pl.Expr = 0) -> Comparison:
+    def proportion(self) -> Comparison:
         r"""
         Calculates the proportion difference between the reference and comparison corpora.
 
@@ -263,8 +263,7 @@ class Scorer:
             ```
 
         Each token's contribution is the difference in its normalized frequency (i.e. proportion)
-        within each corpus. When the `reference_score` is 0 (the default), the contribution
-        $\delta_\tau$ of a token $\tau$ is:
+        within each corpus. The contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
         \delta_\tau = p_\tau^{(C)} - p_\tau^{(R)}
@@ -274,20 +273,6 @@ class Scorer:
         $R$ and $C$ respectively, the reference and comparison corpora. Positive contributions
         identify tokens that occur relatively more often in the comparison; negative contributions
         identify tokens that occur relatively more often in the reference.
-
-        When the `reference_score` is non-zero, the contribution of the token is:
-
-        $$
-        \delta_\tau =
-            \left(
-                p_\tau^{(C)} - p_\tau^{(R)}
-            \right)
-            \left(
-                1 - \Phi^{(\text{ref})}
-            \right)
-        $$
-
-        where $\Phi^{(\text{ref})}$ is the user-provided reference score.
 
         Reference:
             For more details, see the following paper:
@@ -303,11 +288,6 @@ class Scorer:
             | [`Comparison.score.frequency`][wordlevel.api.comparison.score.Scorer.frequency] | Scores corpora by raw frequencies |
             | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
 
-        Args:
-            reference_score:
-                Baseline against which per-token contributions are interpreted in the
-                weighted-average decomposition. Defaults to 0
-
         Returns:
             A new `Comparison` with the corpora scored by proportion differences
         """
@@ -315,14 +295,14 @@ class Scorer:
             score_func=_fixed_dual_score_func(pl.lit(1), pl.lit(1)),
             clean_score_func=_passthrough_clean_score_func,
             attribute_by="frequency",
-            reference_score=reference_score,
+            reference_score=0,
             requires_normed_freqs=True,
         )
 
         return self._return_comparison(
             plan,
             method="proportion",
-            parameters={"reference_score": reference_score},
+            parameters={"reference_score": 0},
             is_weighted_avg=True,
             is_nonnegative=False,
             attributed_by="frequency",
@@ -343,7 +323,7 @@ class Scorer:
         | None = None,
         lexicon_token_col: str | None = None,
         lexicon_score_col: str | None = None,
-        reference_score: float | Literal["mean", "center"] | pl.Expr | None = None,
+        reference_score: float | Literal["mean", "center"] | pl.Expr = 0,
         impute: float | Literal["borrow", "mean"] | pl.Expr = "borrow",
     ) -> Comparison:
         r"""
@@ -467,17 +447,6 @@ class Scorer:
         """
         score_alias_ref = LEXICON_SCORE_REF_COL
         score_alias_cmp = LEXICON_SCORE_CMP_COL
-
-        if reference_score is None:
-            is_lexicon = (
-                isinstance(lexicon, Lexicon)
-                or isinstance(lexicon_reference, Lexicon)
-                or isinstance(lexicon_comparison, Lexicon)
-            )
-            if is_lexicon:
-                reference_score = "center"
-            else:
-                reference_score = 0
 
         if not isinstance(reference_score, pl.Expr) and (reference_score == "center"):
             if isinstance(lexicon, Lexicon):

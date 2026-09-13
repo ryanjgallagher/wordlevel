@@ -599,7 +599,8 @@ def test_score_axis_title_resolved_and_rendered(
     )
 
     score_axis = chart.to_dict()["encoding"]["x"]["axis"]
-    assert score_axis.get("title") == expected_title
+    # Indexing (not `.get`) so a missing title, which Vega-Lite renders as the field name, fails
+    assert score_axis["title"] == expected_title
 
 
 @pytest.mark.parametrize(
