@@ -61,4 +61,4 @@ The total difference $\left( \sum \right)$ is positive, which means that the com
 
 ## Where to go next
 
-Learn more about [word shift graphs](../concepts/word_shift_graphs.md) and how to [plot them](../cookbooks/plots.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).
+Learn more about [word shift graphs](../concepts/word_shift_graphs.md) and how to [plot them](../cookbooks/plotting_word_shifts.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).

@@ -2,7 +2,7 @@
 
 A bar graph shows the tokens that contribute most to a comparison, ordered by the magnitude of their contribution. Bar graphs can be made with `Catalog.plot.bar` for a comparison scored with any measure.
 
-For comparisons scored with weighted averages, such as lexicon scores and the entropies, a [word shift graph](../concepts/word_shift_graphs.md) can break each token's contribution down even further.
+For comparisons scored with weighted averages, such as lexicon scores and the entropies, a [word shift graph](../concepts/word_shift_graphs.md) can break each token's contribution down even further. See [Plotting Word Shifts](plotting_word_shifts.md).
 
 
 ## Example dataset
