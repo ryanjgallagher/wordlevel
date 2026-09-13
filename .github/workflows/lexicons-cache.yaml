@@ -37,4 +37,4 @@ jobs:
           restore-keys: lexicons-${{ runner.os }}-
 
       - name: Load lexicons
-        run: uv run --no-sync python -c "import wordlevel as wl; wl.lex.labMT('english')"
+        run: uv run --no-sync python -c "import wordlevel as wl; wl.lex.labMT('english'); wl.lex.SocialSent('1940'); wl.lex.SocialSent('2000')"
