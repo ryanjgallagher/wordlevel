@@ -335,7 +335,9 @@ def shift_total(
         domainColor=to_altair_optional(
             rank_axis.axis_color if rank_axis.axis_color is not None else border_config.color
         ),
-        title="Summary",  # Hidden, but needed to align axes with main chart
+        title=None
+        if rank_axis.title is None
+        else "l",  # Hidden, but needed to align axes with main chart
         titleColor="transparent",
         titleFontSize=to_altair_optional(rank_axis.title_fontsize),
         ticks=False,

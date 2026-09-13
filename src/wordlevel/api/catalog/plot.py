@@ -163,8 +163,9 @@ class Plotter:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
             total_shift_config:
-                Configuration for the grand total bar shown when `show_totals` is `True`. Accepts a
-                `TotalShiftConfig` or a dict with the same fields. Ignored when the totals are hidden
+                Configuration for the grand total bar in the totals panels. Accepts a
+                `TotalShiftConfig` or a dict with the same fields. Ignored if `show_totals` is
+                `False`
             scale_factor:
                 Multiplier applied to the score axis when fitting it to the bar labels. Increasing
                 it provides more space for the bar labels
@@ -315,8 +316,9 @@ class Plotter:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
             total_shift_config:
-                Configuration for the grand total bar shown when `show_totals` is `True`. Accepts a
-                `TotalShiftConfig` or a dict with the same fields. Ignored when the totals are hidden
+                Configuration for the grand total bar in the totals panels. Accepts a
+                `TotalShiftConfig` or a dict with the same fields. Ignored if `show_totals` is
+                `False`
             scale_factor:
                 Multiplier applied to the score axis when fitting it to the bar labels. Increasing
                 it provides more space for the bar labels

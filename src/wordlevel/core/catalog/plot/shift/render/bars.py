@@ -361,7 +361,7 @@ def shift_bars(
 
     # Create aspects of the plot
     score_alt_axis = alt.Axis(
-        title=to_altair_optional(score_axis.title),
+        title=score_axis.title,
         titleColor=to_altair_optional(score_axis.title_color),
         titleFontSize=to_altair_optional(score_axis.title_fontsize),
         labelColor=to_altair_optional(score_axis.label_color),
@@ -381,7 +381,7 @@ def shift_bars(
         translate=_TRANSLATE_PX,
     )
     rank_alt_axis = alt.Axis(
-        title=to_altair_optional(rank_axis.title),
+        title=rank_axis.title,
         titleColor=to_altair_optional(rank_axis.title_color),
         titleFontSize=to_altair_optional(rank_axis.title_fontsize),
         labelColor=to_altair_optional(rank_axis.label_color),

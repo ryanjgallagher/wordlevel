@@ -7,7 +7,7 @@ import pytest
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.catalog.plot import PlotCacheKey, Plotter, PlotType
 from wordlevel.api.comparison.comparison import comp
-from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig
+from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalShiftConfig
 from wordlevel.constants import (
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
@@ -233,6 +233,16 @@ class TestBorrowSymbol:
         assert set(df_result["word"].to_list()) == {"the", "cat", "dog", "ran", "fast"}
 
 
+def _grand_total_bars_layer(chart: alt.TopLevelMixin) -> alt.Chart:
+    """Extracts the bars layer of the grand total panel, the middle panel of the concatenation."""
+    return cast(alt.Chart, cast(alt.VConcatChart, chart).vconcat[1].layer[0].layer[0])
+
+
+def _score_axis_title(chart: alt.TopLevelMixin) -> str:
+    """Extracts the score (x) axis title from the bars layer of a rendered chart."""
+    return cast(alt.LayerChart, chart).layer[0].layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
+
+
 class TestBar:
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """bar() returns a LayerChart with 4 layers and the correct number of data rows."""
@@ -315,6 +325,23 @@ class TestBar:
         with pytest.raises(expected_error):
             plotter.bar(comparison, bar_config=bad_config)
 
+    @pytest.mark.parametrize(
+        "total_shift_config",
+        [
+            TotalShiftConfig(total="#ff0000"),
+            {"total": "#ff0000"},
+        ],
+    )
+    def test_total_shift_config_reaches_the_grand_total_bar(
+        self, catalog: Catalog, total_shift_config: TotalShiftConfig | dict
+    ) -> None:
+        """"""
+        plotter = Plotter(catalog)
+        chart = plotter.bar("freq_comp", show_totals=True, total_shift_config=total_shift_config)
+
+        scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]
+        assert scale["range"] == ["#ff0000"]
+
     def test_show_totals_totals_span_full_vocab(
         self, df_mock: pl.DataFrame, catalog: Catalog
     ) -> None:
@@ -387,10 +414,15 @@ class TestShift:
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
 
+    def test_total_shift_config_reaches_the_grand_total_bar(self, catalog: Catalog) -> None:
+        """"""
+        plotter = Plotter(catalog)
+        chart = plotter.shift(
+            "entropy_comp", show_totals=True, total_shift_config={"total": "#ff0000"}
+        )
 
-def _score_axis_title(chart: alt.TopLevelMixin) -> str:
-    """Extracts the score (x) axis title from the bars layer of a rendered chart."""
-    return cast(alt.LayerChart, chart).layer[0].layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
+        scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]
+        assert scale["range"] == ["#ff0000"]
 
 
 class TestNormalizedPlot:
