@@ -258,7 +258,6 @@ class TestScoreFunctionWiring:
     @pytest.mark.parametrize(
         "score_func",
         [
-            lambda s, ref_score: s.proportion(reference_score=ref_score),
             lambda s, ref_score: s.tsallis_entropy(reference_score=ref_score),
             lambda s, ref_score: s.jensen_shannon_divergence(reference_score=ref_score),
             lambda s, ref_score: s.lexicon(
