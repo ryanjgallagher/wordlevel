@@ -21,20 +21,13 @@ The June 1st corpus and June 2nd corpus together are our corpora.
     WordLevel's methods are only scientifically suited for corpora that have large, stable frequency 
     distributions across the vocabulary, and they are not recommended for comparing short documents individually.
 
-## How WordLevel represents a corpus
-
-WordLevel represents a corpus as a set of tokens and their frequencies. The simplest representation 
-is the [bag-of-words] model, which breaks documents down into tokens and their frequencies, ignoring 
-their original order.
-
-For the concrete ways to get your data into that form, see
-[Constructing Catalogs](../cookbooks/constructing_catalogs.md).
-
 ## What is a catalog?
 
 A **catalog** is WordLevel's interface for working with multiple corpora. It is the workbench for
 transforming, manipulating, and comparing corpora in the same way that a dataframe is a workbench
 for manipulating columns. 
+
+To work with corpora and catalogs, see the [cookbook](../cookbooks/constructing_catalogs.md).
 
 
   [bag-of-words]: https://en.wikipedia.org/wiki/Bag-of-words_model
