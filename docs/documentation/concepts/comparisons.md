@@ -20,17 +20,12 @@ reference corpus can be considered the baseline from which the comparison corpus
 important to be mindful of which corpus is which, since it can affect the interpretation of the
 results. 
 
-## Why direction matters
-
 For example, say we have two corpora: the speeches of President Franklin D. Roosevelt and
 the speeches of President Joe Biden. Suppose Roosevelt's speeches are the reference corpus and 
-Biden's are the comparison corpus, and we want to simply measure the difference in how often 
-different words appear. Since Roosevelt is our reference, this means we are calculating 
+Biden's are the comparison corpus, and we want to simply measure the difference in how often words are used. Since Roosevelt is our reference, this means we are calculating 
 $f^{(\text{Biden})}_\tau - f^{(\text{Roosevelt})}_\tau$, where $f^{(C)}_\tau$ is the frequency of 
 token $\tau$ in corpus $C$. If the difference is positive, then it means that the word was used more 
 by Biden. Similarly, if it is negative, then it means it was used less by Biden (more by Roosevelt).
-
-## Symmetric measures
 
 Some scoring methods, like the 
 [Jensen-Shannon divergence](measures/divergences.md#jensen-shannon-divergence) or 
@@ -39,23 +34,3 @@ default, meaning that the token-level difference is the same regardless of which
 reference and which is the comparison. However, it can still be important to track which corpus is 
 which, particularly for interpreting a [word shift graph](word_shift_graphs.md). See
 [Measures](measures/index.md) for details on how to interpret each measure.
-
-## How tokens are attributed
-
-Every comparison splits its tokens into two groups. What those groups mean depends on the plot.
-
-A [word shift graph](word_shift_graphs.md) reads the same way whatever the measure. It breaks each
-token's contribution into its parts, and every bar says how the comparison corpus differs from the
-reference: whether the token was used more or less, and whether it scored higher or lower.
-
-A [bar graph](../cookbooks/plotting_comparisons.md) does not decompose anything, so its two sides mean one of two
-things. Under some measures each token is attributed to a **corpus**, the one it is most
-characteristic of. Under others each token is attributed by whether it **reinforces or offsets** the
-overall difference: a contribution with the same sign as the overall difference reinforces it, making
-its magnitude larger, while a contribution with the opposite sign offsets it, pulling the difference
-back toward zero.
-
-A comparison records which of the two it uses under its `attributed_by` attribute, which is also what
-decides the [configuration](../cookbooks/plotting_comparisons.md#configuration) a bar graph takes.
-
-  [Polars]: https://pola.rs/
