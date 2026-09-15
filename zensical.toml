@@ -69,7 +69,6 @@ nav = [
         {"Divergences" = "documentation/concepts/measures/divergences.md"}
       ]},
       {"Normalization" = "documentation/concepts/normalization.md"},
-      {"Exclusions" = "documentation/concepts/exclusions.md"},
       {"Word Shift Graphs" = "documentation/concepts/word_shift_graphs.md"}
     ]}
   ]},
