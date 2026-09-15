@@ -63,35 +63,40 @@ chart = cl.plot.bar(
 
 
 # --8<-- [start:max_rank]
-chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=10)
+chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=20)
 # --8<-- [end:max_rank]
 
 
 # --8<-- [start:width]
-chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=15, width=500)
+chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=20, width=500)
 # --8<-- [end:width]
 
 
 # --8<-- [start:height]
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
-    max_rank=15,
-    rank_axis={"bar_width": 24, "bar_padding": 0.3},
+    max_rank=5,
+    rank_axis={"bar_width": 24},
 )
 # --8<-- [end:height]
 
 
-# --8<-- [start:horizontal]
-chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=30, vertical=False, height=300)
-# --8<-- [end:horizontal]
+# --8<-- [start:horizontal_size]
+chart = cl.plot.bar(
+    "roosevelt_biden_jsd",
+    max_rank=20,
+    vertical=False,
+    height=300,
+    rank_axis={"bar_width": 24},
+)
+# --8<-- [end:horizontal_size]
 
 
 # --8<-- [start:rotated_labels]
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
-    max_rank=30,
+    max_rank=20,
     vertical=False,
-    height=300,
     label_config={"rotation": -45},
 )
 # --8<-- [end:rotated_labels]
@@ -100,7 +105,7 @@ chart = cl.plot.bar(
 # --8<-- [start:axes]
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
-    max_rank=15,
+    max_rank=20,
     rank_axis={
         "title": "Position",
         "title_color": "#7B3294",
@@ -120,7 +125,7 @@ chart = cl.plot.bar(
 # --8<-- [start:labels]
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
-    max_rank=15,
+    max_rank=20,
     label_config={"color": "#333333", "size": 13, "weight": "bold", "pad": 6},
 )
 # --8<-- [end:labels]
@@ -129,7 +134,7 @@ chart = cl.plot.bar(
 # --8<-- [start:totals]
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
-    max_rank=15,
+    max_rank=20,
     show_totals=True,
     total_shift_config={"total": "#D55E00", "total_symbol": "JSD"},
 )
@@ -139,7 +144,7 @@ chart = cl.plot.bar(
 # --8<-- [start:borders]
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
-    max_rank=15,
+    max_rank=20,
     border_config={"color": "#7B3294", "width": 1},
     zero_line_config={"color": "#009E73", "width": 2},
 )

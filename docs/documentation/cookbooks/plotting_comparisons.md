@@ -1,15 +1,13 @@
 # Plotting Comparisons
 
-A bar graph shows the tokens that contribute most to a comparison, ordered by the magnitude of their contribution. Bar graphs can be made with `Catalog.plot.bar` for a comparison scored with any measure.
-
-For comparisons scored with weighted averages, such as lexicon scores and the entropies, a [word shift graph](../concepts/word_shift_graphs.md) can break each token's contribution down even further. See [Plotting Word Shifts](plotting_word_shifts.md).
+Comparisons measure how much each token contributes to difference between two corpora. We can visualize those differences by plotting them as a bar graph. Plots are made by calling functions from the [`Catalog.plot`](../api/catalog/plot/index.md) namespace.
 
 
 ## Example dataset
 
 We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president. See the [cookbook](constructing_catalogs.md) for more about working with catalogs.
 
-We make two comparisons: one using the [Jensen-Shannon divergence](../api/comparison/score/jsd.md) and one using the difference in [Shannon entropy](../api/comparison/score/shannon_entropy.md). Both are [normalized](normalizing_scores.md), so each token's contribution is a percentage of the total.
+We make two comparisons: one using the [Jensen-Shannon divergence](../api/comparison/score/jsd.md) and one using the difference in [Shannon entropy](../api/comparison/score/shannon_entropy.md).
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:setup"
@@ -18,7 +16,7 @@ We make two comparisons: one using the [Jensen-Shannon divergence](../api/compar
 
 ## Bar plot
 
-To plot a comparison, pass its name to `plot.bar`. The name is the alias that we gave the comparison when adding it to the `Catalog`.
+Once we make a comparison, we can plot it by passing its name to [`Catalog.plot.bar`](../api/catalog/plot/bar.md). The name is the alias that we gave it when adding the comparison to the `Catalog`.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:bar"
@@ -32,12 +30,18 @@ To plot a comparison, pass its name to `plot.bar`. The name is the alias that we
 
 ## Total contributions
 
-Setting `show_totals=True` adds panels above the bar graph that sum up the contributions of _all_ tokens, including those that are not shown in the graph. The panels are split by how the tokens are attributed, and they also show the total overall difference.
+There are two things that can give more context to the comparison bar graph. First, we can add a legend indicating what each bar means. Second, we can show the total contributions, and how they are _attributed_. The attribution depends on the type of comparison we made.
 
+Both of these aspects are added to the plot if set `show_totals=True`, which appends panels to the top of the bar graph summing of the contributions of all tokens, including those that are not shown in the graph. 
+
+!!! tip
+    A comparison records how its tokens are [attributed]((../concepts/comparisons.md#how-tokens-are-attributed)) under its `attributed_by` attribute.
 
 ### Attributed by corpus
 
-Some measures attribute each token to one of the two corpora. For the Jensen-Shannon divergence, a token is attributed to the corpus that uses it relatively more often: tokens that are more common in Roosevelt's speeches are attributed to the reference corpus, and tokens that are more common in Biden's speeches are attributed to the comparison corpus. Each bar points in the direction of the corpus that its token is attributed to.
+Some comparison measures attribute tokens to a specific corpus, based whether its relatively more frequent in one or the other. For example, with the Jensen-Shannon divergence, a token used more in Roosevelt's speeches is attributed to the reference corpus, and a token used more in Biden's speeches is attributed to the comparison corpus. Each bar points in the direction of the attribution.
+
+In the example below, "you," "ukraine," and "afghanistan" are attributed to Biden's speeches (the comparison corpus), and "of," "government," and "men" are attributed to Roosevelt's speeches (the reference). 
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:corpus_totals"
@@ -48,7 +52,9 @@ Some measures attribute each token to one of the two corpora. For the Jensen-Sha
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-The colors of the bars are set with the `reference` and `comparison` keys of the `bar_config`. The `reference_symbol` and `comparison_symbol` keys set the labels in the totals panels. See [`BarConfig`](../api/configuration/plots/bar_config.md) for all options.
+If a comparison attributes by corpus, then its bars can be configured with a [`BarConfig`](../api/configuration/plots/bar_config.md). For example, we can change their colors and the labels of the total contributions. 
+
+Note, we can pass a dictionary instead of a `BarConfig` instance, and we do not have to specify every field—only the ones that we want to change.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:corpus_colors"
@@ -58,13 +64,13 @@ The colors of the bars are set with the `reference` and `comparison` keys of the
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-!!! tip
-    A comparison records how its tokens are attributed under its `attributed_by` attribute. See [how tokens are attributed](../concepts/comparisons.md#how-tokens-are-attributed) for more details.
-
 
 ### Attributed by sign
 
-Other measures attribute each token by whether it _reinforces_ or _offsets_ the overall difference between the corpora. Biden's speeches have a higher Shannon entropy than Roosevelt's speeches, so the overall difference is positive. A token reinforces that difference when its contribution is also positive, pushing Biden's entropy higher relative to Roosevelt's. A token offsets the difference when its contribution is negative, pulling back toward Roosevelt having the higher entropy.
+Some comparison measures cannot attribute tokens to a specific corpus because there is a more complex interplay between how often it appears and how it "scores" in a corpus. For example, when we compare two corpora by entropy, both the frequency of a token $p_\tau$ and its surprisal $- \log p_\tau$ in both corpora affect the final token-level contribution. 
+
+For these measures, we attribute a token by whether it _reinforces_ or _offsets_ the overall difference between the corpora. In the example below, we can see that Biden's speeches have a higher entropy than Roosevelt's speeches because the overall difference (the "Total") is positive. An individual token _reinforces_ that difference when its contribution is also positive, pushing Biden's speeches' entropy higher than Roosevelt's speeches. A token _offsets_ that difference when its contribution is negative, pulling back the difference such that is not as large as it could be otherwise.
+
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:sign_totals"
@@ -74,7 +80,7 @@ Other measures attribute each token by whether it _reinforces_ or _offsets_ the 
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-The colors of the bars are set with the `reinforce` and `offset` keys of the `bar_config`. The `reinforce_symbol` and `offset_symbol` keys set the labels in the totals panels. See [`ScoreSignBarConfig`](../api/configuration/plots/score_sign_bar_config.md) for all options.
+If a comparison attributes by reinforcements and offsets, which is the same as attributing it by the contribution's sign, then its bars can be configured with a [`ScoreSignBarConfig`](../api/configuration/plots/score_sign_bar_config.md). Like before, we can pass a dictionary instead of a `ScoreSignBarConfig` instance, and we do not have to specify every field—only the ones that we want to change.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:sign_colors"
@@ -90,7 +96,7 @@ The colors of the bars are set with the `reinforce` and `offset` keys of the `ba
 
 ### Number of tokens
 
-The `max_rank` parameter sets how many of the top contributing tokens are shown. By default, the top 50 tokens are shown.
+As we have seen in some of the examples already, the `max_rank` parameter can be used to set how many tokens are shown in the bar graph. By default, the top 50 contributing tokens are displayed.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:max_rank"
@@ -101,42 +107,12 @@ The `max_rank` parameter sets how many of the top contributing tokens are shown.
 ```
 
 
-### Height and width
-
-By default, bar graphs are vertical: tokens are listed from top to bottom and the bars extend left and right. The `width` parameter sets the width of the graph in pixels.
-
-```python exec="true" source="above" session="plotting_comparisons"
---8<-- "snippets/cookbooks/plotting_comparisons.py:width"
-```
-
-```python exec="true" html="true" session="plotting_comparisons"
---8<-- "snippets/cookbooks/plotting_comparisons.py:render"
-```
-
-The height of a vertical graph depends on how many tokens are shown. Rather than setting the height directly, the `rank_axis` sets how much space each token occupies. Its `bar_width` key is the number of pixels given to each token, so the height is roughly `max_rank` times `bar_width`. Its `bar_padding` key is the fraction of that space left empty between bars.
-
-```python exec="true" source="above" session="plotting_comparisons"
---8<-- "snippets/cookbooks/plotting_comparisons.py:height"
-```
-
-```python exec="true" html="true" session="plotting_comparisons"
---8<-- "snippets/cookbooks/plotting_comparisons.py:render"
-```
-
-
 ### Orientation
 
-Setting `vertical=False` makes a horizontal bar graph: tokens are listed from left to right and the bars extend up and down. The roles of the dimensions swap: `height` sets the height of the graph in pixels, and the width is set by the `rank_axis`.
+By default, the bar graph is vertical. This makes it easier for a reader to interpret the tokens because they can be easily read horizontally. However, we can plot the bar graph horizontally, if we set `vertical=False`. 
 
-```python exec="true" source="above" session="plotting_comparisons"
---8<-- "snippets/cookbooks/plotting_comparisons.py:horizontal"
-```
+The `rotation` key of a [`LabelConfig`](../api/configuration/plots/label_config.md) can be used to rotate the bar labels so that they can be ready more easily even in the horizontal layout.
 
-```python exec="true" html="true" session="plotting_comparisons"
---8<-- "snippets/cookbooks/plotting_comparisons.py:render"
-```
-
-By default, the labels of a horizontal bar graph are turned on their side so that they read vertically. The `rotation` key of the `label_config` sets a different angle, in degrees. Labels on bars pointing in the opposite direction are rotated to the mirrored angle so they still extend away from their bars.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:rotated_labels"
@@ -147,14 +123,44 @@ By default, the labels of a horizontal bar graph are turned on their side so tha
 ```
 
 
+### Height and width
+
+When the bar graph is vertical, the `width` parameter controls the width of the graph in pixels.
+
+```python exec="true" source="above" session="plotting_comparisons"
+--8<-- "snippets/cookbooks/plotting_comparisons.py:width"
+```
+
+```python exec="true" html="true" session="plotting_comparisons"
+--8<-- "snippets/cookbooks/plotting_comparisons.py:render"
+```
+
+For a vertical bar graph, its height is automatically determined from two things: the number of tokens displayed, and how wide each bar is. The number of tokens is set by `max_rank`. The `bar_width` is specified as a configuration of the the rank axis, which is the vertical axis. It indicates how many pixels to give each token vertically. Other aspects of the height can be controlled through some of the other [`RankAxisConfig`](../api/configuration/plots/rank_axis_config.md) parameters.
+
+```python exec="true" source="above" session="plotting_comparisons"
+--8<-- "snippets/cookbooks/plotting_comparisons.py:height"
+```
+
+```python exec="true" html="true" session="plotting_comparisons"
+--8<-- "snippets/cookbooks/plotting_comparisons.py:render"
+```
+
+For a horizontal bar graph, when `vertical=False`, width of the bars is still controlled by the `RankAxisConfig` because it is now the horizontal axis. However, the `width` parameter is ignored, and `height` becomes the tunable parameter that can be used to specify the height of the graph.
+
+```python exec="true" source="above" session="plotting_comparisons"
+--8<-- "snippets/cookbooks/plotting_comparisons.py:horizontal_size"
+```
+
+```python exec="true" html="true" session="plotting_comparisons"
+--8<-- "snippets/cookbooks/plotting_comparisons.py:render"
+```
+
+
 ## Configuration
-
-Every part of the bar graph can be configured by passing a dictionary of options. Each configuration can also be passed as its corresponding configuration class.
-
 
 ### Axes
 
-The rank axis lists the tokens, and the score axis shows their contributions. Both can be configured with titles, colors, font sizes, and grid lines. See [`RankAxisConfig`](../api/configuration/plots/rank_axis_config.md) and [`ScoreAxisConfig`](../api/configuration/plots/score_axis_config.md) for all options.
+The _score axis_ measures the magnitude of each token's contribution, and the _rank axis_ indicates how tokens are ordered by those contributions. Things like the titles, font sizes, and colors can be configured using a [`ScoreAxisConfig`](../api/configuration/plots/score_axis_config.md) and [`RankAxisConfig`](../api/configuration/plots/rank_axis_config.md) respectively.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:axes"
@@ -167,7 +173,7 @@ The rank axis lists the tokens, and the score axis shows their contributions. Bo
 
 ### Labels
 
-The token labels beside each bar can be configured with their color, size, weight, and padding. See [`LabelConfig`](../api/configuration/plots/label_config.md) for all options.
+Each bar is _labeled_ with its corresponding token. How labels are displayed can be configured with a [`LabelConfig`](../api/configuration/plots/label_config.md).
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:labels"
@@ -180,7 +186,7 @@ The token labels beside each bar can be configured with their color, size, weigh
 
 ### Totals
 
-When the totals panels are shown, the color and label of the overall total can be configured. The colors and labels of the other totals come from the `bar_config`. See [`TotalShiftConfig`](../api/configuration/plots/total_shift_config.md) for all options.
+When the total contributions are shown (`show_totals=True`), the color and label of the grand total can be configured with a [`TotalShiftConfig`](../api/configuration/plots/total_shift_config.md). To configure the colors and labels of the totals per attribution, [see above](#total-contributions) for using the `bar_config`.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:totals"
@@ -193,7 +199,7 @@ When the totals panels are shown, the color and label of the overall total can b
 
 ### Borders
 
-The border around the graph can be configured with its color and width. A width of `0` only draws the axis lines, while a larger width draws a box around the whole graph. The line at zero along the score axis is configured separately. See [`BorderConfig`](../api/configuration/plots/border_config.md) and [`ZeroLineConfig`](../api/configuration/plots/zero_line_config.md) for all options.
+The border and middle line (zero line) can also be configured stylistically using a [`BorderConfig`](../api/configuration/plots/border_config.md) and [`ZeroLineConfig`](../api/configuration/plots/zero_line_config.md).
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:borders"
@@ -202,5 +208,3 @@ The border around the graph can be configured with its color and width. A width 
 ```python exec="true" html="true" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
-
-For all parameters, see the [`plot.bar`](../api/catalog/plot/bar.md) and [plot configuration](../api/configuration/plots/index.md) documentation.

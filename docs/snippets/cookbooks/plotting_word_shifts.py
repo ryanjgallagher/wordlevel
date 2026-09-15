@@ -27,14 +27,14 @@ chart = cl.plot.shift("roosevelt_biden_labmt")
 
 
 # --8<-- [start:single_totals]
-chart = cl.plot.shift("roosevelt_biden_labmt", max_rank=25, show_totals=True)
+chart = cl.plot.shift("roosevelt_biden_labmt", max_rank=20, show_totals=True)
 # --8<-- [end:single_totals]
 
 
 # --8<-- [start:single_colors]
 chart = cl.plot.shift(
     "roosevelt_biden_labmt",
-    max_rank=25,
+    max_rank=20,
     show_totals=True,
     bar_config={
         "more_of_positive": "#009E73",
@@ -47,14 +47,14 @@ chart = cl.plot.shift(
 
 
 # --8<-- [start:multiple_totals]
-chart = cl.plot.shift("roosevelt_biden_socialsent", max_rank=25, show_totals=True)
+chart = cl.plot.shift("roosevelt_biden_socialsent", max_rank=20, show_totals=True)
 # --8<-- [end:multiple_totals]
 
 
 # --8<-- [start:multiple_colors]
 chart = cl.plot.shift(
     "roosevelt_biden_socialsent",
-    max_rank=25,
+    max_rank=20,
     show_totals=True,
     bar_config={
         "higher_score": "#D55E00",
