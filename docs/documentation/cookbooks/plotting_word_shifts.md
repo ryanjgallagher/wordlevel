@@ -35,10 +35,10 @@ We can create a word shift graph it by passing a comparison's name to [`Catalog.
 
 Word shift graphs indicate the different ways that tokens contribute to the difference. A token can have been used more or less in the comparison corpus versus the reference corpus $\left( \uparrow / \downarrow \right)$, and it can have a [relatively](../concepts/word_shift_graphs.md#reference-scores) positive or negative score $(+ / -)$. This means a token can contribute in four ways:
 
-- $\left(+ \uparrow \right)$ A relatively positive word is used more
-- $\left(+ \downarrow \right)$ A relatively positive word is used less
-- $\left(- \uparrow \right)$ A relatively negative word is used more
-- $\left(- \downarrow \right)$ A relatively negative word is used less
+- $\left(+ \uparrow \right)$ A relatively positive token is used more
+- $\left(+ \downarrow \right)$ A relatively positive token is used less
+- $\left(- \uparrow \right)$ A relatively negative token is used more
+- $\left(- \downarrow \right)$ A relatively negative token  is used less
 
 If we set `show_totals=True`, we can see the relative magnitude of the different kinds of contributions.
 
