@@ -1,7 +1,7 @@
 # Install
 
 `wordlevel` runs on Python 3.10 and above. It can be installed with any Python package manager,
-including [pip] and [uv]. If you want to use `uv`, follow the [uv installation guide][uv install].
+including [pip] and [uv]. If you want to use uv, make sure to [install it first][uv install].
 
   [pip]: https://pip.pypa.io/
   [uv]: https://docs.astral.sh/uv/
@@ -45,7 +45,7 @@ To install `wordlevel`, simply run one of the following commands:
 
 ## Saving plots
 
-`wordlevel` uses [Altair] to generate plots. To save plots as PNG, SVG, or PDF, some extra
+`wordlevel` uses [Altair] to generate plots. To save plots as PNGs, SVGs, or PDFs, some extra
 dependencies are required. They are bundled with the `save` extra when installing `wordlevel`:
 
 === "pip"

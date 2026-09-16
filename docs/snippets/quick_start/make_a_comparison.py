@@ -41,7 +41,14 @@ print(
 
 
 # --8<-- [start:bar_chart]
-chart = cl.plot.bar("roosevelt_biden")
+chart = cl.plot.bar(
+    "roosevelt_biden",
+    show_totals=True,
+    bar_config={
+        "reference_symbol": "Roosevelt",
+        "comparison_symbol": "Biden",
+    },
+)
 # --8<-- [end:bar_chart]
 
 

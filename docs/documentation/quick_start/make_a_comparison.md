@@ -15,7 +15,7 @@ A collection of documents is known as a [corpus](../concepts/corpora_and_catalog
 
 The `Catalog` stores the corpora together as a dataframe. There is one row per token, and one column per corpus, where the entry indicates the frequency of that token in that corpus. For example, the word "the" was used 9,559 times in speeches by Roosevelt.
 
-Columns with the suffix `__wl_normed` contain the normalized frequencies of tokens in each corpus.
+Columns with the suffix `__wl_normed` contain the normalized frequencies of the tokens in each corpus.
 
 ```python exec="true" session="make_a_comparison"
 --8<-- "snippets/quick_start/make_a_comparison.py:display_config"
@@ -48,9 +48,9 @@ The comparison is stored on the `Catalog` under the alias we gave it, `"roosevel
 --8<-- "snippets/quick_start/make_a_comparison.py:top_tokens"
 ```
 
-There is one row per token. Each token has a `comparison_score`, measuring how much it contributes to the difference between the corpora. 
+There is one row per token. Each token has a `comparison_score`, which comes directly from the scoring measure that we chose, the rank-turbulence divergence. It measures how much that token contributes to the difference between the corpora.
 
-For the rank-turbulence divergence, the `attribution` indicates whether the token had a higher rank by frequency in the "reference" corpus or "comparison" corpus. Because we defined our comparison as `comp("Franklin D. Roosevelt", "Joe Biden")`, the reference corpus is Roosevelt's speeches, and the comparison corpus is Biden's speeches. Read more about [comparisons](../concepts/comparisons.md) for more on reference and comparison corpora.
+For the rank-turbulence divergence, the `attribution` indicates whether the token was used relatively more in the "reference" corpus or "comparison" corpus. Because we defined our comparison as `comp("Franklin D. Roosevelt", "Joe Biden")`, the reference corpus is Roosevelt's speeches, and the comparison corpus is Biden's speeches. Read more about [comparisons](../concepts/comparisons.md) for more on reference and comparison corpora.
 
 
 ## Plot the scores

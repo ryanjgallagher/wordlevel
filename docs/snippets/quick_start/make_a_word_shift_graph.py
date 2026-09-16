@@ -17,7 +17,6 @@ labmt = wl.lex.labMT("english")
 cl = cl.with_comparisons(
     wl.comp("Franklin D. Roosevelt", "Joe Biden")
         .score.lexicon(labmt, reference_score=labmt.center)
-        .normalize(by="sum_abs")
         .alias("roosevelt_biden_sentiment"),
 )
 # --8<-- [end:comparison]

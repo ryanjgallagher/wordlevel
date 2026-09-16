@@ -32,9 +32,7 @@ Like our [first comparison](make_a_comparison.md), we compare the presidential s
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:comparison"
 ```
 
-We pass a `reference_score` when scoring the words—in this case it is the center of labMT's 1-to-9 sentiment scale, which is 5. Each token's score is compared to this reference score: if it is greater than 5, then it is "relatively positive"; if it is less than 5 then it is "relatively negative." This is important for interpreting the word shift graph below.
-
-We also [normalize](../concepts/normalization.md) the scores, so that we can interpret each token's contribution as a percent of the total difference between the corpora. 
+We pass a `reference_score` when scoring the words—in this case it is the center of labMT's 1-to-9 sentiment scale, which is 5. Each token's score is compared to this reference score: if it is greater than 5, then it is "relatively positive"; if it is less than 5 then it is "relatively negative."
 
 
 ## Plot the word shift
@@ -56,7 +54,7 @@ A [comparison bar graph](make_a_comparison.md#plot-the-scores) shows _which_ wor
 --8<-- "snippets/quick_start/make_a_word_shift_graph.py:shift_chart_render"
 ```
 
-The total difference $\left( \sum \right)$ is positive, which means that the comparison corpus (Biden) has a higher sentiment than the reference corpus (Roosevelt). The tokens are interpreted with respect to this difference. For example, Biden's speeches have a higher sentiment than Roosevelt's because they use relatively positive words more ("you", "america", "thank") and relatively negative words less ("war", "fighting"). The higher sentiment is partly offset by other words, such as Biden's speeches using some relatively positive words less ("great", "peace", "victory") and some relatively negative words more ("violence", "dont", "tax").
+The total difference is positive, which means that the comparison corpus (Biden) has a higher sentiment than the reference corpus (Roosevelt). The tokens are interpreted with respect to this difference. For example, Biden's speeches have a higher sentiment than Roosevelt's because they use relatively positive words more ("you", "america", "thank") and relatively negative words less ("war", "fighting"). The higher sentiment is partly offset by other words, such as Biden's speeches using some relatively positive words less ("great", "peace", "victory") and some relatively negative words more ("violence", "dont", "tax").
 
 
 ## Where to go next
