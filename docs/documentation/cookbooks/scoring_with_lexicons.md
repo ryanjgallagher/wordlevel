@@ -1,6 +1,6 @@
 # Scoring with Lexicons
 
-A lexicon assigns scores to tokens. For example, sentiment dictionaries are some of the most popular lexicons: words are given a score based on how "positive" or "negative" they are. 
+A lexicon assigns scores to tokens. For example, sentiment dictionaries are some of the most popular lexicons: tokens are given a score based on how "positive" or "negative" they are. 
 
 When tokens are given scores, we can score an entire corpus by taking the weighted average $\sum \phi_\tau \, p_\tau$, where $\phi_\tau$ is the score given to a token $\tau$ by the lexicon, and $p_\tau$ is how relatively often it appears in the corpus.
 
@@ -15,9 +15,7 @@ We will use two small corpora and put them into a `Catalog`. See the [cookbook](
 
 ## Loading a lexicon
 
-WordLevel provides [several pre-made lexicons](../api/lexicons/index.md), constructed by academic researchers. They can be loaded using the `wl.lex` operator.
-
-Below, we load the [labMT](../api/lexicons/labMT.md) sentiment lexicon, which rates how positive ("happy") or negative ("sad") a word is on a scale from 1 to 9.
+WordLevel provides [several pre-made lexicons](../api/lexicons/index.md), constructed by academic researchers. They can be loaded using the `wl.lex` operator. Below, we load the [labMT](../api/lexicons/labMT.md) sentiment lexicon, which rates how positive ("happy") or negative ("sad") a word is on a scale from 1 to 9.
 
 ```python exec="true" source="above" session="scoring_with_lexicons"
 --8<-- "snippets/cookbooks/scoring_with_lexicons.py:load_labmt"

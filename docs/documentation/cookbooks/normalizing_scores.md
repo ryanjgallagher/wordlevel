@@ -2,7 +2,7 @@
 
 We can put comparison scores on a common scale by normalizing them. This allows us to easily interpret the scores relative to one another, rather than in terms of their raw units.
 
-In a comparison, each token $\tau$ makes a contribution to the difference $\delta_\tau$. The overall difference between the two corpora is $\sum \delta_\tau$.
+In a comparison, each token $\tau$ makes a contribution $\delta_\tau$ to the difference. The overall difference between the two corpora is $\sum \delta_\tau$.
 
 
 ## Example data

@@ -73,7 +73,7 @@ We can also pass a single dictionary which names each token-to-frequency corpus 
 ### From a Polars dataframe
 
 If we already have our corpora formatted as a dataframe, we can create a `Catalog` directly
-from it. First, let's create a dataframe from our example data.
+from it. First, let's create a dataframe for our example data.
 
 ```python exec="true" source="above" session="constructing_catalogs"
 --8<-- "snippets/cookbooks/constructing_catalogs.py:build_dataframe"
@@ -100,10 +100,6 @@ PySpark, and others.
     Polars is the internal engine for WordLevel. This means that even if you provide a non-Polars dataframe, any dataframe you receive back from WordLevel will be a Polars dataframe. See the [Polars] documentation to learn more about how to manipulate such dataframes.
 
     If you pass a lazy non-Polars dataframe, it will be eagerly collected and materialized in memory when the `Catalog` is constructed.
-
-
-See the documentation of `Catalog` [constructors](../api/catalog/construct/index.md) for more 
-details.
 
 
 ## Working with a `Catalog`

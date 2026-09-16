@@ -1,13 +1,13 @@
 # Plotting Comparisons
 
-Comparisons measure how much each token contributes to difference between two corpora. We can visualize those differences by plotting them as a bar graph. Plots are made by calling functions from the [`Catalog.plot`](../api/catalog/plot/index.md) namespace.
+Comparisons measure how much each token contributes to difference between two corpora. We can visualize those differences by plotting them as a bar graph.
 
 
 ## Example dataset
 
 We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president. See the [cookbook](constructing_catalogs.md) for more about working with catalogs.
 
-We make two comparisons: one using the [Jensen-Shannon divergence](../api/comparison/score/jsd.md) and one using the difference in [Shannon entropy](../api/comparison/score/shannon_entropy.md).
+We make two comparisons: one using the [Jensen-Shannon divergence](../api/comparison/score/jensen_shannon_divergence.md) and one using the difference in [Shannon entropy](../api/comparison/score/shannon_entropy.md).
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:setup"
@@ -32,10 +32,7 @@ Once we make a comparison, we can plot it by passing its name to [`Catalog.plot.
 
 There are two things that can give more context to the comparison bar graph. First, we can add a legend indicating what each bar means. Second, we can show the total contributions, and how they are _attributed_. The attribution depends on the type of comparison we made.
 
-Both of these aspects are added to the plot if set `show_totals=True`, which appends panels to the top of the bar graph summing of the contributions of all tokens, including those that are not shown in the graph. 
-
-!!! tip
-    A comparison records how its tokens are attributed under its `attributed_by` property.
+Both of these aspects are added to the plot if we set `show_totals=True`, which appends panels to the top of the bar graph summing the contributions of all tokens, including those that are not shown in the graph. 
 
 ### Attributed by corpus
 
@@ -52,9 +49,7 @@ In the example below, "you," "ukraine," and "afghanistan" are attributed to Bide
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-If a comparison attributes by corpus, then its bars can be configured with a [`BarConfig`](../api/configuration/plots/bar_config.md). For example, we can change their colors and the labels of the total contributions. 
-
-Note, we can pass a dictionary instead of a `BarConfig` instance, and we do not have to specify every field—only the ones that we want to change.
+If a comparison attributes by corpus, then its bars can be configured with a [`BarConfig`](../api/configuration/plots/bar_config.md). For example, we can change their colors and the labels of the total contributions. Note, we can pass a dictionary instead of a `BarConfig` instance, and we do not have to specify every field—only the ones that we want to change.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:corpus_colors"
@@ -67,7 +62,7 @@ Note, we can pass a dictionary instead of a `BarConfig` instance, and we do not 
 
 ### Attributed by sign
 
-Some comparison measures cannot attribute tokens to a specific corpus because there is a more complex interplay between how often it appears and how it "scores" in a corpus. For example, when we compare two corpora by entropy, both the frequency of a token $p_\tau$ and its surprisal $- \log p_\tau$ in both corpora affect the final token-level contribution. 
+Some comparison measures cannot attribute tokens to a specific corpus because there is a more complex interplay between how often it appears and how it "scores" in a corpus. For example, when we compare two corpora by entropy, both the frequency of a token $p_\tau$ and its surprisal $\log 1 / p_\tau$ in both corpora affect the final token-level contribution. 
 
 For these measures, we attribute a token by whether it _reinforces_ or _offsets_ the overall difference between the corpora. In the example below, we can see that Biden's speeches have a higher entropy than Roosevelt's speeches because the overall difference (the "Total") is positive. An individual token _reinforces_ that difference when its contribution is also positive, pushing Biden's speeches' entropy higher than Roosevelt's speeches. A token _offsets_ that difference when its contribution is negative, pulling back the difference such that is not as large as it could be otherwise.
 
@@ -109,9 +104,7 @@ As we have seen in some of the examples already, the `max_rank` parameter can be
 
 ### Orientation
 
-By default, the bar graph is vertical. This makes it easier for a reader to interpret the tokens because they can be easily read horizontally. However, we can plot the bar graph horizontally, if we set `vertical=False`. 
-
-The `rotation` key of a [`LabelConfig`](../api/configuration/plots/label_config.md) can be used to rotate the bar labels so that they can be ready more easily even in the horizontal layout.
+By default, the bar graph is vertical. This makes it easier for a reader to interpret the tokens because they can be read horizontally. However, we can plot the bar graph horizontally, if we set `vertical=False`. The `rotation` key of a [`LabelConfig`](../api/configuration/plots/label_config.md) can be used to rotate the bar labels so that they can be ready more easily even in the horizontal layout.
 
 
 ```python exec="true" source="above" session="plotting_comparisons"
@@ -145,7 +138,7 @@ For a vertical bar graph, its height is automatically determined from two things
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-For a horizontal bar graph, when `vertical=False`, width of the bars is still controlled by the `RankAxisConfig` because it is now the horizontal axis. However, the `width` parameter is ignored, and `height` becomes the tunable parameter that can be used to specify the height of the graph.
+For a horizontal bar graph, when `vertical=False`, the width of the bars is still controlled by the `RankAxisConfig` because it is now the horizontal axis. However, the `width` parameter is ignored, and `height` becomes the tunable parameter that can be used to specify the height of the graph.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:horizontal_size"
@@ -160,7 +153,7 @@ For a horizontal bar graph, when `vertical=False`, width of the bars is still co
 
 ### Axes
 
-The _score axis_ measures the magnitude of each token's contribution, and the _rank axis_ indicates how tokens are ordered by those contributions. Things like the titles, font sizes, and colors can be configured using a [`ScoreAxisConfig`](../api/configuration/plots/score_axis_config.md) and [`RankAxisConfig`](../api/configuration/plots/rank_axis_config.md) respectively.
+The _score axis_ measures the magnitude of each token's contribution, and the _rank axis_ indicates how tokens are ordered by those contributions. Their titles, font sizes, colors, and other aspects can be configured using a [`ScoreAxisConfig`](../api/configuration/plots/score_axis_config.md) and [`RankAxisConfig`](../api/configuration/plots/rank_axis_config.md) respectively.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:axes"
@@ -173,7 +166,7 @@ The _score axis_ measures the magnitude of each token's contribution, and the _r
 
 ### Labels
 
-Each bar is _labeled_ with its corresponding token. How labels are displayed can be configured with a [`LabelConfig`](../api/configuration/plots/label_config.md).
+Each bar is labeled with its corresponding token. How labels are displayed can be configured with a [`LabelConfig`](../api/configuration/plots/label_config.md).
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:labels"

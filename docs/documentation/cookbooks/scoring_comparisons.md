@@ -56,8 +56,6 @@ The column `Joe Biden__wl_normed` is $p_\tau^{(\text{Biden})}$, the relative fre
 
 The `attribution` is determined by whether the score is positive or negative. When it is positive, the token was used more in Biden's speeches, and so it is "attributed" to his corpus (the `comparison`). When the score is negative, the token was used more in Roosevelt's speeches, and so it is attributed to the `reference` corpus.
 
-The comparison also carries [metadata](recording_reproducibility.md) recording how it was made.
-
 
 ## Making multiple comparisons
 

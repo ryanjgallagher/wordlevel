@@ -14,9 +14,7 @@ We will use an example dataset of US presidential speeches from Franklin D. Roos
 --8<-- "snippets/cookbooks/excluding_tokens.py:setup"
 ```
 
-We will start by comparing them with the rank divergence. We can look at the most distinguishing tokens (the ones with the highest scores) before we exclude any. 
-
-Observe how most of the top tokens are function words and contractions. While these are genuine differences, we may want to exclude them because they are not particularly insightful.
+We will start by comparing them with the rank divergence. We can look at the most distinguishing tokens (the ones with the highest scores) before we exclude any. Observe how most of the top tokens are function words and contractions. While these are genuine differences, we may want to exclude them because they are not particularly insightful.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
 ```python exec="true" session="excluding_tokens"
@@ -31,9 +29,6 @@ Observe how most of the top tokens are function words and contractions. While th
 ## Excluding specific tokens
 
 If we know which specific tokens we want to drop—like a pre-defined list of stop words—we can exclude them specifically from the comparison.
-
-All exclusion methods are called from the [`Comparison.exclude`](../api/comparison/exclude/index.md) namespace.
-
 
 ```python exec="true" source="above" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:tokens"

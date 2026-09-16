@@ -88,7 +88,7 @@ These contributions are _additive_ to the other ways that a token can contribute
 
 The total is negative, so Biden's speeches have a lower sentiment than Roosevelt's speeches when each is scored with the lexicon of its time. The totals panels show that much of this difference comes from words having lower scores in the 2000s $\left(\bigtriangledown \right)$, such as "nation", "families", and "americans".
 
-The different kinds of contributions can partially cance each other out. When this happens, we show it by fading the canceled out portions. For example, "violence" is relatively negative word that was used more in Biden's speeches. However, that contribution is partly offset by the score change, because "violence" also has a relatively higher sentiment score in the 2000s lexicon dictionary than the 1940s lexicon dictionary.
+The different kinds of contributions can partially cancel each other out. When this happens, we show it by fading the canceled out portions. For example, "violence" is relatively negative word that was used more in Biden's speeches. However, that contribution is partly offset by the score change, because "violence" also has a relatively higher sentiment score in the 2000s lexicon dictionary than the 1940s lexicon dictionary.
 
 The higher and lower score contribution colors can also be configured with a [`ShiftBarConfig`](../api/configuration/plots/shift_bar_config.md).
 
