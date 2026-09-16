@@ -61,13 +61,6 @@ nav = [
     {"Concepts" = [
       {"Corpora & Catalogs" = "documentation/concepts/corpora_and_catalogs.md"},
       {"Comparisons" = "documentation/concepts/comparisons.md"},
-      {"Measures" = [
-        "documentation/concepts/measures/index.md",
-        {"Frequencies" = "documentation/concepts/measures/frequencies.md"},
-        {"Lexicons" = "documentation/concepts/measures/lexicons.md"},
-        {"Entropies" = "documentation/concepts/measures/entropies.md"},
-        {"Divergences" = "documentation/concepts/measures/divergences.md"}
-      ]},
       {"Normalization" = "documentation/concepts/normalization.md"},
       {"Word Shift Graphs" = "documentation/concepts/word_shift_graphs.md"}
     ]}
