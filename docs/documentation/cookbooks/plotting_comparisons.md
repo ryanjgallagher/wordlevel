@@ -35,7 +35,7 @@ There are two things that can give more context to the comparison bar graph. Fir
 Both of these aspects are added to the plot if set `show_totals=True`, which appends panels to the top of the bar graph summing of the contributions of all tokens, including those that are not shown in the graph. 
 
 !!! tip
-    A comparison records how its tokens are [attributed](../concepts/comparisons.md#how-tokens-are-attributed) under its `attributed_by` attribute.
+    A comparison records how its tokens are attributed under its `attributed_by` property.
 
 ### Attributed by corpus
 

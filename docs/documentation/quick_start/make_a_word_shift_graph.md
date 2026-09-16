@@ -10,7 +10,7 @@ We will use an example dataset of US presidential speeches from Franklin D. Roos
 
 ## Load a sentiment lexicon
 
-A [lexicon](../concepts/measures/lexicons.md) assigns a "score" to each token. For example, the [labMT sentiment lexicon](../api/lexicons/labMT.md) maps each token to a score between 1 and 9, where 1 indicates that the word is associated with negativity ("sadness") and 9 indicates the word is associated with positivity ("happiness").
+A _lexicon_ assigns a "score" to each token. For example, the [labMT sentiment lexicon](../api/lexicons/labMT.md) maps each token to a score between 1 and 9, where 1 indicates that the word is associated with negativity ("sadness") and 9 indicates the word is associated with positivity ("happiness").
 
 WordLevel provides [several sentiment lexicons](../api/lexicons/index.md) previously constructed by researchers. We will use the English labMT lexicon as an example. Lexicons are loaded using `wl.lex`.
 

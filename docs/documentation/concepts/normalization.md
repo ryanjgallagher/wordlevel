@@ -2,8 +2,6 @@
 
 For comparisons, each scoring measure produces a per-token contribution $\delta_\tau$. Normalization rescales every contribution by a single constant so that scores become interpretable and comparable across measures. There are two normalization strategies that are available.
 
-- `"abs_sum"` divides by the absolute sum of contributions, $|\sum_\tau \delta_\tau|$. The
-  normalized contributions then sum to $\pm 1$.
 
 ## By total difference
 

@@ -28,9 +28,9 @@ Columns with the suffix `__wl_normed` contain the normalized frequencies of toke
 
 ## Compare the corpora
 
-WordLevel lets us quantify how two corpora differ token by token (at the "word level"). We do this by creating a [comparison](../concepts/comparisons.md) between them, and using a [measure](../concepts/measures/index.md) to score their token-level differences.
+WordLevel lets us quantify how two corpora differ token by token (at the "word level"). We do this by creating a [comparison](../concepts/comparisons.md) between them, and using a [measure](../api/comparison/score/index.md) to score their token-level differences.
 
-We will use the [rank-turbulence divergence](../concepts/measures/divergences.md#rank-turbulence-divergence) as an example. Each token is ranked by frequency. The larger a token's difference in rank between the corpora, the more it contributes to the divergence.
+We will use the [rank-turbulence divergence](../api/comparison/score/rank_divergence.md) as an example. Each token is ranked by frequency. The larger a token's difference in rank between the corpora, the more it contributes to the divergence.
 
 We make comparisons by using `wl.comp` and providing the names of the corpora that we want to compare. We give this comparison the alias `"roosevelt_biden"`, which we will use to retrieve it from our `Catalog`.
 
@@ -50,7 +50,7 @@ The comparison is stored on the `Catalog` under the alias we gave it, `"roosevel
 
 There is one row per token. Each token has a `comparison_score`, measuring how much it contributes to the difference between the corpora. 
 
-For the rank-turbulence divergence, the `attribution` indicates whether the token had a higher rank by frequency in the "reference" corpus or "comparison" corpus. Because we defined our comparison as `comp("Franklin D. Roosevelt", "Joe Biden")`, the reference corpus is Roosevelt's speeches, and the comparison corpus is Biden's speeches. For example, "ukraine" is attributed to Biden's speeches. See more about [attribution](../concepts/comparisons.md#how-tokens-are-attributed) and [reference and comparison corpora](../concepts/comparisons.md#reference-and-comparison-corpora).
+For the rank-turbulence divergence, the `attribution` indicates whether the token had a higher rank by frequency in the "reference" corpus or "comparison" corpus. Because we defined our comparison as `comp("Franklin D. Roosevelt", "Joe Biden")`, the reference corpus is Roosevelt's speeches, and the comparison corpus is Biden's speeches. Read more about [comparisons](../concepts/comparisons.md) for more on reference and comparison corpora.
 
 
 ## Plot the scores
