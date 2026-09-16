@@ -56,7 +56,6 @@ nav = [
       {"Excluding Tokens" = "documentation/cookbooks/excluding_tokens.md"},
       {"Plotting Comparisons" = "documentation/cookbooks/plotting_comparisons.md"},
       {"Plotting Word Shifts" = "documentation/cookbooks/plotting_word_shifts.md"},
-      {"Recording Steps for Reproducibility" = "documentation/cookbooks/recording_reproducibility.md"}
     ]},
     {"Concepts" = [
       {"Corpora & Catalogs" = "documentation/concepts/corpora_and_catalogs.md"},
