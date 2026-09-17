@@ -46,7 +46,7 @@ To install `wordlevel`, simply run one of the following commands:
 ## Saving plots
 
 `wordlevel` uses [Altair] to generate plots. To save plots as PNGs, SVGs, or PDFs, some extra
-dependencies are required. They are bundled with the `save` extra when installing `wordlevel`:
+dependencies are required. Install them with the `save` extra:
 
 === "pip"
 
