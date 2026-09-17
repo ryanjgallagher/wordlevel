@@ -1,6 +1,6 @@
 # Normalizing Scores
 
-We can put comparison scores on a common scale by normalizing them. This allows us to easily interpret the scores relative to one another, rather than in terms of their raw units.
+We can put comparison scores on a common scale by normalizing them. This allows us to easily interpret the scores relative to one another and across comparisons, rather than in terms of their raw units.
 
 In a comparison, each token $\tau$ makes a contribution $\delta_\tau$ to the difference. The overall difference between the two corpora is $\sum \delta_\tau$.
 
@@ -16,7 +16,7 @@ We will use an example dataset of US presidential speeches from Franklin D. Roos
 
 ## Normalizing by total difference
 
-The first way that we can normalize scores is by the _total_ difference, which is equivalent to dividing all of the scores by $\sum | \delta_\tau |$. This allows us to interpret each token's score as a percent of the total difference between the two corpora.
+The first way that we can normalize scores is by the _total_ difference, which is equivalent to dividing all of the scores by $\sum | \delta_\tau |$. This allows us to interpret each token's score as a portion of the total difference between the two corpora.
 
 
 ```python exec="true" source="above" session="normalizing_scores"
@@ -25,7 +25,7 @@ The first way that we can normalize scores is by the _total_ difference, which i
 
 ## Normalizing by net difference
 
-The second way that we can normalize is by the _net_ difference, which is equivalent to dividing all of the scores by $\left| \sum \delta_\tau \right|$. This allows us to interpret each token's score as its size relative to that net difference.
+The second way that we can normalize is by the _net_ difference, which is equivalent to dividing all of the scores by $\left| \sum \delta_\tau \right|$. This allows us to interpret each token's score as its ratio to the net difference.
 
 
 ```python exec="true" source="above" session="normalizing_scores" 
@@ -33,5 +33,5 @@ The second way that we can normalize is by the _net_ difference, which is equiva
 ```
 
 !!! warning
-    Normalizing scores causes them to be eagerly evaluated because the normalization needs to verify
-    that the normalization constant is nonzero. 
+    Normalizing forces the comparison to be evaluated eagerly because WordLevel must check that the constant it divides by is nonzero.
+

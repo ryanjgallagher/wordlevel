@@ -16,7 +16,7 @@ corpus = {
 ```
 
 Similarly, we can represent a corpus as a set of rows and columns, where there is one row
-per token, one column indicating its name, and one column indicating its frequency.
+per token, one column indicating the token itself, and one column indicating its frequency.
 
 | token | frequency |
 |-------|-----------|
@@ -26,7 +26,7 @@ per token, one column indicating its name, and one column indicating its frequen
 | happy | 35        |
 
 In Python, we can represent these rows and columns as a dataframe. For example, using the package
-[Polars], our corpus is encoded as a dataframe.
+[Polars], our corpus can be encoded as a dataframe.
 
 ```python
 import polars as pl
@@ -56,7 +56,7 @@ convenient.
 ### From multiple dictionaries
 
 We can create a `Catalog` by passing both corpora (represented as token-to-frequency dictionaries) 
-and giving them names. Note, the order of the dictionaries and corpus names needs to be the same. 
+and giving them names. Note, corpus names must be listed in the same order as the dictionaries. If not provided, they will default to the generic names `corpus1` and `corpus2`.
 
 ```python exec="true" source="above" session="constructing_catalogs"
 --8<-- "snippets/cookbooks/constructing_catalogs.py:from_multiple_dicts"
@@ -64,7 +64,7 @@ and giving them names. Note, the order of the dictionaries and corpus names need
 
 ### From a single dictionary
 
-We can also pass a single dictionary which names each token-to-frequency corpus explicitly:
+We can also pass a single dictionary which maps each corpus name to its token-to-frequency dictionary explicitly:
 
 ```python exec="true" source="above" session="constructing_catalogs"
 --8<-- "snippets/cookbooks/constructing_catalogs.py:from_single_dict"

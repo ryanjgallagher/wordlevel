@@ -3,10 +3,10 @@
 Sometimes we do not want to include all tokens in our comparison. For example, we may want to remove exceedingly common tokens ("stop words") or exceedingly rare ones if we think that they may not contribute meaningfully to the difference between our corpora.
 
 !!! note
-    If you exclude tokens from a comparison, WordLevel automatically renormalizes all frequencies, ensuring that all scores are correctly calculated over the narrower vocabulary.
+    If you exclude tokens from a comparison, WordLevel automatically renormalizes all normalized frequencies, ensuring that all scores are correctly calculated over the narrower vocabulary.
 
 
-## Example dataset
+## Example data
 
 We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president. See the [cookbook](constructing_catalogs.md) for more about working with catalogs. 
 
@@ -14,7 +14,7 @@ We will use an example dataset of US presidential speeches from Franklin D. Roos
 --8<-- "snippets/cookbooks/excluding_tokens.py:setup"
 ```
 
-We will start by comparing them with the rank divergence. We can look at the most distinguishing tokens (the ones with the highest scores) before we exclude any. Observe how most of the top tokens are function words and contractions. While these are genuine differences, we may want to exclude them because they are not particularly insightful.
+We will start by comparing them with the rank-turbulence divergence. We can look at the most distinguishing tokens (the ones with the highest scores) before we exclude any. Observe how most of the top tokens are function words and contractions. While these are genuine differences, we may want to exclude them because they are not particularly insightful.
 
 <!-- Runs in the session but renders nothing: omitting `source` hides the block itself. -->
 ```python exec="true" session="excluding_tokens"
@@ -28,14 +28,13 @@ We will start by comparing them with the rank divergence. We can look at the mos
 
 ## Excluding specific tokens
 
-If we know which specific tokens we want to drop—like a pre-defined list of stop words—we can exclude them specifically from the comparison.
+If we know which specific tokens we want to drop—like a pre-defined list of stop words—we can exclude them from the comparison.
 
 ```python exec="true" source="above" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:tokens"
 ```
 
-Because we excluded several of the previous top tokens, we can see that the new top tokens are different even though our comparisons are the same in every other way.
-
+Because we excluded several of the previous top tokens, we can see that the new top tokens change, even though the two comparisons are otherwise identical.
 
 ```python exec="true" source="material-block" result="text" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:tokens_effect"
@@ -44,7 +43,7 @@ Because we excluded several of the previous top tokens, we can see that the new 
 
 ## Excluding by frequency
 
-We can also exclude tokens by how often they do or do not appear. The `by_frequency` method can take one of three parameters: `less_than`, `greater_than`, or `between`. Below, we exclude all tokens that appear less than 10 times.
+We can also exclude tokens by how often they appear. The `by_frequency` method takes exactly one of three bounds: `less_than`, `greater_than`, or `between`. Below, we exclude all tokens that appear 10 or fewer times.
 
 ```python exec="true" source="above" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:by_frequency"
@@ -57,18 +56,18 @@ We can also use the normalized frequency, or proportion, to exclude tokens.
 ```
 
 !!! note
-    By default, a token is only excluded if it meets the criteria for _both_ corpora. For example, `exclude.by_frequency(less_than=10)` excludes tokens that appear less than 10 times in both the reference and comparison corpora. If it appeared 11 times in one corpus but not the other, then it would not be excluded.
+    By default, a token is only excluded if it meets the criteria for _both_ corpora. For example, `exclude.by_frequency(less_than=10)` excludes tokens that appear 10 or fewer times in both the reference and comparison corpora. If it appeared 11 times in one corpus and 3 times in the other, then it would not be excluded.
 
-    If you want the exclusion criteria to apply according to a specific corpus or either of them, see the [`corpus` parameter](../api/comparison/exclude/by_frequency.md) for details.
+    To apply the exclusion criteria against only one corpus, or either corpus, see the [`corpus`](../api/comparison/exclude/by_frequency.md) parameter for details.
 
 !!! warning
-    A token missing from one corpus has a frequency and proportion of zero there, so specifying `corpus="either"` and the `less_than` parameter will remove every token that the two corpora do not share.
+    A token missing from one corpus has a frequency and proportion of zero there, so specifying `corpus="either"` and the `less_than` parameter will remove every token that the two corpora do not share, in addition to tokens below the bound.
 
 ## Excluding by lexicon score
 
 When a comparison is scored by a [lexicon](scoring_with_lexicons.md), tokens can be excluded by the score that the lexicon assigns them.
 
-For example, say that we score words with the [labMT](../api/lexicons/labMT.md) sentiment lexicon, which assigns scores on a scale from 1 to 9. To focus on tokens with "strong" sentiment, we can exclude those with "neutral" sentiment by filtering out tokens with scores between 4 and 6.
+For example, say that we score tokens with the [labMT](../api/lexicons/labMT.md) sentiment lexicon, which assigns scores on a scale from 1 to 9. To focus on tokens with "strong" sentiment, we can exclude those with "neutral" sentiment by filtering out tokens with scores between 4 and 6 (inclusive).
 
 ```python exec="true" source="above" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:by_lexicon_score"
@@ -87,7 +86,7 @@ Some measures, like the Kullback-Leibler divergence, are only well defined if bo
 
 ## Chaining multiple exclusions
 
-Exclusions can be chained together, each one narrowing the vocabulary further. Below, we drop our list of stop words _and_ tokens that appear more than 40 times in both corpora.
+Exclusions can be chained together, each one narrowing the vocabulary further. Below, we drop our list of stop words _and_ tokens that appear more than 40 or more times in both corpora.
 
 ```python exec="true" source="above" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:chained_exclusions"
