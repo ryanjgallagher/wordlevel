@@ -86,7 +86,7 @@ addopts = ["--import-mode=importlib"]
 line-length = 100
 show-fixes = true
 force-exclude = true
-extend-exclude = ["docs/snippets"]
+extend-exclude = ["docs/snippets", "*.md"]
 src = [".", "src", ".github/scripts"]
 
 [tool.ruff.lint]
