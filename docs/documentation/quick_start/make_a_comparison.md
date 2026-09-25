@@ -68,6 +68,15 @@ We can visualize the comparison scores as a bar graph. There is one bar per toke
 
 This provides a quick but effective summary of how the two corpora differ. For example, we see that Roosevelt's speeches are characterized by words pertaining to World War II ("japanese", "germany", "british", "axis") and industrial mobilization ("industry", "ships", "labor", "production"), whereas Biden's speeches are characterized by the COVID-19 pandemic ("covid", "vaccinated", "pandemic") and the Russian invasion of Ukraine ("ukraine", "putin", "nato").
 
+## Save the figure
+
+WordLevel plots are [Altair](https://altair-viz.github.io/) charts, so they can be saved as PNG, SVG, PDF, or HTML files with the `save` method. Saving requires some extra dependencies, which are installed with the [`save` extra](../install.md#saving-plots).
+
+```python
+chart.save("roosevelt_biden.png", ppi=300)
+```
+
+
 ## Where to go next
 
 Continue to learn how to conduct sentiment analysis of Roosevelt's and Biden's speeches and [make a word shift graph](make_a_word_shift_graph.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).

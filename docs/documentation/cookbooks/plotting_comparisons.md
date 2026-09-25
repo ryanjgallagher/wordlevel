@@ -201,3 +201,12 @@ The border and zero line can also be configured stylistically using a [`BorderCo
 ```python exec="true" html="true" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
+
+
+## Saving the figure
+
+WordLevel plots are [Altair](https://altair-viz.github.io/) charts, so they can be saved as PNG, SVG, PDF, or HTML files with the `save` method. Saving requires some extra dependencies, which are installed with the [`save` extra](../install.md#saving-plots).
+
+```python
+chart.save("bar_graph.png", ppi=300)
+```

@@ -99,3 +99,12 @@ The higher and lower score contribution colors can also be configured with a [`S
 ```python exec="true" html="true" session="plotting_word_shifts"
 --8<-- "snippets/cookbooks/plotting_word_shifts.py:render"
 ```
+
+
+## Saving the figure
+
+WordLevel plots are [Altair](https://altair-viz.github.io/) charts, so they can be saved as PNG, SVG, PDF, or HTML files with the `save` method. Saving requires some extra dependencies, which are installed with the [`save` extra](../install.md#saving-plots).
+
+```python
+chart.save("word_shift.png", ppi=300)
+```

@@ -57,6 +57,15 @@ A [comparison bar graph](make_a_comparison.md#plot-the-scores) shows _which_ tok
 The total difference is positive, which means that the comparison corpus (Biden) has a higher average sentiment than the reference corpus (Roosevelt). The tokens are interpreted with respect to this difference. For example, Biden's speeches have a higher sentiment than Roosevelt's because they use relatively positive words more ("you", "america", "thank") and relatively negative words less ("war", "fighting"). The higher sentiment is partly offset by other words, such as Biden's speeches using some relatively positive words less ("great", "peace", "victory") and some relatively negative words more ("violence", "dont", "tax").
 
 
+## Save the figure
+
+WordLevel plots are [Altair](https://altair-viz.github.io/) charts, so they can be saved as PNG, SVG, PDF, or HTML files with the `save` method. Saving requires some extra dependencies, which are installed with the [`save` extra](../install.md#saving-plots).
+
+```python
+chart.save("word_shift.png", ppi=300)
+```
+
+
 ## Where to go next
 
 Learn more about [word shift graphs](../concepts/word_shift_graphs.md) and how to [plot them](../cookbooks/plotting_word_shifts.md), or get started with your own data by [constructing a catalog](../cookbooks/constructing_catalogs.md) and [scoring it](../cookbooks/scoring_comparisons.md).
