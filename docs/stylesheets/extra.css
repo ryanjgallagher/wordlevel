@@ -118,6 +118,35 @@
   display: none;
 }
 
+/* A page that hides both sidebars (currently only the home page) would otherwise let its content
+   span the full 70rem grid, blowing up the logo and stretching prose to unreadable line lengths.
+   Hold it to the width the content column has everywhere else — the grid less the two sidebars,
+   16rem + 12.1rem — so the home page lines up with the rest of the site. */
+@media screen and (min-width: 76.25em) {
+  .md-main__inner:has(.md-sidebar--primary[hidden]):has(.md-sidebar--secondary[hidden])
+    .md-content__inner {
+    max-width: 41rem;
+    margin-inline: auto;
+  }
+}
+
+/* Cover word shift graph on the home page. Each color scheme has its own render, selected by the
+   `#only-light` / `#only-dark` suffix, so the figure needs no ground of its own. */
+/* Laid out with flex rather than by setting `display` on the image: the theme hides the variant
+   that does not match the scheme with `img[src$="#only-light"]{display:none}`, and an equally
+   specific `display` rule here would load later and override it, showing both. */
+.md-typeset .cover-figure {
+  display: flex;
+  justify-content: center;
+  margin: 1.5em auto;
+  max-width: 100%;
+}
+
+.md-typeset .cover-figure img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* ===========================================================================
    Custom admonition types: Citation, License, Reference, See Also.
    Section names like `Citation:`, `License:`, etc. in docstrings render as
