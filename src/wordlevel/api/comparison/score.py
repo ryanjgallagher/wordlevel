@@ -348,8 +348,8 @@ class Scorer:
         $\phi_\tau^{(C)}$ is the score the lexicon assigns it, and likewise for $R$.
 
         For how each token contributes to that difference, and how the `reference_score` shapes the
-        contributions, see
-        [Lexicons](https://wordlevel.dev/documentation/concepts/measures/lexicons/).
+        contributions, see more on
+        [word shift graphs](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
 
         Reference:
             For more details, see the following paper:
@@ -373,9 +373,9 @@ class Scorer:
             lexicon_score_col:
                 Name of the score column when a dataframe is supplied for the lexicon
             reference_score:
-                Baseline against which per-token contributions are interpreted. Defaults to the
-                "center" of a lexicon's numerical scale when a `Lexicon` is supplied; otherwise it
-                defaults to 0. If `"mean"`, uses the weighted average of the reference corpus as
+                Baseline against which per-token contributions are interpreted. Defaults to 0. If
+                "center' and a WordLevel lexicon is provided, uses the center of that lexicon's
+                numerical scale. If `"mean"`, uses the weighted average of the reference corpus as
                 the reference score
             impute:
                 How to score tokens when a score exists in one lexicon for the reference or
@@ -480,9 +480,6 @@ class Scorer:
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of a token $\tau$ in
         $R$ and $C$ respectively.
 
-        For how each token contributes to that difference, and what $\alpha$ controls, see
-        [Entropies](https://wordlevel.dev/documentation/concepts/measures/entropies/#tsallis-entropy).
-
         Reference:
             For more details, see the following paper:
             > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
@@ -557,9 +554,6 @@ class Scorer:
         $\log_b \frac{1}{p_\tau}$ is the "surprisal" of a token: the less frequent a token, the
         higher its surprisal.
 
-        For how each token contributes to that difference, see
-        [Entropies](https://wordlevel.dev/documentation/concepts/measures/entropies/#shannon-entropy).
-
         Reference:
             For more details, see the following paper:
             > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
@@ -611,9 +605,6 @@ class Scorer:
 
         where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of a token $\tau$ in
         $R$ and $C$ respectively, and $b$ is the logarithm `base`.
-
-        For when the KLD is undefined and how each token contributes to it, see
-        [Divergences](https://wordlevel.dev/documentation/concepts/measures/divergences/#kullback-leibler-divergence).
 
         Reference:
             For more details, see the following paper:
@@ -745,9 +736,6 @@ class Scorer:
         where $p_\tau^{(M)} = \pi_R \, p_\tau^{(R)} + \pi_C \, p_\tau^{(C)}$ is the normalized
         frequency of a token $\tau$ in the mixture, with weights $\pi_R$ and $\pi_C$ such that
         $\pi_R + \pi_C = 1$, and $b$ is the logarithm `base`.
-
-        For how each token contributes to the divergence, and what $\alpha$ controls, see
-        [Divergences](https://wordlevel.dev/documentation/concepts/measures/divergences/#jensen-shannon-divergence).
 
         Reference:
             For more details, see the following paper:

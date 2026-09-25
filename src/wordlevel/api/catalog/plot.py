@@ -107,9 +107,6 @@ class Plotter:
         magnitude. Which two groups the tokens are split into, and how each side reads, depends on
         the scoring measure.
 
-        For how each measure attributes its tokens, see
-        [Comparisons](https://wordlevel.dev/documentation/concepts/comparisons/#how-tokens-are-attributed).
-
         Reference:
             For more details, see the following paper:
             > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
@@ -257,10 +254,10 @@ class Plotter:
 
         There are two stacked bars per token: one indicating the difference in relative frequency,
         one indicating the difference in score. Tokens are ranked by the magnitude of both bars
-        stacked together. For what each bar means and how to read the plot, see
-        [Word Shift Graphs](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
+        stacked together. For what each bar means and how to read the plot, see more on
+        [word shift graphs](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
 
-        Word shift plots can only be used with scores derived from weighted averages. For comparing
+        Word shift graphs can only be used with scores derived from weighted averages. For comparing
         corpora using measures that are not weighted averages, use
         [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
 
