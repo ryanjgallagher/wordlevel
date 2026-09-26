@@ -74,6 +74,9 @@ dev = [
   "zensical>=0.0.47",
 ]
 
+[tool.uv]
+prerelease = "disallow"
+
 [tool.codespell]
 ignore-words-list = "thats"  # Used in lexicon exclusion example because it's a word from a corpus
 
