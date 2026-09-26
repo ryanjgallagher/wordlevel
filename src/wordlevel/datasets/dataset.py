@@ -9,7 +9,7 @@ WordLevelDataset = Literal["presidential_speeches"]
 
 
 class Dataset:
-    def __init__(self, name: WordLevelDataset) -> None:
+    def __init__(self, name: WordLevelDataset, corpora: Collection[str] | None = None) -> None:
         """
         Dataset loader to use for examples in the `wordlevel` package
 
@@ -19,6 +19,9 @@ class Dataset:
         data_f = Path(__file__).parent / "data" / f"{name}.parquet"
         self._df = pl.read_parquet(data_f)
         self._token_col = "token"
+
+        if corpora:
+            self._df = self._df.select(self._token_col, *corpora)
 
     def as_df(self, corpora: Collection[str] | None = None) -> pl.DataFrame:
         """

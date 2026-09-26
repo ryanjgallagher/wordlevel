@@ -14,6 +14,9 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
+[options]
+prerelease-mode = "disallow"
+
 [[package]]
 name = "altair"
 version = "6.2.2"
@@ -624,6 +627,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/29/6f/da4c6aea59b3001f2e8c0ec7497475aadaf3b021c10cab5b2858f0f32b26/markdown-3.10.3.tar.gz", hash = "sha256:3589362618f743188b4d955b874402bc814f4f83f544dc207719f4baa7d9c45f", size = 372596, upload-time = "2026-07-30T19:05:29.005Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/64/69/4a5af2bc115a9a33fefe51709749de8262be3f9ba063d1753a837cdbc49c/markdown-3.10.3-py3-none-any.whl", hash = "sha256:fa6c92a00a4a3c98b22728c64a935ae1928250ae65058a6ded814d2cc29a4cea", size = 110757, upload-time = "2026-07-30T19:05:27.883Z" },
+]
+
+[[package]]
+name = "markdown-exec"
+version = "1.12.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pymdown-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6d/76/c47da8edb6a12b066728432fb3724109d9d91de5331df5073d12d272493f/markdown_exec-1.12.3.tar.gz", hash = "sha256:006b9cac46470a9499797bc9c579305ae4719e0a8e495e5401dfbf1e66ce7fb4", size = 77841, upload-time = "2026-07-07T09:53:13.838Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/a7/0279016386d611183ccc508c5688eb1e2133e8182164d7a2c6213b176f69/markdown_exec-1.12.3-py3-none-any.whl", hash = "sha256:48ac12a565f3f4331b1acd9efc48a0773e717eb7ca7c38e23c1d72ee61660de6", size = 37995, upload-time = "2026-07-07T09:53:12.619Z" },
 ]
 
 [[package]]
@@ -2132,6 +2147,7 @@ dev = [
     { name = "altair", extra = ["all"] },
     { name = "duckdb" },
     { name = "griffelib" },
+    { name = "markdown-exec" },
     { name = "mkdocstrings-python" },
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -2161,6 +2177,7 @@ dev = [
     { name = "altair", extras = ["all"], specifier = ">=5.5.0" },
     { name = "duckdb", specifier = ">=1.0.0" },
     { name = "griffelib", specifier = ">=2.0.0" },
+    { name = "markdown-exec", specifier = ">=1.12.3" },
     { name = "mkdocstrings-python", specifier = ">=2.0.3" },
     { name = "pandas", specifier = ">=2.2.2" },
     { name = "pre-commit", specifier = ">=4.3.0" },
@@ -2169,7 +2186,7 @@ dev = [
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "ruff", specifier = "==0.16.1" },
     { name = "tomlkit", specifier = ">=0.13.0" },
-    { name = "zensical", specifier = ">=0.0.40" },
+    { name = "zensical", specifier = ">=0.0.47" },
 ]
 
 [[package]]

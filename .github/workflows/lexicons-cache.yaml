@@ -1,0 +1,40 @@
+# Keeps the documentation build's lexicon cache warm, since Actions evicts caches after
+# seven days without access.
+name: Cache lexicons
+
+on:
+  schedule:
+    - cron: "0 6 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lexicons-cache
+  cancel-in-progress: false
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Install Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev
+
+      - name: Cache lexicons
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/wordlevel/lexicons
+          key: lexicons-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: lexicons-${{ runner.os }}-
+
+      - name: Load lexicons
+        run: uv run --no-sync python -c "import wordlevel as wl; wl.lex.labMT('english'); wl.lex.SocialSent('1940'); wl.lex.SocialSent('2000')"

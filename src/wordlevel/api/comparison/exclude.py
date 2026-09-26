@@ -38,12 +38,10 @@ class ComparisonExcluder:
 
     def tokens(self, tokens: Collection[str]) -> Comparison:
         """
-        Removes the given tokens from the the reference and comparison corpora.
+        Removes the given tokens from the reference and comparison corpora.
 
-        Excluding tokens is a way of narrowing a comparison to the vocabulary that is of interest,
-        such as removing stop words that carry little meaning of their own. Tokens are excluded
-        from both corpora, before they are scored, so the frequencies the scoring measure works
-        with are normalized over the remaining vocabulary.
+        Tokens are excluded from both corpora, before they are scored, so the frequencies the
+        scoring measure works with are normalized over the remaining vocabulary.
 
         Example:
             ```python
@@ -130,11 +128,9 @@ class ComparisonExcluder:
         Removes tokens whose frequency falls in the given range from the reference and comparison
         corpora.
 
-        Excluding by frequency narrows a comparison to the part of the frequency distribution that
-        is of interest, such as dropping rare or common tokens. The range is tested against the
-        frequencies the catalog was built from, so its bounds are counts. Tokens are excluded from
-        both corpora, before they are scored, so the frequencies the scoring measure works with are
-        normalized over the remaining vocabulary.
+        The range is tested against the frequencies the catalog was built from, so its bounds are
+        counts. Tokens are excluded from both corpora, before they are scored, so the frequencies
+        the scoring measure works with are normalized over the remaining vocabulary.
 
         Example:
             ```python
@@ -202,10 +198,9 @@ class ComparisonExcluder:
         Removes tokens whose proportion of a corpus falls in the given range from the reference and
         comparison corpora.
 
-        Excluding by proportion narrows a comparison to the part of the frequency distribution that
-        is of interest, using each token's share of its corpus rather than a count, so that the same
-        bounds mean the same thing in corpora of different sizes. Tokens are excluded from both
-        corpora, before they are scored, so the frequencies the scoring measure works with are
+        The range is tested against each token's share of its corpus rather than a count, so that
+        the same bounds mean the same thing in corpora of different sizes. Tokens are excluded from
+        both corpora, before they are scored, so the frequencies the scoring measure works with are
         normalized over the remaining vocabulary.
 
         Example:
@@ -289,9 +284,9 @@ class ComparisonExcluder:
         Removes tokens whose lexicon score falls in the given range from the reference and
         comparison corpora.
 
-        Excluding by lexicon score narrows a comparison to the part of a lexicon's scale that is of
-        interest. Tokens are excluded from both corpora, before they are scored, so the frequencies
-        the scoring measure works with are normalized over the remaining vocabulary.
+        The range is tested against the scores the comparison's lexicon assigns. Tokens are excluded
+        from both corpora, before they are scored, so the frequencies the scoring measure works with
+        are normalized over the remaining vocabulary.
 
         Example:
             ```python

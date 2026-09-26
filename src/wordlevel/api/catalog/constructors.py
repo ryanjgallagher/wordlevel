@@ -145,8 +145,9 @@ def from_polars(
         KeyError: If any column in `freq_cols` is not a column in `df`.
         ValueError: If fewer than two columns are provided in `freq_cols`.
     """
-    # Check all columns exist
-    deduped_freq_cols = set(freq_cols)
+    # Check all columns exist. Dedupe via `dict.fromkeys` rather than a set: dicts keep insertion
+    # order, so the corpora stay in the order the caller gave them
+    deduped_freq_cols = list(dict.fromkeys(freq_cols))
 
     if isinstance(df, pl.DataFrame):
         cols = set(df.columns)

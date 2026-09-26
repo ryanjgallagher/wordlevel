@@ -41,34 +41,48 @@ Copyright &copy; 2026 Ryan J. Gallagher
 # Read more: https://zensical.org/docs/setup/navigation/
 nav = [
   {"Home" = "index.md"},
-  {"Documentation" = [
+  {"User Guide" = [
     "documentation/index.md",
-    {"User Guide" = [
-      {"Install" = "documentation/user_guide/install.md"},
-      {"Corpora & Catalogs" = "documentation/user_guide/corpora_and_catalogs.md"},
-      {"Comparisons" = [
-        {"Scoring" = "documentation/user_guide/comparisons/scoring.md"},
-        {"Word Shifts" = "documentation/user_guide/comparisons/word_shifts.md"},
-        {"Lexicons & Sentiment Analysis" = "documentation/user_guide/comparisons/lexicons.md"}
-      ]},
-      {"Plots" = [
-        {"Bar Graphs" = "documentation/user_guide/plots/bars.md"},
-        {"Word Shift Graphs" = "documentation/user_guide/plots/shifts.md"}
-      ]}
+    {"Quick Start" = [
+      {"Install" = "documentation/install.md"},
+      {"Make a Comparison" = "documentation/quick_start/make_a_comparison.md"},
+      {"Make a Word Shift Graph" = "documentation/quick_start/make_a_word_shift_graph.md"}
     ]},
-    # The "API" subtree below is a placeholder. docs/scripts/api_docs reads this
-    # file as a template and writes the fully-populated nav to
-    # zensical-build.toml; that derived file is what `zensical build`/`serve`
-    # should read (via the `-f` flag). The generator matches the placeholder
-    # exactly, on a line of its own — do not populate or comment it out by hand.
+    {"Cookbooks" = [
+      {"Constructing Catalogs" = "documentation/cookbooks/constructing_catalogs.md"},
+      {"Scoring Comparisons" = "documentation/cookbooks/scoring_comparisons.md"},
+      {"Scoring with Lexicons" = "documentation/cookbooks/scoring_with_lexicons.md"},
+      {"Normalizing Scores" = "documentation/cookbooks/normalizing_scores.md"},
+      {"Excluding Tokens" = "documentation/cookbooks/excluding_tokens.md"},
+      {"Plotting Comparisons" = "documentation/cookbooks/plotting_comparisons.md"},
+      {"Plotting Word Shifts" = "documentation/cookbooks/plotting_word_shifts.md"},
+    ]},
+    {"Concepts" = [
+      {"Corpora & Catalogs" = "documentation/concepts/corpora_and_catalogs.md"},
+      {"Comparisons" = "documentation/concepts/comparisons.md"},
+      {"Normalization" = "documentation/concepts/normalization.md"},
+      {"Word Shift Graphs" = "documentation/concepts/word_shift_graphs.md"}
+    ]}
+  ]},
+  # The "API" subtree below is a placeholder. docs/scripts/api_docs reads this
+  # file as a template and writes the fully-populated nav to
+  # zensical-build.toml; that derived file is what `zensical build`/`serve`
+  # should read (via the `-f` flag). The generator matches the placeholder
+  # exactly, on a line of its own — do not populate or comment it out by hand.
+  #
+  # It is nested one level inside the tab so that the sections it holds sit
+  # below the level `navigation.sections` renders as always-open groups, and
+  # stay collapsible.
+  {"API Reference" = [
+    "documentation/api/index.md",
     {"API" = []}
   ]},
-  {"Contributing" = [
-    "contributing/index.md",
-    {"Implementing a Comparison Score" = "contributing/scores.md"},
-    {"Adding a Lexicon" = "contributing/lexicons.md"}
-  ]},
-  {"References" = "references.md"},
+  # {"Contributing" = [
+  #   "contributing/index.md",
+  #   {"Getting Started" = "contributing/getting_started.md"},
+  #   {"Implementing a Comparison Score" = "contributing/scores.md"},
+  #   {"Adding a Lexicon" = "contributing/lexicons.md"}
+  # ]},
 ]
 
 # With the "extra_css" option you can add your own CSS styling to customize
@@ -360,6 +374,11 @@ combine_header_slug = true
 custom_checkbox = true
 [project.markdown_extensions.pymdownx.tilde]
 
+
+# ----------------------------------------------------------------------------
+# markdown-exec
+# ----------------------------------------------------------------------------
+[project.plugins."markdown-exec"]
 
 # ----------------------------------------------------------------------------
 # mkdocstrings

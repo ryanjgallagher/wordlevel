@@ -215,17 +215,15 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:frequency"
             ```
 
-        Each token's contribution is the difference in its raw frequency between the corpora.
-        Specifically, the contribution $\delta_\tau$ of a token $\tau$ is:
+        The contribution $\delta_\tau$ of a token $\tau$ is the difference in its raw frequency
+        between the corpora:
 
         $$
         \delta_\tau = f_\tau^{(C)} - f_\tau^{(R)}
         $$
 
-        where $f_\tau^{(R)}$ and $f_\tau^{(C)}$ are the raw frequencies of token $\tau$ in $R$ and
-        $C$ respectively, the reference and comparison corpora. Positive contributions identify
-        tokens that occur more often in the comparison; negative contributions identify tokens that
-        occur more often in the reference.
+        where $f_\tau^{(R)}$ and $f_\tau^{(C)}$ are the raw frequencies of $\tau$ in the reference
+        corpus $R$ and the comparison corpus $C$.
 
         See Also:
             | Score | Description |
@@ -262,17 +260,15 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:proportion"
             ```
 
-        Each token's contribution is the difference in its normalized frequency (i.e. proportion)
-        within each corpus. The contribution $\delta_\tau$ of a token $\tau$ is:
+        The contribution $\delta_\tau$ of a token $\tau$ is the difference in its normalized
+        frequency (i.e. proportion) within each corpus:
 
         $$
         \delta_\tau = p_\tau^{(C)} - p_\tau^{(R)}
         $$
 
-        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
-        $R$ and $C$ respectively, the reference and comparison corpora. Positive contributions
-        identify tokens that occur relatively more often in the comparison; negative contributions
-        identify tokens that occur relatively more often in the reference.
+        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of $\tau$ in the
+        reference corpus $R$ and the comparison corpus $C$.
 
         Reference:
             For more details, see the following paper:
@@ -330,14 +326,6 @@ class Scorer:
         Calculates the difference in lexicon-weighted averages between the reference and comparison
         corpora.
 
-        The supplied lexicon associates a score with each token. The user can provide a single
-        lexicon to use for both corpora, or one lexicon for each. The overall score for each corpus
-        individually is the lexicon-weighted average. Specifically, if $p_\tau$ is the normalized
-        frequency of a token $\tau$ in a corpus, and $\phi_\tau$ is the score assigned to it by
-        the lexicon, then the corpus-level score is $\Phi = \sum_\tau p_\tau \phi_\tau$. This method
-        takes the difference in weighted averages between the reference and comparison corpora,
-        $\Phi^{(C)} - \Phi^{(R)}$.
-
         Example:
             ```python
             --8<-- "snippets/comparison/score.py:setup"
@@ -345,61 +333,23 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:lexicon"
             ```
 
-        When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
+        The supplied lexicon associates a score with each token. The user can provide a single
+        lexicon to use for both corpora, or one lexicon for each. Each corpus is summarized by its
+        lexicon-weighted average $\Phi = \sum_\tau p_\tau \phi_\tau$, and this method takes the
+        difference between the weighted averages of the reference corpus $R$ and the comparison
+        corpus $C$:
 
         $$
-        \delta_\tau = \phi^{(C)}_\tau p_\tau^{(C)} - \phi^{(R)}_\tau p_\tau^{(R)}
+        \Phi^{(C)} - \Phi^{(R)} =
+            \sum_\tau p_\tau^{(C)} \phi_\tau^{(C)} - \sum_\tau p_\tau^{(R)} \phi_\tau^{(R)}
         $$
 
-        where $\phi_\tau^{(C)}$ is the score of token $\tau$ in the comparison corpus, and
-        $p_\tau^{(C)}$ is its normalized frequency. Similarly, $\phi_\tau^{(R)}$ and $p_\tau^{(R)}$
-        are the score and normalized frequency of $\tau$ in the reference corpus.
+        where $p_\tau^{(C)}$ is the normalized frequency of a token $\tau$ in $C$ and
+        $\phi_\tau^{(C)}$ is the score the lexicon assigns it, and likewise for $R$.
 
-        Each token is interpreted by whether it reinforces or offsets the corpus-level difference in
-        weighted averages $\Phi^{(C)} - \Phi^{(R)}$. A contribution with the same sign as the overall
-        difference reinforces it, making its magnitude larger; a contribution with the opposite sign
-        offsets it, pulling the difference back toward zero. For example, if
-        $\Phi^{(C)} - \Phi^{(R)} > 0$ (the comparison's weighted average is higher), positive
-        contributions reinforce the difference and negative contributions offset it; the
-        interpretation flips when $\Phi^{(C)} - \Phi^{(R)} < 0$.
-
-        If the `reference_score` is non-zero, and the score of a word is the same in both corpora,
-        i.e. $\phi_\tau = \phi^{(C)}_\tau = \phi^{(R)}_\tau$, then a token's contribution is:
-
-        $$
-        \delta_\tau =
-            \left(
-                p_\tau^{(C)} - p_\tau^{(R)}
-            \right)
-            \left(
-                \phi_\tau - \Phi^{(\text{ref})}
-            \right)
-        $$
-
-        where $\Phi^{(\text{ref})}$ is the user-provided reference score. If the `reference_score`
-        is non-zero, and the score of a word is corpus dependent, then a token's contribution is:
-
-        $$
-        \delta_\tau =
-        \left(
-            p_\tau^{(C)} - p_\tau^{(R)}
-        \right)
-        \left[
-            \frac{1}{2}
-            \left(
-                \phi_\tau^{(C)} + \phi_\tau^{(R)}
-            \right)
-            - \Phi^{(\text{ref})}
-        \right]
-        +
-        \frac{1}{2}
-        \left(
-            p_\tau^{(C)} + p_\tau^{(R)}
-        \right)
-        \left(
-            \phi_\tau^{(C)} - \phi_\tau^{(R)}
-        \right)
-        $$
+        For how each token contributes to that difference, and how the `reference_score` shapes the
+        contributions, see more on
+        [word shift graphs](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
 
         Reference:
             For more details, see the following paper:
@@ -423,9 +373,9 @@ class Scorer:
             lexicon_score_col:
                 Name of the score column when a dataframe is supplied for the lexicon
             reference_score:
-                Baseline against which per-token contributions are interpreted. Defaults to the
-                "center" of a lexicon's numerical scale when a `Lexicon` is supplied; otherwise it
-                defaults to 0. If `"mean"`, uses the weighted average of the reference corpus as
+                Baseline against which per-token contributions are interpreted. Defaults to 0. If
+                "center' and a WordLevel lexicon is provided, uses the center of that lexicon's
+                numerical scale. If `"mean"`, uses the weighted average of the reference corpus as
                 the reference score
             impute:
                 How to score tokens when a score exists in one lexicon for the reference or
@@ -510,12 +460,6 @@ class Scorer:
         r"""
         Calculates the difference in Tsallis entropy between the reference and comparison corpora.
 
-        Tsallis entropy is a generalized measure of textual diversity, parameterized by an
-        order $\alpha$. When $\alpha = 1$, the Tsallis entropy reduces to the [Shannon
-        entropy][wordlevel.api.comparison.score.Scorer.shannon_entropy]; when $\alpha < 1$, more
-        weight is given to rare tokens; and when $\alpha > 1$, more weight is given to common
-        tokens.
-
         Example:
             ```python
             --8<-- "snippets/comparison/score.py:setup"
@@ -523,56 +467,18 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:tsallis_entropy"
             ```
 
-        When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
+        Tsallis entropy is a generalized measure of textual diversity, parameterized by an order
+        $\alpha$. This method takes the difference between the entropies of the reference corpus $R$
+        and the comparison corpus $C$:
 
         $$
-        \delta_\tau =
-            \frac{p_\tau^{(C)} - \left[ p_\tau^{(C)} \right]^\alpha}{\alpha - 1}
-            - \frac{p_\tau^{(R)} - \left[ p_\tau^{(R)} \right]^\alpha}{\alpha - 1}
+        \Phi^{(C)} - \Phi^{(R)} =
+            \frac{1 - \sum_\tau \left[ p_\tau^{(C)} \right]^\alpha}{\alpha - 1}
+            - \frac{1 - \sum_\tau \left[ p_\tau^{(R)} \right]^\alpha}{\alpha - 1}
         $$
 
-        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
-        $R$ and $C$ respectively, the reference and comparison corpora.
-
-        Each token is interpreted by whether it reinforces or offsets the corpus-level difference in
-        entropies $\Phi^{(C)} - \Phi^{(R)}$. A contribution with the same sign as the overall
-        difference reinforces it, making its magnitude larger; a contribution with the opposite sign
-        offsets it, pulling the difference back toward zero. For example, if
-        $\Phi^{(C)} - \Phi^{(R)} > 0$ (the comparison's entropy is higher), positive contributions
-        reinforce the difference and negative contributions offset it; the interpretation flips when
-        $\Phi^{(C)} - \Phi^{(R)} < 0$.
-
-        When the `reference_score` is non-zero, the contribution of the token is:
-
-        $$
-        \delta_\tau =
-        \left(
-            p_\tau^{(C)} - p_\tau^{(R)}
-        \right)
-        \left[
-            \frac{1}{2}
-            \left(
-                \phi_\tau^{(C)} + \phi_\tau^{(R)}
-            \right)
-            - \Phi^{(\text{ref})}
-        \right]
-        +
-        \frac{1}{2}
-        \left(
-            p_\tau^{(C)} + p_\tau^{(R)}
-        \right)
-        \left(
-            \phi_\tau^{(C)} - \phi_\tau^{(R)}
-        \right)
-        $$
-
-        where $\Phi^{(\text{ref})}$ is the user-provided reference score, and
-
-        $$
-            \phi_\tau^{(C)} = \frac{1 - \left[ p_\tau^{(C)} \right]^{\alpha - 1}}{\alpha - 1}
-            \, , \,
-            \phi_\tau^{(R)} = \frac{1 - \left[ p_\tau^{(R)} \right]^{\alpha - 1}}{\alpha - 1}
-        $$
+        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of a token $\tau$ in
+        $R$ and $C$ respectively.
 
         Reference:
             For more details, see the following paper:
@@ -627,11 +533,6 @@ class Scorer:
         r"""
         Calculates the difference in Shannon entropy between the reference and comparison corpora.
 
-        Shannon entropy is a measure of textual diversity and "surprise." If $p_\tau$ is the
-        normalized frequency of a token $\tau$ in a corpus, then its Shannon entropy is
-        $\sum_\tau p_\tau \log \frac{1}{p_\tau}$. The factor $\log \frac{1}{p_\tau}$ is known as
-        the "surprisal" of a token: the less frequent a token, the higher its surprisal.
-
         Example:
             ```python
             --8<-- "snippets/comparison/score.py:setup"
@@ -639,56 +540,19 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:shannon_entropy"
             ```
 
-        When the `reference_score` is 0, the contribution $\delta_\tau$ of a token $\tau$ is:
+        Shannon entropy is a measure of textual diversity and "surprise." This method takes the
+        difference between the entropies of the reference corpus $R$ and the comparison corpus $C$:
 
         $$
-        \delta_\tau =
-            p_\tau^{(C)} \log \frac{1}{p_\tau^{(C)}}
-            - p_\tau^{(R)} \log \frac{1}{p_\tau^{(R)}}
+        \Phi^{(C)} - \Phi^{(R)} =
+            \sum_\tau p_\tau^{(C)} \log_b \frac{1}{p_\tau^{(C)}}
+            - \sum_\tau p_\tau^{(R)} \log_b \frac{1}{p_\tau^{(R)}}
         $$
 
-        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
-        $R$ and $C$ respectively, the reference and comparison corpora.
-
-        Each token is interpreted by whether it reinforces or offsets the corpus-level difference in
-        entropies $\Phi^{(C)} - \Phi^{(R)}$. A contribution with the same sign as the overall
-        difference reinforces it, making its magnitude larger; a contribution with the opposite sign
-        offsets it, pulling the difference back toward zero. For example, if
-        $\Phi^{(C)} - \Phi^{(R)} > 0$ (the comparison's entropy is higher), positive contributions
-        reinforce the difference and negative contributions offset it; the interpretation flips when
-        $\Phi^{(C)} - \Phi^{(R)} < 0$.
-
-        When the `reference_score` is non-zero, the contribution of the token is:
-
-        $$
-        \delta_\tau =
-        \left(
-            p_\tau^{(C)} - p_\tau^{(R)}
-        \right)
-        \left[
-            \frac{1}{2}
-            \left(
-                \phi_\tau^{(C)} + \phi_\tau^{(R)}
-            \right)
-            - \Phi^{(\text{ref})}
-        \right]
-        +
-        \frac{1}{2}
-        \left(
-            p_\tau^{(C)} + p_\tau^{(R)}
-        \right)
-        \left(
-            \phi_\tau^{(C)} - \phi_\tau^{(R)}
-        \right)
-        $$
-
-        where $\Phi^{(\text{ref})}$ is the user-provided reference score, and
-
-        $$
-            \phi_\tau^{(C)} = \log \frac{1}{p_\tau^{(C)}}
-            \, , \,
-            \phi_\tau^{(R)} = \log \frac{1}{p_\tau^{(R)}}
-        $$
+        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of a token $\tau$ in
+        $R$ and $C$ respectively, and $b$ is the logarithm `base`. The factor
+        $\log_b \frac{1}{p_\tau}$ is the "surprisal" of a token: the less frequent a token, the
+        higher its surprisal.
 
         Reference:
             For more details, see the following paper:
@@ -719,11 +583,6 @@ class Scorer:
         r"""
         Calculates the Kullback-Leibler divergence (KLD) between the reference and comparison corpora.
 
-        The KLD is an asymmetric measure of how two corpora differ. From an information-theoretic
-        perspective, it measures how much more information is needed to encode the comparison corpus
-        when using the reference as the "codebook." It is only well-defined when all of the words in
-        the comparison also appear in the reference. Otherwise, the KLD diverges to infinity.
-
         Example:
             ```python
             --8<-- "snippets/comparison/score.py:setup"
@@ -735,19 +594,17 @@ class Scorer:
             Using this measure forces the comparison to be evaluated eagerly rather than lazily,
             because validating it requires computing over the full vocabulary.
 
-        The contribution $\delta_\tau$ of a token $\tau$ is:
+        The KLD is an asymmetric measure of how much more information is needed to encode the
+        comparison corpus $C$ when using the reference corpus $R$ as the "codebook":
 
         $$
-        \delta_\tau =
-            p_\tau^{(C)} \log \frac{1}{p_\tau^{(R)}} - p_\tau^{(C)} \log \frac{1}{p_\tau^{(C)}}
+        \Phi =
+            \sum_\tau p_\tau^{(C)} \log_b \frac{1}{p_\tau^{(R)}}
+            - \sum_\tau p_\tau^{(C)} \log_b \frac{1}{p_\tau^{(C)}}
         $$
 
-        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
-        $R$ and $C$ respectively, the reference and comparison corpora. The total divergence is
-        always non-negative, but individual per-token contributions can be either sign. A positive
-        contribution identifies a token that appears relatively more in the comparison corpus; a
-        negative contribution, more in the reference. Because the total is non-negative, positive
-        contributions reinforce the divergence and negative contributions offset it.
+        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of a token $\tau$ in
+        $R$ and $C$ respectively, and $b$ is the logarithm `base`.
 
         Reference:
             For more details, see the following paper:
@@ -771,10 +628,11 @@ class Scorer:
 
         Raises:
             ValueError:
-                If the comparison corpus contains any token absent from the reference
-                corpus, which causes the KLD to be infinite. Filter to the intersection of tokens
-                or use a symmetric measure like the [Jensen-Shannon
-                divergence][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence]
+                If the comparison corpus contains any token absent from the reference corpus, which
+                causes the KLD to be infinite. Use a symmetric measure like the
+                [Jensen-Shannon divergence][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence],
+                or drop those tokens with
+                [`Comparison.exclude.unshared_tokens`][wordlevel.api.comparison.exclude.ComparisonExcluder.unshared_tokens]
         """
         # The reference score does not affect token contributions for the KLD.
         plan = self._make_weighted_avg_score_plan(
@@ -849,12 +707,6 @@ class Scorer:
         r"""
         Calculates the Jensen-Shannon divergence (JSD) between the reference and comparison corpora.
 
-        The JSD is a symmetric, bounded measure of how two corpora differ. It is computed by
-        averaging the Kullback-Leibler divergence of each corpus against a synthetic mixture corpus
-        representing the combination of both corpora. This implementation generalizes the JSD
-        through an order parameter $\alpha$. When $\alpha < 1$, more weight is given to rare tokens;
-        when $\alpha > 1$, more weight is given to common tokens.
-
         Example:
             ```python
             --8<-- "snippets/comparison/score.py:setup"
@@ -862,67 +714,28 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:jensen_shannon_divergence"
             ```
 
-        When the `reference_score` is 0 and $\alpha = 1$, the contribution $\delta_\tau$ of a
-        token $\tau$ is:
+        The JSD is a symmetric, bounded measure of how two corpora differ. It averages the
+        [Kullback-Leibler divergence][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence]
+        of the reference corpus $R$ and the comparison corpus $C$ against a synthetic mixture corpus
+        $M$ representing the combination of both. When $\alpha = 1$:
 
         $$
-        \delta_\tau =
-            p_\tau^{(M)} \log \frac{1}{p_\tau^{(M)}}
-            -
-            \left(
-                \pi_R \, p_\tau^{(R)} \log \frac{1}{p_\tau^{(R)}}
-                + \pi_C \, p_\tau^{(C)} \log \frac{1}{p_\tau^{(C)}}
-            \right)
+        \begin{aligned}
+        \Phi
+        &= \pi_R \, D_{\text{KL}} \left( R \parallel M \right)
+         + \pi_C \, D_{\text{KL}} \left( C \parallel M \right) \\[6pt]
+        &= \sum_\tau p_\tau^{(M)} \log_b \frac{1}{p_\tau^{(M)}}
+         -
+         \left(
+             \pi_R \sum_\tau p_\tau^{(R)} \log_b \frac{1}{p_\tau^{(R)}}
+             + \pi_C \sum_\tau p_\tau^{(C)} \log_b \frac{1}{p_\tau^{(C)}}
+         \right)
+        \end{aligned}
         $$
 
-        where $p_\tau^{(R)}$ and $p_\tau^{(C)}$ are the normalized frequencies of token $\tau$ in
-        $R$ and $C$ respectively, the reference and comparison corpora, and $p_\tau^{(M)} = \pi_R \,
-        p_\tau^{(R)} + \pi_C \, p_\tau^{(C)}$ with weights $\pi_R$ and $\pi_C$ such that $\pi_R + \pi_C
-        = 1$. For $\alpha = 1$, each token's contribution is always non-negative.
-
-        When the `reference_score` is 0 and $\alpha \neq 1$, the contribution of the token is:
-
-        $$
-        \delta_\tau =
-        \left(
-            p_\tau^{(C)} - p_\tau^{(R)}
-        \right)
-        \left[
-            \frac{1}{2}
-            \left(
-                \phi_\tau^{(C)} + \phi_\tau^{(R)}
-            \right)
-            - \Phi^{(\text{ref})}
-        \right]
-        +
-        \frac{1}{2}
-        \left(
-            p_\tau^{(C)} + p_\tau^{(R)}
-        \right)
-        \left(
-            \phi_\tau^{(C)} - \phi_\tau^{(R)}
-        \right)
-        $$
-
-        where $\Phi^{(\text{ref})}$ is the user-provided reference score, and
-
-        $$
-            \phi_\tau^{(C)} =
-                \pi_C
-                \left(
-                    \frac
-                    {\left[ p_\tau^{(C)} \right]^{\alpha - 1} - \left[ p_\tau^{(M)} \right]^{\alpha - 1}}
-                    {\alpha - 1}
-                \right)
-            \, , \,
-            \phi_\tau^{(R)} =
-                \pi_R
-                \left(
-                    \frac
-                    {\left[ p_\tau^{(M)} \right]^{\alpha - 1} - \left[ p_\tau^{(R)} \right]^{\alpha - 1}}
-                    {\alpha - 1}
-                \right)
-        $$
+        where $p_\tau^{(M)} = \pi_R \, p_\tau^{(R)} + \pi_C \, p_\tau^{(C)}$ is the normalized
+        frequency of a token $\tau$ in the mixture, with weights $\pi_R$ and $\pi_C$ such that
+        $\pi_R + \pi_C = 1$, and $b$ is the logarithm `base`.
 
         Reference:
             For more details, see the following paper:
@@ -951,8 +764,8 @@ class Scorer:
                 Mixture weight $\pi_C$ for the comparison corpus
             reference_score:
                 Baseline against which per-token contributions are interpreted. Defaults to 0. If
-                `"mean"`, uses the weighted average of the reference corpus, where weights are the
-                values described in the general formula above
+                `"mean"`, uses the weighted average of the reference corpus's token scores as the
+                reference score
 
         Returns:
             A new `Comparison` scored by the Jensen-Shannon divergence
@@ -1032,12 +845,6 @@ class Scorer:
         r"""
         Calculates the rank-turbulence divergence between the reference and comparison corpora.
 
-        Rank-turbulence divergence compares corpora by comparing the ranks of tokens in each corpus
-        when ordered by relative frequency. The measure is symmetric and bounded between 0 and 1,
-        where 0 indicates that the corpora are identical, and 1 indicates that they are maximally
-        divergent. It is also parameterized by an order parameter $\alpha$. When $\alpha < 1$, more
-        weight is given to rare tokens; when $\alpha > 1$, more weight is given to common tokens.
-
         Example:
             ```python
             --8<-- "snippets/comparison/score.py:setup"
@@ -1045,7 +852,8 @@ class Scorer:
             --8<-- "snippets/comparison/score.py:rank_divergence"
             ```
 
-        When $\alpha > 0$, the contribution $\delta_\tau$ of a token $\tau$ is:
+        Rank-turbulence divergence compares corpora by the ranks of their tokens when ordered by
+        relative frequency. When $\alpha > 0$, the contribution $\delta_\tau$ of a token $\tau$ is:
 
         $$
         \delta_\tau =
@@ -1058,20 +866,13 @@ class Scorer:
             ^{ 1 / (\alpha + 1)}
         $$
 
-        where $r_\tau^{(R)}$ and $r_\tau^{(C)}$ are the ranks of token $\tau$ in $R$ and $C$
-        respectively, the reference and comparison corpora, and $\mathcal{N}_\alpha$ is a
-        normalization constant based on $\alpha$.
+        where $r_\tau^{(R)}$ and $r_\tau^{(C)}$ are the ranks of $\tau$ in the reference corpus $R$
+        and the comparison corpus $C$, and $\mathcal{N}_\alpha$ is a normalization constant based on
+        $\alpha$. When $\alpha = 0$, the contribution is instead
+        $\left| \ln \left( r_\tau^{(R)} / r_\tau^{(C)} \right) \right| / \mathcal{N}_0$.
 
-        When $\alpha = 0$, the contribution of the token is:
-
-        $$
-        \delta_\tau =
-            \frac{1}{N_0}
-            \,
-            \left|
-                \ln \frac{r_\tau^{(R)}}{r_\tau^{(C)}}
-            \right|
-        $$
+        For more details, including the effect of tuning $\alpha$, see
+        [Divergences](https://wordlevel.dev/documentation/concepts/measures/divergences/#rank-turbulence-divergence).
 
         Reference:
             For details, see the following paper:
