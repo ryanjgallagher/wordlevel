@@ -127,3 +127,50 @@ class TestNormalizedPlan:
         normalized = score_func(comp("ref", "cmp").score).normalize(by)  # type: ignore[arg-type]
         with pytest.raises(ValueError, match="zero"):
             normalized._state.resolve()(df_equal, "word")
+
+    @pytest.mark.parametrize("check_nonzero", [True, False])
+    def test_nonzero_divisor_normalizes_whether_or_not_checked(
+        self, df_mock: pl.DataFrame, check_nonzero: bool
+    ) -> None:
+        """
+        The corpora in `df_mock` differ, so the divisor is nonzero and the scores normalize whether
+        or not the divisor is checked.
+        """
+        normalized = comp("ref", "cmp").score.frequency().normalize("sum_abs", check_nonzero)
+
+        df_normalized = normalized._state.resolve()(df_mock, "word").lazy().collect()
+
+        assert df_normalized[SCORE_COL].abs().sum() == pytest.approx(1.0)
+
+    def test_zero_divisor_does_not_raise_without_check_nonzero(
+        self, df_equal: pl.DataFrame
+    ) -> None:
+        """
+        The corpora in `df_equal` are identical, so the divisor is zero, which does not raise when
+        it is not checked.
+        """
+        normalized = comp("ref", "cmp").score.frequency().normalize("sum_abs", check_nonzero=False)
+
+        normalized._state.resolve()(df_equal, "word").lazy().collect()
+
+
+class TestCheckNonzeroLaziness:
+    @pytest.fixture
+    def lf_uncollectable(self) -> pl.LazyFrame:
+        """A mock corpus frame whose strict cast of `"x"` fails only when it is collected."""
+        return pl.LazyFrame(
+            {"word": ["the", "cat"], "ref": ["100", "x"], "cmp": [20, 30]}
+        ).with_columns(pl.col("ref").cast(pl.Int64))
+
+    def test_check_nonzero_collects_the_plan(self, lf_uncollectable: pl.LazyFrame) -> None:
+        """Checking for a zero divisor collects the plan, so the failing query runs."""
+        normalized = comp("ref", "cmp").score.frequency().normalize("sum_abs", check_nonzero=True)
+
+        with pytest.raises(pl.exceptions.InvalidOperationError):
+            normalized._state.resolve()(lf_uncollectable, "word")
+
+    def test_plan_stays_lazy_without_check_nonzero(self, lf_uncollectable: pl.LazyFrame) -> None:
+        """Without the check, the plan does not collect, so the failing query never runs."""
+        normalized = comp("ref", "cmp").score.frequency().normalize("sum_abs", check_nonzero=False)
+
+        normalized._state.resolve()(lf_uncollectable, "word")
