@@ -5,7 +5,7 @@ from typing import Any
 import tomlkit
 
 from docs.scripts.api_docs import structure
-from docs.scripts.api_docs.introspect import summary
+from docs.scripts.api_docs.introspect import _escape_cell, summary
 from docs.scripts.api_docs.markdown import render
 from docs.scripts.api_docs.nav import splice
 from docs.scripts.api_docs.tree import (
@@ -223,7 +223,7 @@ def test_summary_escapes_characters_that_would_break_a_table_row() -> None:
     """
     Checks that a pipe in a docstring is escaped rather than read as a column separator
     """
-    assert r"\|" in summary("wordlevel.core.comparison.normalization.NormalizeBy")
+    assert _escape_cell("Sums $|x|$ per token.") == r"Sums $\|x\|$ per token."
 
 
 def test_summary_is_empty_for_an_undocumented_object() -> None:
