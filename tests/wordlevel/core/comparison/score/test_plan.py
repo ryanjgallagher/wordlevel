@@ -501,7 +501,7 @@ class TestLexiconJoinPlan:
 
     class TestImputation:
         def test_default_drops_words_missing_from_lexicon(self, df_words, lexicon_dict) -> None:
-            """With default impute=None, words not in the lexicon are dropped."""
+            """By default, words not in the lexicon are dropped."""
             result = lexicon_join_plan(
                 df_words,
                 df_token_col=_TOKEN_COL,
@@ -516,7 +516,7 @@ class TestLexiconJoinPlan:
             assert result["score_cmp"].is_not_null().all()
 
         def test_drop_null_scores_disabled_keeps_nulls(self, df_words, lexicon_dict) -> None:
-            """With drop_null_scores=False and impute=None, null scores are retained."""
+            """With drop_null_scores=False, null scores are retained."""
             result = lexicon_join_plan(
                 df_words,
                 df_token_col=_TOKEN_COL,
@@ -532,7 +532,7 @@ class TestLexiconJoinPlan:
             assert fish_row["score_cmp"].item() is None
 
         def test_borrow_fills_missing_score_from_other_corpus(self) -> None:
-            """With impute='borrow', a null in one column is filled from the other and flagged."""
+            """With scored_in_one_lexicon='borrow', a null in one column is filled from the other and flagged."""
             df = pl.DataFrame({_TOKEN_COL: ["the", "dog", "fish"], "freq": [100, 25, 10]})
             lexicon_ref = {"the": 1.0, "fish": 9.0}  # missing "dog"
             lexicon_cmp = {"the": 2.0, "dog": 5.0}  # missing "fish"
@@ -544,7 +544,7 @@ class TestLexiconJoinPlan:
                 lexicon_cmp=lexicon_cmp,
                 score_alias_ref="score_ref",
                 score_alias_cmp="score_cmp",
-                impute="borrow",
+                scored_in_one_lexicon="borrow",
                 drop_null_scores=False,
             )
 
@@ -583,7 +583,7 @@ class TestLexiconJoinPlan:
                 lexicon_cmp=lexicon_cmp,
                 score_alias_ref="score_ref",
                 score_alias_cmp="score_cmp",
-                impute="borrow",
+                scored_in_one_lexicon="borrow",
                 drop_null_scores=True,
             )
 
@@ -615,6 +615,21 @@ class TestLexiconJoinPlan:
             # "cat" has a non-null score_ref but a null score_cmp -- should still be dropped
             assert result[_TOKEN_COL].to_list() == ["the"]
 
+        def test_drop_keeps_only_words_scored_by_both_lexicons(self) -> None:
+            """With "drop", a word scored by only one lexicon is removed rather than filled."""
+            df = pl.DataFrame({_TOKEN_COL: ["the", "dog", "fish"], "freq": [100, 25, 10]})
+
+            result = lexicon_join_plan(
+                df,
+                df_token_col=_TOKEN_COL,
+                lexicon_ref={"the": 1.0, "fish": 9.0},  # missing "dog"
+                lexicon_cmp={"the": 2.0, "dog": 5.0},  # missing "fish"
+                scored_in_one_lexicon="drop",
+            )
+
+            assert result[_TOKEN_COL].to_list() == ["the"]
+            assert IS_BORROWED_COL not in result.columns
+
         def test_mean_fills_each_side_from_its_own_lexicon(self) -> None:
             """A token scored by one lexicon gets the mean of the lexicon that lacks it."""
             df = pl.DataFrame({_TOKEN_COL: ["the", "dog", "fish"], "freq": [100, 25, 10]})
@@ -628,7 +643,7 @@ class TestLexiconJoinPlan:
                 lexicon_cmp=lexicon_cmp,
                 score_alias_ref="score_ref",
                 score_alias_cmp="score_cmp",
-                impute="mean",
+                scored_in_one_lexicon="mean",
             )
 
             dog_row = result.filter(col(_TOKEN_COL) == "dog")
@@ -650,7 +665,7 @@ class TestLexiconJoinPlan:
                 lexicon_cmp={"the": 2.0},
                 score_alias_ref="score_ref",
                 score_alias_cmp="score_cmp",
-                impute=0.0,
+                scored_in_one_lexicon=0.0,
                 drop_null_scores=drop_null_scores,
             )
 
@@ -664,7 +679,10 @@ class TestLexiconJoinPlan:
         def test_single_lexicon_imputes_nothing(self, df_words, lexicon_dict) -> None:
             """With one lexicon no word is scored on only one side, so imputing changes nothing."""
             imputed = lexicon_join_plan(
-                df_words, df_token_col=_TOKEN_COL, lexicon=lexicon_dict, impute="mean"
+                df_words,
+                df_token_col=_TOKEN_COL,
+                lexicon=lexicon_dict,
+                scored_in_one_lexicon="mean",
             )
             not_imputed = lexicon_join_plan(df_words, df_token_col=_TOKEN_COL, lexicon=lexicon_dict)
 

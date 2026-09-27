@@ -460,8 +460,8 @@ class TestExcludeByLexiconScoreValidation:
         with pytest.raises(ValueError, match="scored by a lexicon"):
             excluded.score.shannon_entropy()._state.resolve()
 
-    @pytest.mark.parametrize("impute", ["mean", 5.0])
-    def test_imputed_scores_raise(self, impute: float | str) -> None:
+    @pytest.mark.parametrize("scored_in_one_lexicon", ["mean", 5.0])
+    def test_imputed_scores_raise(self, scored_in_one_lexicon: float | str) -> None:
         """
         An imputed score is a modeling choice rather than what the lexicon says about a token, so
         excluding by it would remove tokens on the strength of a value the lexicon never gave.
@@ -469,15 +469,24 @@ class TestExcludeByLexiconScoreValidation:
         with pytest.raises(ValueError, match="modeling choice"):
             comp("ref", "cmp").score.lexicon(
                 lexicon=LEXICON,
-                impute=impute,  # type: ignore[arg-type]
+                scored_in_one_lexicon=scored_in_one_lexicon,  # type: ignore[arg-type]
             ).exclude.by_lexicon_score(less_than=2.0)
 
-    def test_borrowed_scores_are_allowed(self, df_mock: pl.DataFrame) -> None:
-        """A borrowed score is a genuine one, just taken from the lexicon of the other corpus."""
+    @pytest.mark.parametrize("scored_in_one_lexicon", ["borrow", "drop"])
+    def test_borrowed_or_dropped_scores_are_allowed(
+        self, df_mock: pl.DataFrame, scored_in_one_lexicon: str
+    ) -> None:
+        """
+        A borrowed score is a genuine one, just taken from the lexicon of the other corpus, and a
+        dropped token has no score at all.
+        """
         df_result = (
             comp("ref", "cmp")
             .exclude.by_lexicon_score(less_than=2.0)
-            .score.lexicon(lexicon=LEXICON, impute="borrow")
+            .score.lexicon(
+                lexicon=LEXICON,
+                scored_in_one_lexicon=scored_in_one_lexicon,  # type: ignore[arg-type]
+            )
             ._state.resolve()(df_mock, "word")
         )
 

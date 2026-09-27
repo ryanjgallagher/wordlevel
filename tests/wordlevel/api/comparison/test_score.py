@@ -68,7 +68,7 @@ class TestScoreFunctionWiring:
             (
                 lambda s: s.lexicon(lexicon={"the": 1.0}),
                 "lexicon",
-                ["reference_score", "impute"],
+                ["reference_score", "scored_in_one_lexicon"],
                 True,
                 "score_sign",
             ),
@@ -537,20 +537,28 @@ class TestLexiconScorer:
             df_split.select(SCORE_COL),
         )
 
-    def test_impute_parameter_wiring(self, df_mock) -> None:
-        """Different `impute` strategies score a token that only one lexicon scores differently."""
+    def test_scored_in_one_lexicon_parameter_wiring(self, df_mock) -> None:
+        """Borrowing and imputing score a token that only one lexicon scores differently."""
         df_borrow, df_zero = [
             Comparison("ref", "cmp")
             .score.lexicon(
                 lexicon_reference={"the": 1.0, "cat": 5.0},  # missing "dog"
                 lexicon_comparison={"the": 2.0, "cat": 5.0, "dog": -3.0},
-                impute=impute,
+                scored_in_one_lexicon=scored_in_one_lexicon,
             )
             ._state.resolve()(df_mock, "word")
-            for impute in ("borrow", 0.0)
+            for scored_in_one_lexicon in ("borrow", 0.0)
         ]
 
         assert_frame_not_equal(df_borrow.select(SCORE_COL), df_zero.select(SCORE_COL))
+
+    def test_invalid_scored_in_one_lexicon_raises(self) -> None:
+        """An unrecognized string is rejected when the comparison is built, not when resolved."""
+        with pytest.raises(ValueError, match="scored_in_one_lexicon"):
+            Comparison("ref", "cmp").score.lexicon(
+                lexicon={"the": 1.0},
+                scored_in_one_lexicon="median",  # type: ignore[arg-type]
+            )
 
     def test_borrowed_flag_survives_scoring(self, df_mock) -> None:
         """`is_borrowed` is passed through the weighted-average plan into the scored dataframe."""
@@ -558,17 +566,17 @@ class TestLexiconScorer:
         df_result = comparison.score.lexicon(
             lexicon_reference={"the": 1.0, "cat": 5.0},  # missing "dog"
             lexicon_comparison={"the": 2.0, "dog": -3.0},  # missing "cat"
-            impute="borrow",
+            scored_in_one_lexicon="borrow",
         )._state.resolve()(df_mock, "word")
 
         borrowed = df_result.filter(col(IS_BORROWED_COL))["word"].to_list()
         assert set(borrowed) == {"cat", "dog"}
 
-    def test_no_borrowed_flag_for_other_impute_strategies(self, df_mock) -> None:
-        """The `is_borrowed` column is only added when imputing by borrowing."""
+    def test_no_borrowed_flag_unless_borrowing(self, df_mock) -> None:
+        """The `is_borrowed` column is only added when borrowing."""
         comparison = Comparison("ref", "cmp")
         df_result = comparison.score.lexicon(
-            lexicon={"the": 1.0, "cat": 5.0}, impute=0.0
+            lexicon={"the": 1.0, "cat": 5.0}, scored_in_one_lexicon=0.0
         )._state.resolve()(df_mock, "word")
 
         assert IS_BORROWED_COL not in df_result.columns
@@ -592,11 +600,31 @@ class TestLexiconScorer:
         """
         df_result = (
             Comparison("ref", "cmp")
-            .score.lexicon(lexicon={"the": 1.0, "cat": 5.0}, impute=0.0)
+            .score.lexicon(lexicon={"the": 1.0, "cat": 5.0}, scored_in_one_lexicon=0.0)
             ._state.resolve()(df_mock, "word")
         )
 
         assert df_result["word"].to_list() == ["the", "cat"]
+
+    def test_imputing_changes_the_normalized_freqs(self, df_mock) -> None:
+        """
+        Imputing keeps a token that only one lexicon scores, so that token holds onto its share of
+        the frequency mass instead of the mass being spread over the tokens both lexicons score.
+        """
+        dropped, imputed = [
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon_reference={"the": 1.0, "cat": 5.0},  # missing "dog"
+                lexicon_comparison={"the": 2.0, "cat": 5.0, "dog": -3.0},
+                scored_in_one_lexicon=scored_in_one_lexicon,
+            )
+            ._state.resolve()(df_mock, "word")
+            .filter(col("word") == "the")["ref__wl_normed"]
+            .item()
+            for scored_in_one_lexicon in ("drop", 0.0)
+        ]
+
+        assert dropped > imputed
 
     def test_mean_reference_score_is_taken_over_the_scored_vocabulary(self, df_mock) -> None:
         """
