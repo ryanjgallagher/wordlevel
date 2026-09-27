@@ -33,5 +33,5 @@ The second way that we can normalize is by the _net_ difference, which is equiva
 ```
 
 !!! warning
-    Normalizing forces the comparison to be evaluated eagerly because WordLevel must check that the constant it divides by is nonzero.
+    By default, normalizing forces the comparison to be evaluated eagerly because WordLevel must check that the constant it divides by is nonzero. This behavior can be changed by setting the [`check_nonzero`](../api/comparison/manipulate/normalize.md) parameter to `False`.
 
