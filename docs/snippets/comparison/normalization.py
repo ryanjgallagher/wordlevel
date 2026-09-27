@@ -11,5 +11,5 @@ cl = wl.Catalog.from_dict_of_freqs(
 
 
 # --8<-- [start:normalize]
-cl = cl.with_comparisons(wl.comp("before", "after").score.shannon_entropy().normalize("sum_abs"))
+cl = cl.with_comparisons(wl.comp("before", "after").score.shannon_entropy().normalize("total_diff"))
 # --8<-- [end:normalize]

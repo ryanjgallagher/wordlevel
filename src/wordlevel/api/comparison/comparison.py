@@ -79,7 +79,7 @@ class Comparison:
         """
         return self._update_state(alias=name)
 
-    def normalize(self, by: NormalizeBy) -> Comparison:
+    def normalize(self, by: NormalizeBy, check_nonzero: bool = True) -> Comparison:
         r"""
         Returns a new `Comparison` whose token contributions are normalized onto a common scale.
 
@@ -99,24 +99,34 @@ class Comparison:
         [Normalization](https://wordlevel.dev/documentation/concepts/normalization/).
 
         Warning:
-            Using this method forces the comparison to be evaluated eagerly rather than lazily,
-            because validating it requires computing the scores over the full vocabulary.
+            By default, using this method forces the comparison to be evaluated eagerly rather than
+            lazily, because validating it requires computing the scores over the full vocabulary.
+            The eager validation can be skipped using the `check_nonzero` parameter.
 
         Args:
             by:
-                The normalization strategy. `"sum_abs"` divides every token's contribution by
-                $\sum_\tau |\delta_\tau|$; `"abs_sum"` divides by $|\sum_\tau \delta_\tau|$
+                The normalization strategy. `"total_diff"` divides every token's contribution by
+                the total difference $\sum_\tau |\delta_\tau|$; `"net_diff"` divides by the net
+                difference $|\sum_\tau \delta_\tau|$
+            check_nonzero:
+                Whether to check whether the normalization constant is zero and raise an error. If
+                `False`, the operation remains lazy, but the scores can become NaN when normalizing
+                by `"total_diff"` or inf and -inf when normalizing by `"net_diff"` if the
+                normalization constant is zero
 
         Returns:
             A new `Comparison` with normalized token contributions
 
         Raises:
             ValueError:
+                If `check_nonzero` is `True` and the normalization constant is zero. This is raised
+                when the comparison is scored, not when `normalize` is called.
+            ValueError:
                 If the comparison is already normalized by a different strategy.
             ValueError: If `by` is not a recognized normalization strategy.
             ValueError:
-                If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
-                zero by construction, so the absolute sum is always zero.
+                If `by` is `"net_diff"` for a `proportion` comparison, whose contributions sum to
+                zero by construction, so the net difference is always zero.
         """
         if self._state.normalized_by is not None:
             if self._state.normalized_by == by:
@@ -129,7 +139,7 @@ class Comparison:
         self._state.validate_normalization(by)
 
         return self._update_state(
-            score_normalization_plan=make_normalized_plan(by),
+            score_normalization_plan=make_normalized_plan(by, check_nonzero=check_nonzero),
             normalized_by=by,
         )
 

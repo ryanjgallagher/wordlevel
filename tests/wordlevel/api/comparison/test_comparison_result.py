@@ -411,18 +411,18 @@ class TestNormalizationFields:
             is_nonnegative=False,
             attributed_by="frequency",
             parameters={},
-            normalized_by="sum_abs",
+            normalized_by="total_diff",
         )
 
         assert result.normalized is True
-        assert result.normalized_by == "sum_abs"
+        assert result.normalized_by == "total_diff"
         assert result.normalization_constant == 4.0
 
     def test_from_comparison_threads_normalization(self, df_mock) -> None:
         """`from_comparison` carries the normalization strategy and computes the constant."""
-        comparison = comp("ref", "cmp").score.proportion().normalize("sum_abs").alias("test")
+        comparison = comp("ref", "cmp").score.proportion().normalize("total_diff").alias("test")
 
         result = ComparisonResult.from_comparison(comparison, df_mock, token_col="word")
 
-        assert result.normalized_by == "sum_abs"
+        assert result.normalized_by == "total_diff"
         assert result.normalization_constant is not None

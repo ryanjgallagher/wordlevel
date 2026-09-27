@@ -7,7 +7,7 @@ cl = wl.Catalog(speeches, corpora=["Franklin D. Roosevelt", "Joe Biden"])
 cl = cl.with_comparisons(
     wl.comp("Franklin D. Roosevelt", "Joe Biden")
         .score.lexicon(wl.lex.labMT("english"), reference_score="center")
-        .normalize(by="sum_abs")
+        .normalize(by="total_diff")
         .alias("roosevelt_biden_labmt"),
     wl.comp("Franklin D. Roosevelt", "Joe Biden")
         .score.lexicon(
@@ -15,7 +15,7 @@ cl = cl.with_comparisons(
             lexicon_comparison=wl.lex.SocialSent("2000"),
             reference_score="center",
         )
-        .normalize(by="sum_abs")
+        .normalize(by="total_diff")
         .alias("roosevelt_biden_socialsent"),
 )
 # --8<-- [end:setup]
