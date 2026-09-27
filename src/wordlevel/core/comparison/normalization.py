@@ -9,7 +9,7 @@ from polars import col
 NormalizeBy: TypeAlias = Literal["total_diff", "net_diff"]
 r"""
 The strategy for normalizing token contributions, dividing each contribution $\delta_\tau$ by a
-single constant:
+single constant.
 
 - `"total_diff"` divides by the sum of absolute contributions (the "total difference"), $\sum_\tau |\delta_\tau|$.
 - `"net_diff"` divides by the absolute sum of contributions (the "net difference"), $|\sum_\tau \delta_\tau|$.
