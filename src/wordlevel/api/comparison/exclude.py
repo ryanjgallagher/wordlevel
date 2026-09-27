@@ -331,8 +331,9 @@ class ComparisonExcluder:
                 If the comparison is not scored by a lexicon, so it has no lexicon scores to
                 exclude by.
             ValueError:
-                If the lexicon scores are imputed by anything other than `"borrow"`, because an
-                imputed score is a modeling choice rather than what a lexicon says about a token.
+                If tokens scored by only one lexicon are imputed rather than borrowed or dropped,
+                because an imputed score is a modeling choice rather than what a lexicon says about
+                a token.
         """
         self._comparison._state.validate_lexicon_score_exclusion()
 

@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import polars as pl
 from polars import col
@@ -8,6 +8,15 @@ from wordlevel.core.lexicons.load import Lexicon
 
 
 DEFAULT_LEXICON_SCORE_COL = "lexicon_score"
+
+ScoredInOneLexicon: TypeAlias = Literal["borrow", "drop", "mean"]
+"""
+How to handle a token that is scored by only one of the reference or comparison lexicons.
+
+- `"borrow"` applies the score from the other corpus's lexicon.
+- `"drop"` removes the token from the comparison.
+- `"mean"` imputes the mean score of the corpus's own lexicon.
+"""
 
 
 def join_lexicon(

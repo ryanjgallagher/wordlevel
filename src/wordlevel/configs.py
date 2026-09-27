@@ -305,8 +305,8 @@ class LabelConfig:
             autoscaling to estimate label widths from font size
         borrow_symbol:
             A symbol appended to the end of a token's label indicating that it "borrowed" a score
-            across corpora. If `None`, no symbol is appended. For detail on borrowing, see the
-            imputation documentation for
+            across corpora. If `None`, no symbol is appended. For detail on borrowing, see
+            `scored_in_one_lexicon` in
             [lexicon scoring][wordlevel.api.comparison.score.Scorer.lexicon]
     """
 

@@ -12,6 +12,7 @@ from wordlevel.core.comparison.score.components import (
 )
 from wordlevel.core.comparison.score.lexicon import (
     DEFAULT_LEXICON_SCORE_COL,
+    ScoredInOneLexicon,
     get_imputation_expression,
     join_lexicon,
 )
@@ -204,7 +205,7 @@ def lexicon_join_plan(
     lexicon_score_col: str | None = None,
     score_alias_ref: str | None = None,
     score_alias_cmp: str | None = None,
-    impute: float | Literal["borrow", "mean"] | pl.Expr | None = None,
+    scored_in_one_lexicon: float | ScoredInOneLexicon | pl.Expr = "drop",
     drop_null_scores: bool = True,
 ) -> pl.DataFrame | pl.LazyFrame:
     """ """
@@ -236,11 +237,9 @@ def lexicon_join_plan(
     if score_alias_cmp is None:
         score_alias_cmp = f"{score_col_to_rename}_cmp"
 
-    impute_strategy: float | Literal["mean"] | pl.Expr | None
-    if isinstance(impute, str) and (impute == "borrow"):
-        impute_strategy = None
-    else:
-        impute_strategy = impute
+    impute_strategy: float | Literal["mean"] | pl.Expr | None = None
+    if not isinstance(scored_in_one_lexicon, str) or scored_in_one_lexicon == "mean":
+        impute_strategy = scored_in_one_lexicon
 
     df = join_lexicon(
         df,
@@ -282,7 +281,7 @@ def lexicon_join_plan(
             .alias(score_alias_cmp),
         )
 
-    if isinstance(impute, str) and impute == "borrow":
+    if isinstance(scored_in_one_lexicon, str) and scored_in_one_lexicon == "borrow":
         is_borrowed = (col(score_alias_ref).is_null() & col(score_alias_cmp).is_not_null()) | (
             col(score_alias_cmp).is_null() & col(score_alias_ref).is_not_null()
         )
