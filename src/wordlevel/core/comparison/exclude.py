@@ -1,11 +1,19 @@
 from collections.abc import Collection
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import polars as pl
 from polars import col
 
 
-EXCLUDE_CORPUS = Literal["reference", "comparison", "both", "either"]
+ExcludeCorpus: TypeAlias = Literal["reference", "comparison", "both", "either"]
+"""
+Which corpus or corpora are used to determine whether a token should be excluded.
+
+- `"reference"` excludes a token when its value in the reference corpus falls in the range.
+- `"comparison"` excludes a token when its value in the comparison corpus falls in the range.
+- `"both"` excludes a token only when its value falls in the range in both corpora.
+- `"either"` excludes a token when its value falls in the range in at least one corpus.
+"""
 
 
 def exclude_tokens(
@@ -27,7 +35,7 @@ def exclude_by_range(
     greater_than: float | None = None,
     between: tuple[float, float] | None = None,
     inclusive: bool = True,
-    corpus: EXCLUDE_CORPUS = "both",
+    corpus: ExcludeCorpus = "both",
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Removes tokens whose per-corpus value falls in the given range from the two corpora being

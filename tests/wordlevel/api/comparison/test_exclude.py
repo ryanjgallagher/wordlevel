@@ -8,7 +8,7 @@ from polars.testing import assert_frame_equal
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import Comparison, comp
 from wordlevel.api.comparison.score import Scorer
-from wordlevel.core.comparison.exclude import EXCLUDE_CORPUS
+from wordlevel.core.comparison.exclude import ExcludeCorpus
 
 
 LEXICON = {"the": 1.0, "cat": 5.0, "dog": 2.0, "ran": 3.0}
@@ -217,7 +217,7 @@ class TestExcludeByFrequency:
         ],
     )
     def test_corpus_chooses_which_frequency_is_tested(
-        self, df_mock: pl.DataFrame, corpus: EXCLUDE_CORPUS, expected: list[str]
+        self, df_mock: pl.DataFrame, corpus: ExcludeCorpus, expected: list[str]
     ) -> None:
         """
         The two corpora give a token different frequencies, so which of them the range is tested
@@ -410,7 +410,7 @@ class TestExcludeByLexiconScore:
         ],
     )
     def test_corpus_chooses_which_lexicons_score_is_tested(
-        self, df_mock: pl.DataFrame, corpus: EXCLUDE_CORPUS, expected: list[str]
+        self, df_mock: pl.DataFrame, corpus: ExcludeCorpus, expected: list[str]
     ) -> None:
         """
         With a lexicon per corpus the two scores differ, so which of them the range is tested
