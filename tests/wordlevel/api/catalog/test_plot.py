@@ -432,7 +432,7 @@ class TestNormalizedPlot:
     def normalized_catalog(self, df_mock: pl.DataFrame) -> Catalog:
         return Catalog(df_mock, token_col="word", corpora=["freq1", "freq2"]).with_comparisons(
             comp("freq1", "freq2").score.tsallis_entropy().alias("raw"),
-            comp("freq1", "freq2").score.tsallis_entropy().normalize("sum_abs").alias("normed"),
+            comp("freq1", "freq2").score.tsallis_entropy().normalize("total_diff").alias("normed"),
         )
 
     def test_contributions_scaled_to_percent(self, normalized_catalog: Catalog) -> None:

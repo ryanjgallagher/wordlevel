@@ -196,15 +196,15 @@ class ComparisonState:
         Raises:
             ValueError: If `by` is not a recognized normalization strategy.
             ValueError:
-                If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
-                zero by construction, so the absolute sum is always zero.
+                If `by` is `"net_diff"` for a `proportion` comparison, whose contributions sum to
+                zero by construction, so the net difference is always zero.
         """
         if by not in get_args(NormalizeBy):
             raise ValueError(f"`by` must be one of {get_args(NormalizeBy)}, got {by!r}")
-        if by == "abs_sum" and self.method == "proportion":
+        if by == "net_diff" and self.method == "proportion":
             raise ValueError(
-                "Cannot normalize a 'proportion' comparison by 'abs_sum': proportions sum to one "
-                "in each corpus, so the net difference is zero by construction. Use 'sum_abs' "
+                "Cannot normalize a 'proportion' comparison by 'net_diff': proportions sum to one "
+                "in each corpus, so the net difference is zero by construction. Use 'total_diff' "
                 "instead."
             )
 

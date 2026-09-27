@@ -16,14 +16,14 @@ class TestNormalizationConstantExpr:
     @pytest.mark.parametrize(
         "by, scores, expected",
         [
-            ("sum_abs", [2.0, -3.0, 1.0], 6.0),
-            ("abs_sum", [2.0, -3.0, 1.0], 0.0),
-            ("sum_abs", [2.0, -1.0, 1.0], 4.0),
-            ("abs_sum", [2.0, -1.0, 1.0], 2.0),
+            ("total_diff", [2.0, -3.0, 1.0], 6.0),
+            ("net_diff", [2.0, -3.0, 1.0], 0.0),
+            ("total_diff", [2.0, -1.0, 1.0], 4.0),
+            ("net_diff", [2.0, -1.0, 1.0], 2.0),
         ],
     )
     def test_constant(self, by: str, scores: list[float], expected: float) -> None:
-        """The divisor is the sum of absolutes for `sum_abs` and the absolute sum for `abs_sum`."""
+        """The divisor is the sum of absolutes for `total_diff` and the absolute sum for `net_diff`."""
         df = pl.DataFrame({SCORE_COL: scores})
         constant = df.select(normalization_constant_expr(by, SCORE_COL)).item()  # type: ignore[arg-type]
 
@@ -35,7 +35,7 @@ class TestNormalizeScores:
         """`score_col` is divided by the constant, which is also written as its own column."""
         df = pl.DataFrame({SCORE_COL: [2.0, -1.0, 1.0]})
 
-        df_norm = normalize_scores(df, "sum_abs", SCORE_COL, [], CONSTANT_COL)
+        df_norm = normalize_scores(df, "total_diff", SCORE_COL, [], CONSTANT_COL)
         expected_scores = pl.Series(SCORE_COL, [2 / 4, -1 / 4, 1 / 4])
 
         polars.testing.assert_series_equal(df_norm[SCORE_COL], expected_scores)
@@ -52,7 +52,7 @@ class TestNormalizeScores:
         )
 
         df_norm = normalize_scores(
-            df, "sum_abs", SCORE_COL, ["more_of_positive", "higher_score"], CONSTANT_COL
+            df, "total_diff", SCORE_COL, ["more_of_positive", "higher_score"], CONSTANT_COL
         )
 
         summed_components = df_norm.select(

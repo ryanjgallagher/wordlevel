@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 
 
 _ZERO_CONSTANT_DESCRIPTION: dict[NormalizeBy, str] = {
-    "sum_abs": "the total absolute contribution is zero (the corpora are identical)",
-    "abs_sum": "the net difference is zero",
+    "total_diff": "the total difference is zero (the corpora are identical)",
+    "net_diff": "the net difference is zero",
 }
 
 

@@ -6,13 +6,13 @@ import polars.selectors as cs
 from polars import col
 
 
-NormalizeBy: TypeAlias = Literal["sum_abs", "abs_sum"]
+NormalizeBy: TypeAlias = Literal["total_diff", "net_diff"]
 r"""
 The strategy for normalizing token contributions, dividing each contribution $\delta_\tau$ by a
 single constant:
 
-- `"sum_abs"` divides by the sum of absolute contributions, $\sum_\tau |\delta_\tau|$.
-- `"abs_sum"` divides by the absolute sum of contributions, $|\sum_\tau \delta_\tau|$.
+- `"total_diff"` divides by the sum of absolute contributions (the "total difference"), $\sum_\tau |\delta_\tau|$.
+- `"net_diff"` divides by the absolute sum of contributions (the "net difference"), $|\sum_\tau \delta_\tau|$.
 """
 
 
@@ -23,14 +23,14 @@ def normalization_constant_expr(by: NormalizeBy, score_col: str) -> pl.Expr:
     The two strategies differ in how the per-token contributions $\\delta_\\tau$ in `score_col` are
     aggregated:
 
-    - `"sum_abs"` divides by the sum of absolute contributions, $\\sum_\\tau |\\delta_\\tau|$.
-    - `"abs_sum"` divides by the absolute sum of contributions, $|\\sum_\\tau \\delta_\\tau|$.
+    - `"total_diff"` divides by the sum of absolute contributions, $\\sum_\\tau |\\delta_\\tau|$.
+    - `"net_diff"` divides by the absolute sum of contributions, $|\\sum_\\tau \\delta_\\tau|$.
 
     The result is a single scalar (broadcast across all rows when used in `with_columns`).
     """
     contributions = col(score_col)
     constant: pl.Expr
-    if by == "sum_abs":
+    if by == "total_diff":
         constant = contributions.abs().sum()
     else:
         constant = contributions.sum().abs()

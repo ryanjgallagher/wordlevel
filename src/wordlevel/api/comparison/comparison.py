@@ -105,13 +105,14 @@ class Comparison:
 
         Args:
             by:
-                The normalization strategy. `"sum_abs"` divides every token's contribution by
-                $\sum_\tau |\delta_\tau|$; `"abs_sum"` divides by $|\sum_\tau \delta_\tau|$
+                The normalization strategy. `"total_diff"` divides every token's contribution by
+                the total difference $\sum_\tau |\delta_\tau|$; `"net_diff"` divides by the net
+                difference $|\sum_\tau \delta_\tau|$
             check_nonzero:
                 Whether to check whether the normalization constant is zero and raise an error. If
                 `False`, the operation remains lazy, but the scores can become NaN when normalizing
-                by `"sum_abs"` or inf and -inf when normalizing by `"abs_sum"` if the normalization
-                constant is zero
+                by `"total_diff"` or inf and -inf when normalizing by `"net_diff"` if the
+                normalization constant is zero
 
         Returns:
             A new `Comparison` with normalized token contributions
@@ -121,8 +122,8 @@ class Comparison:
                 If the comparison is already normalized by a different strategy.
             ValueError: If `by` is not a recognized normalization strategy.
             ValueError:
-                If `by` is `"abs_sum"` for a `proportion` comparison, whose contributions sum to
-                zero by construction, so the absolute sum is always zero.
+                If `by` is `"net_diff"` for a `proportion` comparison, whose contributions sum to
+                zero by construction, so the net difference is always zero.
         """
         if self._state.normalized_by is not None:
             if self._state.normalized_by == by:
