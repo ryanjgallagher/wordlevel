@@ -111,6 +111,7 @@ API: tuple[Section, ...] = (
         index=SUMMARY_TABLE,
         children=(
             page("wordlevel.api.catalog.constructors.DictOfFreqs"),
+            page("wordlevel.core.comparison.exclude.ExcludeCorpus"),
             page("wordlevel.api.catalog.constructors.ListOfFreqs"),
             page("wordlevel.core.comparison.normalization.NormalizeBy"),
         ),

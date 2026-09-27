@@ -14,7 +14,7 @@ from wordlevel.constants import (
     NORMED_FREQ_REF_COL,
 )
 from wordlevel.core.comparison.exclude import (
-    EXCLUDE_CORPUS,
+    ExcludeCorpus,
     exclude_by_range,
     exclude_tokens,
 )
@@ -122,7 +122,7 @@ class ComparisonExcluder:
         greater_than: float | None = None,
         between: tuple[float, float] | None = None,
         inclusive: bool = True,
-        corpus: EXCLUDE_CORPUS = "both",
+        corpus: ExcludeCorpus = "both",
     ) -> Comparison:
         """
         Removes tokens whose frequency falls in the given range from the reference and comparison
@@ -192,7 +192,7 @@ class ComparisonExcluder:
         greater_than: float | None = None,
         between: tuple[float, float] | None = None,
         inclusive: bool = True,
-        corpus: EXCLUDE_CORPUS = "both",
+        corpus: ExcludeCorpus = "both",
     ) -> Comparison:
         """
         Removes tokens whose proportion of a corpus falls in the given range from the reference and
@@ -278,7 +278,7 @@ class ComparisonExcluder:
         greater_than: float | None = None,
         between: tuple[float, float] | None = None,
         inclusive: bool = True,
-        corpus: EXCLUDE_CORPUS = "both",
+        corpus: ExcludeCorpus = "both",
     ) -> Comparison:
         """
         Removes tokens whose lexicon score falls in the given range from the reference and
@@ -356,7 +356,7 @@ class ComparisonExcluder:
         greater_than: float | None,
         between: tuple[float, float] | None,
         inclusive: bool,
-        corpus: EXCLUDE_CORPUS,
+        corpus: ExcludeCorpus,
     ) -> Comparison:
         """
         Adds a plan excluding tokens whose values in the given columns fall in the given range.
@@ -404,7 +404,7 @@ class ComparisonExcluder:
         less_than: float | None,
         greater_than: float | None,
         between: tuple[float, float] | None,
-        corpus: EXCLUDE_CORPUS,
+        corpus: ExcludeCorpus,
     ) -> None:
         """
         Checks that exactly one bound describes a well formed range, tested against a recognized
@@ -438,5 +438,5 @@ class ComparisonExcluder:
             raise ValueError(
                 f"The lower bound of `between` cannot exceed its upper bound, got {between}"
             )
-        if corpus not in get_args(EXCLUDE_CORPUS):
-            raise ValueError(f"`corpus` must be one of {get_args(EXCLUDE_CORPUS)}, got {corpus}")
+        if corpus not in get_args(ExcludeCorpus):
+            raise ValueError(f"`corpus` must be one of {get_args(ExcludeCorpus)}, got {corpus}")
