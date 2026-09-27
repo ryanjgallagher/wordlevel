@@ -103,7 +103,7 @@ When we have a different lexicons per corpus, some tokens may be scored in both 
 
 In these cases, we can allow a token to "borrow" a score across lexicons. Effectively, this allows us to just compare the change in the relative frequency of the token, even if we cannot measure the change in its score across the corpora.
 
-In our example lexicons, "happy" is only defined in the `before` lexicon, and "sad" is only defined in the `after` lexicon. We can see that those tokens "borrow" their scores across lexicons because we set `impute="borrow"` when creating our comparison.
+In our example lexicons, "happy" is only defined in the `before` lexicon, and "sad" is only defined in the `after` lexicon. We can see that those tokens "borrow" their scores across lexicons because we set `scored_in_one_lexicon="borrow"` when creating our comparison. If we instead set `scored_in_one_lexicon="drop"`, those tokens would be dropped, and only tokens scored by both lexicons would contribute to the comparison.
 
 
 ```python exec="true" source="material-block" result="text" session="scoring_with_lexicons"

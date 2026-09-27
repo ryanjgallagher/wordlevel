@@ -169,7 +169,7 @@ class TestBorrowSymbol:
             .score.lexicon(
                 lexicon_reference={"the": 1.0, "cat": 5.0, "dog": 3.0, "ran": 2.0},  # no "fast"
                 lexicon_comparison={"the": 2.0, "cat": 4.0, "dog": 1.0, "fast": 8.0},  # no "ran"
-                impute="borrow",
+                scored_in_one_lexicon="borrow",
             )
             .alias("borrow_comp")
         )

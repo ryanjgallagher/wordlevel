@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from functools import partial
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import polars as pl
 from polars import col
@@ -22,6 +22,7 @@ from wordlevel.constants import (
     SCORE_COL,
 )
 from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
+from wordlevel.core.comparison.score.lexicon import ScoredInOneLexicon
 from wordlevel.core.comparison.score.metrics.entropy import (
     tsallis_entropy_clean_dual_dist_scores,
     tsallis_entropy_dual_dist_scores,
@@ -320,7 +321,7 @@ class Scorer:
         lexicon_token_col: str | None = None,
         lexicon_score_col: str | None = None,
         reference_score: float | Literal["mean", "center"] | pl.Expr = 0,
-        impute: float | Literal["borrow", "mean"] | pl.Expr = "borrow",
+        scored_in_one_lexicon: float | ScoredInOneLexicon | pl.Expr = "borrow",
     ) -> Comparison:
         r"""
         Calculates the difference in lexicon-weighted averages between the reference and comparison
@@ -377,12 +378,16 @@ class Scorer:
                 "center' and a WordLevel lexicon is provided, uses the center of that lexicon's
                 numerical scale. If `"mean"`, uses the weighted average of the reference corpus as
                 the reference score
-            impute:
-                How to score tokens when a score exists in one lexicon for the reference or
-                comparison but not the other. `"borrow"` applies the score from the other corpus.
-                `"mean"` uses the mean score of the corpus's lexicon (not weighted by frequency). A
-                float or Polars expression can also be passed to use a specific value as the imputed
-                score
+            scored_in_one_lexicon:
+                How to handle a token that is scored by one of `lexicon_reference` or
+                `lexicon_comparison` but not the other. Only applies when the two lexicons differ.
+                `"borrow"` applies the score from the other corpus's lexicon, so the token
+                contributes only through its change in frequency. `"drop"` removes the token from
+                the comparison. `"mean"` imputes the mean score of the corpus's own lexicon (not
+                weighted by frequency), and a float or Polars expression imputes that value
+                instead. Because each corpus imputes from its own lexicon, an imputed token can
+                have a different score in each corpus. Tokens that are in neither lexicon are
+                always dropped
 
         Returns:
             A new `Comparison` scored by the difference in lexicon-weighted averages
@@ -394,7 +399,18 @@ class Scorer:
             ValueError:
                 If `lexicon` is supplied alongside `lexicon_reference` or `lexicon_comparison` (the
                 single-lexicon and per-corpus-lexicon paths are mutually exclusive).
+            ValueError:
+                If `scored_in_one_lexicon` is a string other than `"borrow"`, `"drop"`, or
+                `"mean"`.
         """
+        if isinstance(scored_in_one_lexicon, str) and scored_in_one_lexicon not in get_args(
+            ScoredInOneLexicon
+        ):
+            raise ValueError(
+                f"`scored_in_one_lexicon` must be one of {get_args(ScoredInOneLexicon)}, a float, "
+                f"or a Polars expression, got {scored_in_one_lexicon!r}"
+            )
+
         score_alias_ref = LEXICON_SCORE_REF_COL
         score_alias_cmp = LEXICON_SCORE_CMP_COL
 
@@ -412,7 +428,7 @@ class Scorer:
                 )
 
         passthrough_cols = None
-        if isinstance(impute, str) and impute == "borrow":
+        if isinstance(scored_in_one_lexicon, str) and scored_in_one_lexicon == "borrow":
             passthrough_cols = [IS_BORROWED_COL]
 
         score_plan = self._make_weighted_avg_score_plan(
@@ -437,14 +453,17 @@ class Scorer:
                 lexicon_score_col=lexicon_score_col,
                 score_alias_ref=score_alias_ref,
                 score_alias_cmp=score_alias_cmp,
-                impute=impute,
+                scored_in_one_lexicon=scored_in_one_lexicon,
                 drop_null_scores=True,
             )
 
         return self._return_comparison(
             score_plan,
             method="lexicon",
-            parameters={"reference_score": reference_score, "impute": impute},
+            parameters={
+                "reference_score": reference_score,
+                "scored_in_one_lexicon": scored_in_one_lexicon,
+            },
             is_weighted_avg=True,
             is_nonnegative=False,
             attributed_by="score_sign",

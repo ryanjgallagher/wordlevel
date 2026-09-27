@@ -220,8 +220,9 @@ class ComparisonState:
                 If the comparison is not scored by a lexicon, so it has no lexicon scores to
                 exclude by.
             ValueError:
-                If the lexicon scores are imputed by anything other than `"borrow"`, because an
-                imputed score is a modeling choice rather than what a lexicon says about a token.
+                If tokens scored by only one lexicon are imputed rather than borrowed or dropped,
+                because an imputed score is a modeling choice rather than what a lexicon says about
+                a token.
         """
         if self.score_plan is None:
             return
@@ -232,10 +233,13 @@ class ComparisonState:
                 f"but it is scored by {self.method!r}."
             )
 
-        impute = self.parameters.get("impute")
-        if impute is not None and not (isinstance(impute, str) and impute == "borrow"):
+        scored_in_one_lexicon = self.parameters.get("scored_in_one_lexicon")
+        is_borrowed_or_dropped = isinstance(scored_in_one_lexicon, str) and (
+            scored_in_one_lexicon in ("borrow", "drop")
+        )
+        if not is_borrowed_or_dropped:
             raise ValueError(
-                f"Cannot exclude by lexicon score when `impute` is {impute!r}: an imputed score is "
-                "a modeling choice rather than what a lexicon says about a token. Only the "
-                "'borrow' imputation strategy is compatible"
+                "Cannot exclude by lexicon score when `scored_in_one_lexicon` is "
+                f"{scored_in_one_lexicon!r}: an imputed score is a modeling choice rather than "
+                "what a lexicon says about a token. Only 'borrow' and 'drop' are compatible"
             )
