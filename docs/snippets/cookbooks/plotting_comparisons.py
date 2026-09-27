@@ -7,11 +7,11 @@ cl = wl.Catalog(speeches, corpora=["Franklin D. Roosevelt", "Joe Biden"])
 cl = cl.with_comparisons(
     wl.comp("Franklin D. Roosevelt", "Joe Biden")
         .score.jsd()
-        .normalize(by="sum_abs")
+        .normalize(by="total_diff")
         .alias("roosevelt_biden_jsd"),
     wl.comp("Franklin D. Roosevelt", "Joe Biden")
         .score.shannon_entropy()
-        .normalize(by="sum_abs")
+        .normalize(by="total_diff")
         .alias("roosevelt_biden_entropy"),
 )
 # --8<-- [end:setup]
