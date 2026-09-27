@@ -538,20 +538,19 @@ class TestLexiconScorer:
         )
 
     def test_impute_parameter_wiring(self, df_mock) -> None:
-        """Different `impute` strategies produce different outputs when the lexicon is partial."""
-        lexicon = {"the": 1.0, "cat": 5.0}  # missing "dog"
-        comparison = Comparison("ref", "cmp")
+        """Different `impute` strategies score a token that only one lexicon scores differently."""
+        df_borrow, df_zero = [
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon_reference={"the": 1.0, "cat": 5.0},  # missing "dog"
+                lexicon_comparison={"the": 2.0, "cat": 5.0, "dog": -3.0},
+                impute=impute,
+            )
+            ._state.resolve()(df_mock, "word")
+            for impute in ("borrow", 0.0)
+        ]
 
-        df_borrow = comparison.score.lexicon(lexicon=lexicon, impute="borrow")._state.resolve()(
-            df_mock, "word"
-        )
-        df_zero = comparison.score.lexicon(lexicon=lexicon, impute=0.0)._state.resolve()(
-            df_mock, "word"
-        )
-
-        # With single-lexicon borrow + drop_null_scores=True, "dog" is dropped.
-        # With impute=0.0, "dog" is kept with score 0. Heights differ.
-        assert df_borrow.height != df_zero.height
+        assert_frame_not_equal(df_borrow.select(SCORE_COL), df_zero.select(SCORE_COL))
 
     def test_borrowed_flag_survives_scoring(self, df_mock) -> None:
         """`is_borrowed` is passed through the weighted-average plan into the scored dataframe."""
@@ -586,22 +585,18 @@ class TestLexiconScorer:
 
         assert df_result["word"].to_list() == ["the", "cat"]
 
-    def test_impute_strategy_changes_the_normalized_freqs(self, df_mock) -> None:
+    def test_imputing_drops_tokens_no_lexicon_scores(self, df_mock) -> None:
         """
-        Imputing keeps a token the lexicon does not score, so that token holds onto its share of
-        the frequency mass instead of the mass being spread over the tokens that are scored.
+        Imputation only fills a token that one of two lexicons scores. A token the lexicon does not
+        score at all is still dropped, rather than given the imputed value.
         """
-        lexicon = {"the": 1.0, "cat": 5.0}  # "dog" is in the corpora but not the lexicon
-        borrowed, imputed = [
+        df_result = (
             Comparison("ref", "cmp")
-            .score.lexicon(lexicon=lexicon, impute=impute)
+            .score.lexicon(lexicon={"the": 1.0, "cat": 5.0}, impute=0.0)
             ._state.resolve()(df_mock, "word")
-            .filter(col("word") == "the")["ref__wl_normed"]
-            .item()
-            for impute in ("borrow", 0.0)
-        ]
+        )
 
-        assert borrowed > imputed
+        assert df_result["word"].to_list() == ["the", "cat"]
 
     def test_mean_reference_score_is_taken_over_the_scored_vocabulary(self, df_mock) -> None:
         """

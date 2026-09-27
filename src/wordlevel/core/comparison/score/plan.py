@@ -10,7 +10,11 @@ from wordlevel.core.comparison.score.components import (
     get_shift_components,
     get_shift_plot_components,
 )
-from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL, join_lexicon
+from wordlevel.core.comparison.score.lexicon import (
+    DEFAULT_LEXICON_SCORE_COL,
+    get_imputation_expression,
+    join_lexicon,
+)
 from wordlevel.core.lexicons.load import Lexicon
 
 
@@ -244,7 +248,6 @@ def lexicon_join_plan(
         df_token_col=df_token_col,
         lexicon_token_col=lexicon_token_col,
         lexicon_score_col=lexicon_score_col,
-        impute=impute_strategy,
     ).rename({score_col_to_rename: score_alias_ref})
     df = join_lexicon(
         df,
@@ -252,8 +255,32 @@ def lexicon_join_plan(
         df_token_col=df_token_col,
         lexicon_token_col=lexicon_token_col,
         lexicon_score_col=lexicon_score_col,
-        impute=impute_strategy,
     ).rename({score_col_to_rename: score_alias_cmp})
+
+    # Only tokens scored by exactly one lexicon are imputed; tokens in neither stay null
+    if impute_strategy is not None:
+        df = df.with_columns(
+            pl.when(col(score_alias_ref).is_null() & col(score_alias_cmp).is_not_null())
+            .then(
+                get_imputation_expression(
+                    lexicon_ref,  # type: ignore[arg-type]
+                    impute=impute_strategy,
+                    lexicon_score_col=lexicon_score_col,
+                )
+            )
+            .otherwise(col(score_alias_ref))
+            .alias(score_alias_ref),
+            pl.when(col(score_alias_cmp).is_null() & col(score_alias_ref).is_not_null())
+            .then(
+                get_imputation_expression(
+                    lexicon_cmp,  # type: ignore[arg-type]
+                    impute=impute_strategy,
+                    lexicon_score_col=lexicon_score_col,
+                )
+            )
+            .otherwise(col(score_alias_cmp))
+            .alias(score_alias_cmp),
+        )
 
     if isinstance(impute, str) and impute == "borrow":
         is_borrowed = (col(score_alias_ref).is_null() & col(score_alias_cmp).is_not_null()) | (

@@ -382,7 +382,7 @@ class Scorer:
                 comparison but not the other. `"borrow"` applies the score from the other corpus.
                 `"mean"` uses the mean score of the corpus's lexicon (not weighted by frequency). A
                 float or Polars expression can also be passed to use a specific value as the imputed
-                score
+                score. Tokens that are in neither lexicon are always dropped
 
         Returns:
             A new `Comparison` scored by the difference in lexicon-weighted averages

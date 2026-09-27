@@ -12,7 +12,7 @@ def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
     Replace load_lexicon with an in-memory stub so doc-snippet tests never call out to
     HuggingFace. The snippets only need a valid Lexicon to flow through scoring and
     plotting; the tokens below match the vocab used in the snippets so the lexicon join
-    lands real scores (missing tokens are imputed regardless).
+    lands real scores.
     """
 
     def fake_load_lexicon(

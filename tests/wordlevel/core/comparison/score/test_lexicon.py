@@ -2,7 +2,11 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL, join_lexicon
+from wordlevel.core.comparison.score.lexicon import (
+    DEFAULT_LEXICON_SCORE_COL,
+    get_imputation_expression,
+    join_lexicon,
+)
 from wordlevel.core.lexicons.load import Lexicon
 
 
@@ -43,13 +47,13 @@ class TestJoinLexicon:
     )
     def test_dict_input(self, df_words, lexicon_dict, score_col, expected_score_col):
         result = join_lexicon(
-            df_words, lexicon_dict, df_token_col=TOKEN_COL, lexicon_score_col=score_col, impute=0
+            df_words, lexicon_dict, df_token_col=TOKEN_COL, lexicon_score_col=score_col
         )
 
         expected = pl.DataFrame(
             {
                 TOKEN_COL: ["the", "cat", "dog", "fish"],
-                expected_score_col: [1.0, 3.0, 7.0, 0.0],
+                expected_score_col: [1.0, 3.0, 7.0, None],
             }
         )
 
@@ -63,12 +67,12 @@ class TestJoinLexicon:
             lf=pl.LazyFrame({"token": ["the", "cat", "dog"], "score": [1.0, 3.0, 7.0]}),
             center=5.0,
         )
-        result = join_lexicon(df_words, lexicon, df_token_col=TOKEN_COL, impute=0)
+        result = join_lexicon(df_words, lexicon, df_token_col=TOKEN_COL)
 
         expected = pl.DataFrame(
             {
                 TOKEN_COL: ["the", "cat", "dog", "fish"],
-                "score": [1.0, 3.0, 7.0, 0.0],
+                "score": [1.0, 3.0, 7.0, None],
             }
         )
 
@@ -82,13 +86,12 @@ class TestJoinLexicon:
             df_token_col=TOKEN_COL,
             lexicon_token_col=LEXICON_TOKEN_COL,
             lexicon_score_col=LEXICON_SCORE_COL,
-            impute=0,
         )
 
         expected = pl.DataFrame(
             {
                 TOKEN_COL: ["the", "cat", "dog", "fish"],
-                LEXICON_SCORE_COL: [1.0, 3.0, 7.0, 0.0],
+                LEXICON_SCORE_COL: [1.0, 3.0, 7.0, None],
             }
         )
 
@@ -98,25 +101,37 @@ class TestJoinLexicon:
         assert "freq" in result.columns
 
 
-class TestImputation:
+class TestGetImputationExpression:
     @pytest.mark.parametrize(
-        "impute, expected_fish_score",
-        [(0.0, 0.0), (5.0, 5.0), ("mean", (1.0 + 3.0 + 7.0) / 3), (pl.lit(2.5), 2.5), (None, None)],
+        "impute, expected_value",
+        [(0.0, 0.0), (5.0, 5.0), ("mean", (1.0 + 3.0 + 7.0) / 3), (pl.lit(2.5), 2.5)],
     )
-    def test_missing_words_are_imputed(self, df_words, lexicon_dict, impute, expected_fish_score):
-        result = join_lexicon(df_words, lexicon_dict, df_token_col=TOKEN_COL, impute=impute)
+    def test_imputation_value(self, lexicon_dict, impute, expected_value):
+        expr = get_imputation_expression(lexicon_dict, impute=impute)
 
-        expected = pl.DataFrame(
-            {
-                TOKEN_COL: ["the", "cat", "dog", "fish"],
-                DEFAULT_LEXICON_SCORE_COL: [1.0, 3.0, 7.0, expected_fish_score],
-            }
+        assert pl.select(expr).item() == expected_value
+
+    def test_mean_of_lexicon_input(self):
+        lexicon = Lexicon(
+            lf=pl.LazyFrame({"token": ["the", "cat"], "score": [1.0, 3.0]}), center=5.0
         )
-        assert_frame_equal(
-            result.select(TOKEN_COL, DEFAULT_LEXICON_SCORE_COL),
-            expected,
-            check_row_order=False,
+
+        assert pl.select(get_imputation_expression(lexicon, impute="mean")).item() == 2.0
+
+    def test_mean_of_dataframe_input(self, lexicon_df):
+        expr = get_imputation_expression(
+            lexicon_df, impute="mean", lexicon_score_col=LEXICON_SCORE_COL
         )
+
+        assert pl.select(expr).item() == (1.0 + 3.0 + 7.0) / 3
+
+    def test_mean_of_dataframe_requires_lexicon_score_col(self, lexicon_df):
+        with pytest.raises(ValueError, match="lexicon_score_col"):
+            get_imputation_expression(lexicon_df, impute="mean")
+
+    def test_invalid_impute_raises(self, lexicon_dict):
+        with pytest.raises(ValueError, match="impute"):
+            get_imputation_expression(lexicon_dict, impute="median")  # type: ignore[arg-type]
 
 
 class TestValidation:
