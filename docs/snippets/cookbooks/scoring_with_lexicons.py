@@ -56,7 +56,7 @@ cl = cl.with_comparisons(
         .score.lexicon(
             lexicon_reference=scores_before,
             lexicon_comparison=scores_after,
-            impute="borrow",
+            scored_in_one_lexicon="borrow",
         )
         .alias("drifting_sentiment"),
 )
