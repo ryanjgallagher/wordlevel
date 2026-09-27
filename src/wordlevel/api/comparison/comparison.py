@@ -119,6 +119,9 @@ class Comparison:
 
         Raises:
             ValueError:
+                If `check_nonzero` is `True` and the normalization constant is zero. This is raised
+                when the comparison is scored, not when `normalize` is called.
+            ValueError:
                 If the comparison is already normalized by a different strategy.
             ValueError: If `by` is not a recognized normalization strategy.
             ValueError:
