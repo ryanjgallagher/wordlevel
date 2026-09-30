@@ -13,6 +13,7 @@ from huggingface_hub.errors import (
 from polars.testing import assert_frame_equal
 
 from wordlevel.core.lexicons.load import (
+    HF_DOWNLOAD_LOGGER,
     HF_HTTP_LOGGER,
     Lexicon,
     LexiconDownloadError,
@@ -85,6 +86,26 @@ def test_hf_token_passed_to_download(lexicon_f: Path, monkeypatch: pytest.Monkey
     assert download_kwargs["token"] == "hf_abc123"
 
 
+def test_cache_dir_passed_as_local_dir(
+    lexicon_f: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that lexicons are stored in a plain directory rather than HuggingFace's versioned cache,
+    so that each lexicon keeps the commit it was downloaded at, independently of the others
+    """
+    download_kwargs: dict[str, object] = {}
+
+    def fake_hf_hub_download(**kwargs: object) -> str:
+        download_kwargs.update(kwargs)
+        return str(lexicon_f)
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+
+    load_lexicon("labMT", "lexicon.parquet", cache_dir=tmp_path)
+
+    assert download_kwargs["local_dir"] == tmp_path
+
+
 def test_hf_token_advisory_suppressed(
     lexicon_f: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -110,12 +131,39 @@ def test_hf_token_advisory_suppressed(
     assert caplog.messages == ["Retrying in 1s [Retry 1/5]."]
 
 
-def test_hf_token_advisory_filter_removed(lexicon: Lexicon) -> None:
+def test_hub_fallback_message_suppressed(
+    lexicon_f: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     """
-    Checks that the filter is taken back off of HuggingFace's logger once the lexicon is loaded, so
-    that it cannot silence messages logged outside of a download
+    Checks that HuggingFace's message about using a stored file without checking the hub is
+    filtered out of the logs, while its other messages still reach the user
     """
-    assert logging.getLogger(HF_HTTP_LOGGER).filters == []
+    hf_logger = logging.getLogger(HF_DOWNLOAD_LOGGER)
+
+    def fake_hf_hub_download(**kwargs: object) -> str:
+        hf_logger.warning(
+            "Couldn't access the Hub to check for update but local file already exists. "
+            "Defaulting to existing file. (error: Cannot access file since 'local_files_only=True' "
+            "as been set.)"
+        )
+        hf_logger.warning("Some other message.")
+        return str(lexicon_f)
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+
+    with caplog.at_level(logging.WARNING, logger=HF_DOWNLOAD_LOGGER):
+        load_lexicon("labMT", "lexicon.parquet")
+
+    assert caplog.messages == ["Some other message."]
+
+
+@pytest.mark.parametrize("logger_name", [HF_HTTP_LOGGER, HF_DOWNLOAD_LOGGER])
+def test_hf_log_filters_removed(lexicon: Lexicon, logger_name: str) -> None:
+    """
+    Checks that the filters are taken back off of HuggingFace's loggers once the lexicon is loaded,
+    so that they cannot silence messages logged outside of a download
+    """
+    assert logging.getLogger(logger_name).filters == []
 
 
 @pytest.fixture
@@ -179,12 +227,13 @@ def test_offline_mode_reported_instead_of_network_failure(
 @pytest.mark.parametrize(
     "download_error", [LocalEntryNotFoundError("Could not connect to the hub")], indirect=True
 )
-def test_hf_token_advisory_filter_removed_on_error(download_error: Exception) -> None:
+@pytest.mark.parametrize("logger_name", [HF_HTTP_LOGGER, HF_DOWNLOAD_LOGGER])
+def test_hf_log_filters_removed_on_error(download_error: Exception, logger_name: str) -> None:
     """
-    Checks that the filter is taken back off of HuggingFace's logger when the download fails, and
-    not just when it succeeds
+    Checks that the filters are taken back off of HuggingFace's loggers when the download fails,
+    and not just when it succeeds
     """
     with pytest.raises(LexiconDownloadError):
         load_lexicon("labMT", "lexicon.parquet")
 
-    assert logging.getLogger(HF_HTTP_LOGGER).filters == []
+    assert logging.getLogger(logger_name).filters == []

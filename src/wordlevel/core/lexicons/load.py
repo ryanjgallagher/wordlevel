@@ -21,6 +21,8 @@ from huggingface_hub.errors import (
 
 # The logger that `huggingface_hub` emits the hub's response header warnings on
 HF_HTTP_LOGGER = "huggingface_hub.utils._http"
+# The logger that `huggingface_hub` reports falling back to a stored file on
+HF_DOWNLOAD_LOGGER = "huggingface_hub.file_download"
 
 
 class LexiconDownloadError(Exception):
@@ -60,22 +62,28 @@ class Lexicon:
 
 
 @contextmanager
-def _suppress_hf_token_warning() -> Generator[None, None, None]:
+def _suppress_hf_log(logger_name: str, log_match_text: str) -> Generator[None, None, None]:
     """
-    Silences the HuggingFace advisory that unauthenticated requests are being sent to the hub. The
-    hub returns the advisory as an `X-HF-Warning` response header, which `huggingface_hub` emits as
-    a log record rather than a warning, so it has to be filtered at the logging layer.
+    Silences the records that `huggingface_hub` logs containing `log_match_text`.
+    `huggingface_hub` reports some of its messages as log records rather than warnings, so they
+    have to be filtered at the logging layer.
+
+    Args:
+        logger_name:
+            The name of the `huggingface_hub` logger that the records are emitted on
+        log_match_text:
+            The text that identifies the records to silence
     """
-    logger = logging.getLogger(HF_HTTP_LOGGER)
+    logger = logging.getLogger(logger_name)
 
-    def drop_token_advisory(record: logging.LogRecord) -> bool:
-        return "HF_TOKEN" not in record.getMessage()
+    def drop_record(record: logging.LogRecord) -> bool:
+        return log_match_text not in record.getMessage()
 
-    logger.addFilter(drop_token_advisory)
+    logger.addFilter(drop_record)
     try:
         yield
     finally:
-        logger.removeFilter(drop_token_advisory)
+        logger.removeFilter(drop_record)
 
 
 @contextmanager
@@ -152,7 +160,8 @@ def load_lexicon(
         subfolder:
             A directory nested within the lexicon's directory that `filename` sits in
         cache_dir:
-            The directory that downloaded lexicons are cached in
+            The directory that downloaded lexicons are stored in, mirroring their paths within the
+            HuggingFace repository
         hf_token:
             A HuggingFace access token to authenticate the download with. If not given, the token
             is read from the `HF_TOKEN` environment variable or a local HuggingFace login, if
@@ -169,7 +178,8 @@ def load_lexicon(
         full_subfolder = f"{full_subfolder}/{subfolder}"
 
     with (
-        _suppress_hf_token_warning(),
+        _suppress_hf_log(HF_HTTP_LOGGER, "HF_TOKEN"),
+        _suppress_hf_log(HF_DOWNLOAD_LOGGER, "Couldn't access the Hub to check for update"),
         _translate_hf_errors(lexicon, f"{full_subfolder}/{filename}"),
     ):
         lexicon_f = hf_hub_download(
@@ -177,7 +187,7 @@ def load_lexicon(
             subfolder=full_subfolder,
             filename=filename,
             repo_type="dataset",
-            cache_dir=cache_dir,
+            local_dir=cache_dir,
             token=hf_token,
         )
 
