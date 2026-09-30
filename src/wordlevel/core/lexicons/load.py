@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
@@ -60,7 +60,7 @@ class Lexicon:
 
 
 @contextmanager
-def _suppress_hf_token_warning() -> Iterator[None]:
+def _suppress_hf_token_warning() -> Generator[None, None, None]:
     """
     Silences the HuggingFace advisory that unauthenticated requests are being sent to the hub. The
     hub returns the advisory as an `X-HF-Warning` response header, which `huggingface_hub` emits as
@@ -76,6 +76,57 @@ def _suppress_hf_token_warning() -> Iterator[None]:
         yield
     finally:
         logger.removeFilter(drop_token_advisory)
+
+
+@contextmanager
+def _translate_hf_errors(lexicon: str, repo_path: str) -> Generator[None, None, None]:
+    """
+    Re-raises the errors that are raised when a connection to HuggingFace fails as a
+    `LexiconDownloadError`, so that the user gets an interpretable message
+
+    Args:
+        lexicon:
+            The name of the lexicon being retrieved, for the error messages
+        repo_path:
+            The path of the lexicon's file within the HuggingFace repository, for the error messages
+    """
+    try:
+        yield
+    except (LocalEntryNotFoundError, OfflineModeIsEnabled) as error:
+        # Offline mode is reported as a failure to find the file locally, so the two are only told
+        # apart by asking HuggingFace whether offline mode is on
+        message: str
+        if is_offline_mode():
+            message = (
+                f"Could not download the '{lexicon}' lexicon because HuggingFace's offline mode is "
+                "enabled. Unset the 'HF_HUB_OFFLINE' environment variable to download it."
+            )
+        else:
+            message = (
+                f"Could not reach HuggingFace to download the '{lexicon}' lexicon. Check your "
+                "network connection and try again."
+            )
+
+        raise LexiconDownloadError(message) from error
+    except EntryNotFoundError as error:
+        raise LexiconDownloadError(
+            f"The file '{repo_path}' is not published on HuggingFace"
+        ) from error
+    except (GatedRepoError, RepositoryNotFoundError) as error:
+        raise LexiconDownloadError(
+            f"Could not access the HuggingFace repository holding the '{lexicon}' lexicon. If you "
+            "are using a HuggingFace token, check that it is valid."
+        ) from error
+    except HfHubHTTPError as error:
+        raise LexiconDownloadError(
+            f"HuggingFace returned an error while downloading the '{lexicon}' lexicon: {error}. If "
+            "you are being rate limited, pass a HuggingFace token to load the lexicon with."
+        ) from error
+    except (XetDownloadError, HTTPError) as error:
+        raise LexiconDownloadError(
+            f"The download of the '{lexicon}' lexicon from HuggingFace failed: {error}. Check your "
+            "network connection and try again."
+        ) from error
 
 
 def load_lexicon(
@@ -117,52 +168,18 @@ def load_lexicon(
     if subfolder is not None:
         full_subfolder = f"{full_subfolder}/{subfolder}"
 
-    with _suppress_hf_token_warning():
-        try:
-            lexicon_f = hf_hub_download(
-                repo_id="ryanjgallag/wordlevel-lexicons",
-                subfolder=full_subfolder,
-                filename=filename,
-                repo_type="dataset",
-                cache_dir=cache_dir,
-                token=hf_token,
-            )
-        except (LocalEntryNotFoundError, OfflineModeIsEnabled) as error:
-            # Offline mode is reported as a failure to find the file locally, so the two are only
-            # told apart by asking HuggingFace whether offline mode is on
-            message: str
-            if is_offline_mode():
-                message = (
-                    f"Could not download the '{lexicon}' lexicon because HuggingFace's offline "
-                    "mode is enabled. Unset the 'HF_HUB_OFFLINE' environment variable to download "
-                    "it."
-                )
-            else:
-                message = (
-                    f"Could not reach HuggingFace to download the '{lexicon}' lexicon. Check your "
-                    "network connection and try again."
-                )
-
-            raise LexiconDownloadError(message) from error
-        except EntryNotFoundError as error:
-            raise LexiconDownloadError(
-                f"The file '{full_subfolder}/{filename}' is not published on HuggingFace"
-            ) from error
-        except (GatedRepoError, RepositoryNotFoundError) as error:
-            raise LexiconDownloadError(
-                f"Could not access the HuggingFace repository holding the '{lexicon}' lexicon. If "
-                "you are using a HuggingFace token, check that it is valid."
-            ) from error
-        except HfHubHTTPError as error:
-            raise LexiconDownloadError(
-                f"HuggingFace returned an error while downloading the '{lexicon}' lexicon: {error}."
-                " If you are being rate limited, pass a HuggingFace token to load the lexicon with."
-            ) from error
-        except (XetDownloadError, HTTPError) as error:
-            raise LexiconDownloadError(
-                f"The download of the '{lexicon}' lexicon from HuggingFace failed: {error}. Check "
-                "your network connection and try again."
-            ) from error
+    with (
+        _suppress_hf_token_warning(),
+        _translate_hf_errors(lexicon, f"{full_subfolder}/{filename}"),
+    ):
+        lexicon_f = hf_hub_download(
+            repo_id="ryanjgallag/wordlevel-lexicons",
+            subfolder=full_subfolder,
+            filename=filename,
+            repo_type="dataset",
+            cache_dir=cache_dir,
+            token=hf_token,
+        )
 
     lf = pl.scan_parquet(lexicon_f)
     center_score = float(pl.read_parquet_metadata(lexicon_f)["center"])
