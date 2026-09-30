@@ -4,24 +4,33 @@ from pathlib import Path
 import httpx
 import polars as pl
 import pytest
+from huggingface_hub._local_folder import write_download_metadata
 from huggingface_hub.errors import (
     HfHubHTTPError,
     LocalEntryNotFoundError,
     OfflineModeIsEnabled,
+    RevisionNotFoundError,
     XetDownloadError,
 )
+from huggingface_hub.file_download import HfFileMetadata
 from polars.testing import assert_frame_equal
 
 from wordlevel.core.lexicons.load import (
     HF_DOWNLOAD_LOGGER,
     HF_HTTP_LOGGER,
     Lexicon,
+    LexiconConnectionError,
     LexiconDownloadError,
     load_lexicon,
+    resolve_revision,
+    stored_revision,
 )
 
 
 CENTER = 5.0
+COMMIT = "a" * 40
+# Attached to the stubbed error responses, which `httpx` requires; it is never sent
+HF_REQUEST = httpx.Request("GET", "https://huggingface.co")
 
 
 @pytest.fixture
@@ -186,9 +195,9 @@ def download_error(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPat
     [
         LocalEntryNotFoundError("Could not connect to the hub"),
         OfflineModeIsEnabled("Offline mode is enabled"),
-        HfHubHTTPError(
-            "429 Too Many Requests",
-            response=httpx.Response(429, request=httpx.Request("GET", "https://huggingface.co")),
+        HfHubHTTPError("429 Too Many Requests", response=httpx.Response(429, request=HF_REQUEST)),
+        RevisionNotFoundError(
+            "404 Revision Not Found", response=httpx.Response(404, request=HF_REQUEST)
         ),
         XetDownloadError("The transfer failed"),
     ],
@@ -225,6 +234,48 @@ def test_offline_mode_reported_instead_of_network_failure(
 
 
 @pytest.mark.parametrize(
+    "download_error",
+    [
+        LocalEntryNotFoundError("Could not connect to the hub"),
+        OfflineModeIsEnabled("Offline mode is enabled"),
+        HfHubHTTPError("429 Too Many Requests", response=httpx.Response(429, request=HF_REQUEST)),
+        HfHubHTTPError("503 Service Unavailable", response=httpx.Response(503, request=HF_REQUEST)),
+        httpx.ConnectError("Connection refused"),
+        XetDownloadError("The transfer failed"),
+    ],
+    indirect=True,
+)
+def test_unreachable_hub_raised_as_connection_error(download_error: Exception) -> None:
+    """
+    Checks that failures to reach HuggingFace are raised as a `LexiconConnectionError`, so that
+    callers can fall back to a stored lexicon when the hub cannot be reached
+    """
+    with pytest.raises(LexiconConnectionError):
+        load_lexicon("labMT", "lexicon.parquet")
+
+
+@pytest.mark.parametrize(
+    "download_error",
+    [
+        HfHubHTTPError("401 Unauthorized", response=httpx.Response(401, request=HF_REQUEST)),
+        RevisionNotFoundError(
+            "404 Revision Not Found", response=httpx.Response(404, request=HF_REQUEST)
+        ),
+    ],
+    indirect=True,
+)
+def test_refused_request_not_raised_as_connection_error(download_error: Exception) -> None:
+    """
+    Checks that HuggingFace refusing a request is not raised as a `LexiconConnectionError`, so that
+    callers do not fall back to a stored lexicon when the request itself is wrong
+    """
+    with pytest.raises(LexiconDownloadError) as error:
+        load_lexicon("labMT", "lexicon.parquet")
+
+    assert not isinstance(error.value, LexiconConnectionError)
+
+
+@pytest.mark.parametrize(
     "download_error", [LocalEntryNotFoundError("Could not connect to the hub")], indirect=True
 )
 @pytest.mark.parametrize("logger_name", [HF_HTTP_LOGGER, HF_DOWNLOAD_LOGGER])
@@ -237,3 +288,98 @@ def test_hf_log_filters_removed_on_error(download_error: Exception, logger_name:
         load_lexicon("labMT", "lexicon.parquet")
 
     assert logging.getLogger(logger_name).filters == []
+
+
+def test_stored_revision_read_from_download_metadata(lexicon_f: Path, tmp_path: Path) -> None:
+    """
+    Checks that the commit a lexicon was downloaded at is read from the metadata that HuggingFace
+    stores alongside it
+    """
+    cache_dir = tmp_path / "cache"
+    repo_path = "labMT/data/processed/lexicon.parquet"
+    (cache_dir / repo_path).parent.mkdir(parents=True)
+    lexicon_f.rename(cache_dir / repo_path)
+    write_download_metadata(cache_dir, repo_path, commit_hash=COMMIT, etag="etag")
+
+    assert stored_revision("labMT", "lexicon.parquet", None, cache_dir) == COMMIT
+
+
+def test_stored_revision_none_when_not_stored(tmp_path: Path) -> None:
+    """
+    Checks that a lexicon that has never been downloaded has no stored revision, rather than
+    raising
+    """
+    assert stored_revision("labMT", "lexicon.parquet", None, tmp_path) is None
+
+
+def test_stored_revision_none_without_download_metadata(lexicon_f: Path, tmp_path: Path) -> None:
+    """
+    Checks that a lexicon file that HuggingFace did not record a download for has no stored
+    revision, so that it is downloaded again rather than trusted at an unknown commit
+    """
+    cache_dir = tmp_path / "cache"
+    repo_path = "labMT/data/processed/lexicon.parquet"
+    (cache_dir / repo_path).parent.mkdir(parents=True)
+    lexicon_f.rename(cache_dir / repo_path)
+
+    assert stored_revision("labMT", "lexicon.parquet", None, cache_dir) is None
+
+
+def test_resolve_revision_requests_given_revision(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Checks that the revision being resolved is the one requested from HuggingFace, and that the
+    commit it reports is returned
+    """
+    url_kwargs: dict[str, object] = {}
+
+    def fake_hf_hub_url(**kwargs: object) -> str:
+        url_kwargs.update(kwargs)
+        return "https://huggingface.co"
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_url", fake_hf_hub_url)
+    monkeypatch.setattr(
+        "wordlevel.core.lexicons.load.get_hf_file_metadata",
+        lambda url, token: HfFileMetadata(
+            commit_hash=COMMIT, etag="etag", location=url, size=1, xet_file_data=None
+        ),
+    )
+
+    commit = resolve_revision("labMT", "lexicon.parquet", None, "v1.0", hf_token=None)
+
+    assert url_kwargs["revision"] == "v1.0"
+    assert commit == COMMIT
+
+
+def test_resolve_revision_raises_without_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Checks that a response that does not report a commit is raised, rather than returned as a
+    revision that cannot be pinned
+    """
+    monkeypatch.setattr(
+        "wordlevel.core.lexicons.load.get_hf_file_metadata",
+        lambda url, token: HfFileMetadata(
+            commit_hash=None, etag="etag", location=url, size=1, xet_file_data=None
+        ),
+    )
+
+    with pytest.raises(LexiconDownloadError, match="did not report which commit"):
+        resolve_revision("labMT", "lexicon.parquet", None, "main", hf_token=None)
+
+
+def test_resolve_revision_unreachable_hub_raised_as_connection_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Checks that failing to reach HuggingFace while resolving a revision is raised as a
+    `LexiconConnectionError`, so that callers can fall back to a stored lexicon
+    """
+
+    def fake_get_hf_file_metadata(url: str, token: str | None) -> HfFileMetadata:
+        raise httpx.ConnectError("Connection refused")
+
+    monkeypatch.setattr(
+        "wordlevel.core.lexicons.load.get_hf_file_metadata", fake_get_hf_file_metadata
+    )
+
+    with pytest.raises(LexiconConnectionError):
+        resolve_revision("labMT", "lexicon.parquet", None, "main", hf_token=None)
