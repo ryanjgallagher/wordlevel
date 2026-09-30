@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import polars as pl
 import pytest
 
@@ -200,3 +202,50 @@ def test_pinned_revision_raises_when_hub_unreachable(
 
     with pytest.raises(LexiconConnectionError):
         LexiconLoader(revision=LATEST_COMMIT).labMT("english")
+
+
+def test_update_cached_updates_stored_lexicons(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that updating hands the stored lexicons, along with the loader's cache directory and
+    token, down to be updated
+    """
+    repo_paths = ["labMT/data/processed/english.parquet"]
+    update_kwargs: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "wordlevel.api.lexicons.lexicon.stored_lexicon_paths", lambda **kwargs: repo_paths
+    )
+    monkeypatch.setattr(
+        "wordlevel.api.lexicons.lexicon.update_lexicons",
+        lambda **kwargs: update_kwargs.update(kwargs),
+    )
+
+    LexiconLoader(cache_dir=tmp_path, hf_token="hf_abc123").update_cached()
+
+    assert update_kwargs == {
+        "cache_dir": tmp_path,
+        "repo_paths": repo_paths,
+        "hf_token": "hf_abc123",
+    }
+
+
+def test_update_cached_skips_hub_when_nothing_stored(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that updating with no stored lexicons does not call out to HuggingFace, so that it
+    succeeds offline when there is nothing to update
+    """
+    update_kwargs: dict[str, object] = {}
+
+    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.stored_lexicon_paths", lambda **kwargs: [])
+    monkeypatch.setattr(
+        "wordlevel.api.lexicons.lexicon.update_lexicons",
+        lambda **kwargs: update_kwargs.update(kwargs),
+    )
+
+    LexiconLoader(cache_dir=tmp_path).update_cached()
+
+    assert update_kwargs == {}

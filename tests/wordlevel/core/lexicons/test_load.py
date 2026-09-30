@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import polars as pl
@@ -23,7 +24,9 @@ from wordlevel.core.lexicons.load import (
     LexiconDownloadError,
     load_lexicon,
     resolve_revision,
+    stored_lexicon_paths,
     stored_revision,
+    update_lexicons,
 )
 
 
@@ -426,3 +429,76 @@ def test_resolve_revision_unreachable_hub_raised_as_connection_error(
 
     with pytest.raises(LexiconConnectionError):
         resolve_revision("labMT", "lexicon.parquet", None, "main", hf_token=None)
+
+
+def test_stored_lexicon_paths_skip_hf_metadata(tmp_path: Path) -> None:
+    """
+    Checks that stored lexicon files are listed by their repository paths, however deeply they are
+    nested, while the files HuggingFace keeps in its `.cache` directory are left out
+    """
+    for repo_path in [
+        "labMT/data/processed/english.parquet",
+        "SocialSent/data/processed/1990.parquet",
+        ".cache/huggingface/download/labMT/data/processed/english.parquet",
+    ]:
+        (tmp_path / repo_path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / repo_path).touch()
+
+    assert stored_lexicon_paths(tmp_path) == [
+        "SocialSent/data/processed/1990.parquet",
+        "labMT/data/processed/english.parquet",
+    ]
+
+
+class FakeHfApi:
+    """
+    Stands in for `HfApi`, reporting that the repository's default branch points to `COMMIT`
+    """
+
+    def repo_info(self, repo_id: str, **kwargs: object) -> SimpleNamespace:
+        return SimpleNamespace(sha=COMMIT)
+
+
+def test_update_lexicons_downloads_stored_paths_at_latest_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that only the given lexicon files are downloaded, and at the commit that the default
+    branch was resolved to, so that every file is updated to the same version
+    """
+    snapshot_kwargs: dict[str, object] = {}
+
+    def fake_snapshot_download(**kwargs: object) -> str:
+        snapshot_kwargs.update(kwargs)
+        return str(tmp_path)
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.HfApi", FakeHfApi)
+    monkeypatch.setattr("wordlevel.core.lexicons.load.snapshot_download", fake_snapshot_download)
+
+    repo_paths = ["labMT/data/processed/english.parquet"]
+    update_lexicons(cache_dir=tmp_path, repo_paths=repo_paths, hf_token=None)
+
+    assert snapshot_kwargs["revision"] == COMMIT
+    assert snapshot_kwargs["allow_patterns"] == repo_paths
+
+
+def test_update_lexicons_unreachable_hub_raised_as_connection_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that failing to reach HuggingFace while updating is raised, rather than the stored files
+    being left as they are without the user knowing
+    """
+
+    class UnreachableHfApi:
+        def repo_info(self, repo_id: str, **kwargs: object) -> SimpleNamespace:
+            raise httpx.ConnectError("Connection refused")
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.HfApi", UnreachableHfApi)
+
+    with pytest.raises(LexiconConnectionError):
+        update_lexicons(
+            cache_dir=tmp_path,
+            repo_paths=["labMT/data/processed/english.parquet"],
+            hf_token=None,
+        )

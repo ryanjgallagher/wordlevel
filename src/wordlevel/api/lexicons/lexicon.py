@@ -11,7 +11,9 @@ from wordlevel.core.lexicons.load import (
     LexiconConnectionError,
     load_lexicon,
     resolve_revision,
+    stored_lexicon_paths,
     stored_revision,
+    update_lexicons,
 )
 
 
@@ -117,6 +119,20 @@ class LexiconLoader:
             cache_dir=self.cache_dir,
             hf_token=self.hf_token,
         )
+
+    def update_cached(self) -> None:
+        """
+        Updates every cached lexicon to its latest version on HuggingFace.
+
+        Raises:
+            LexiconConnectionError: If HuggingFace could not be reached
+            LexiconDownloadError: If the lexicons could not be downloaded from HuggingFace
+        """
+        repo_paths = stored_lexicon_paths(cache_dir=self.cache_dir)
+        if not repo_paths:
+            return
+
+        update_lexicons(cache_dir=self.cache_dir, repo_paths=repo_paths, hf_token=self.hf_token)
 
     def labMT(self, language: labMTLanguage) -> Lexicon:
         """

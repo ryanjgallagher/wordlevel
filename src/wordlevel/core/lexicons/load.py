@@ -8,10 +8,12 @@ from pathlib import Path
 import polars as pl
 from huggingface_hub import (
     DryRunFileInfo,
+    HfApi,
     get_hf_file_metadata,
     hf_hub_download,
     hf_hub_url,
     is_offline_mode,
+    snapshot_download,
 )
 from huggingface_hub.errors import (
     EntryNotFoundError,
@@ -111,7 +113,7 @@ def _suppress_hf_log(logger_name: str, log_match_text: str) -> Generator[None, N
 
 @contextmanager
 def _translate_hf_errors(
-    lexicon: str, repo_path: str, revision: str
+    subject: str, repo_path: str, revision: str
 ) -> Generator[None, None, None]:
     """
     Re-raises the errors that are raised when a connection to HuggingFace fails as a
@@ -119,10 +121,12 @@ def _translate_hf_errors(
     HuggingFace at all are raised as a `LexiconConnectionError`.
 
     Args:
-        lexicon:
-            The name of the lexicon being retrieved, for the error messages
+        subject:
+            What is being retrieved, phrased to complete "Could not download ...", for the error
+            messages (e.g. "the 'labMT' lexicon")
         repo_path:
-            The path of the lexicon's file within the HuggingFace repository, for the error messages
+            The path of the file being retrieved within the HuggingFace repository, for the error
+            messages
         revision:
             The revision of the HuggingFace repository being retrieved, for the error messages
     """
@@ -134,13 +138,13 @@ def _translate_hf_errors(
         message: str
         if is_offline_mode():
             message = (
-                f"Could not download the '{lexicon}' lexicon because HuggingFace's offline mode is "
-                "enabled. Unset the 'HF_HUB_OFFLINE' environment variable to download it."
+                f"Could not download {subject} because HuggingFace's offline mode is enabled. "
+                "Unset the 'HF_HUB_OFFLINE' environment variable to allow downloads."
             )
         else:
             message = (
-                f"Could not reach HuggingFace to download the '{lexicon}' lexicon. Check your "
-                "network connection and try again."
+                f"Could not reach HuggingFace to download {subject}. Check your network "
+                "connection and try again."
             )
 
         raise LexiconConnectionError(message) from error
@@ -150,13 +154,13 @@ def _translate_hf_errors(
         ) from error
     except (GatedRepoError, RepositoryNotFoundError) as error:
         raise LexiconDownloadError(
-            f"Could not access the HuggingFace repository holding the '{lexicon}' lexicon. If you "
-            "are using a HuggingFace token, check that it is valid."
+            f"Could not access the HuggingFace repository holding {subject}. If you are using a "
+            "HuggingFace token, check that it is valid."
         ) from error
     except RevisionNotFoundError as error:
         raise LexiconDownloadError(
-            f"The revision '{revision}' does not exist in the HuggingFace repository holding the "
-            f"'{lexicon}' lexicon"
+            f"The revision '{revision}' does not exist in the HuggingFace repository holding "
+            f"{subject}"
         ) from error
     except HfHubHTTPError as error:
         # Rate limiting and server errors mean the hub could not serve the request
@@ -168,13 +172,13 @@ def _translate_hf_errors(
             error_type = LexiconDownloadError
 
         raise error_type(
-            f"HuggingFace returned an error while downloading the '{lexicon}' lexicon: {error}. If "
-            "you are being rate limited, pass a HuggingFace token to load the lexicon with."
+            f"HuggingFace returned an error while downloading {subject}: {error}. If you are "
+            "being rate limited, pass a HuggingFace token to authenticate the download with."
         ) from error
     except (XetDownloadError, HTTPError) as error:
         raise LexiconConnectionError(
-            f"The download of the '{lexicon}' lexicon from HuggingFace failed: {error}. Check your "
-            "network connection and try again."
+            f"The download of {subject} from HuggingFace failed: {error}. Check your network "
+            "connection and try again."
         ) from error
 
 
@@ -268,7 +272,9 @@ def resolve_revision(
 
     with (
         _suppress_hf_log(HF_HTTP_LOGGER, HF_TOKEN_ADVISORY_TEXT),
-        _translate_hf_errors(lexicon, repo_path, revision),
+        _translate_hf_errors(
+            subject=f"the '{lexicon}' lexicon", repo_path=repo_path, revision=revision
+        ),
     ):
         file_metadata = get_hf_file_metadata(
             hf_hub_url(
@@ -334,7 +340,11 @@ def load_lexicon(
     with (
         _suppress_hf_log(HF_HTTP_LOGGER, HF_TOKEN_ADVISORY_TEXT),
         _suppress_hf_log(HF_DOWNLOAD_LOGGER, HF_STORED_FALLBACK_TEXT),
-        _translate_hf_errors(lexicon, f"{full_subfolder}/{filename}", revision),
+        _translate_hf_errors(
+            subject=f"the '{lexicon}' lexicon",
+            repo_path=f"{full_subfolder}/{filename}",
+            revision=revision,
+        ),
     ):
         lexicon_f = hf_hub_download(
             repo_id=LEXICON_REPO_ID,
@@ -362,3 +372,75 @@ def load_lexicon(
     center_score = float(pl.read_parquet_metadata(lexicon_f)["center"])
 
     return Lexicon(lf=lf, center=center_score, revision=revision)
+
+
+def stored_lexicon_paths(cache_dir: str | Path) -> list[str]:
+    """
+    Lists the lexicon files stored in a directory, by their paths within the HuggingFace repository
+
+    Args:
+        cache_dir:
+            The directory that downloaded lexicons are stored in
+
+    Returns:
+        The repository paths of the stored lexicon files
+    """
+    cache_path = Path(cache_dir)
+
+    return sorted(
+        lexicon_f.relative_to(cache_path).as_posix()
+        for lexicon_f in cache_path.rglob("*.parquet")
+        # HuggingFace keeps its download metadata in a `.cache` directory alongside the files
+        if ".cache" not in lexicon_f.relative_to(cache_path).parts
+    )
+
+
+def update_lexicons(cache_dir: str | Path, repo_paths: list[str], hf_token: str | None) -> None:
+    """
+    Downloads the latest commit of the lexicon repository's default branch for each of the given
+    stored lexicon files, only transferring the files whose contents have changed.
+
+    Args:
+        cache_dir:
+            The directory that downloaded lexicons are stored in
+        repo_paths:
+            The repository paths of the lexicon files to update
+        hf_token:
+            A HuggingFace access token to authenticate the requests with. If not given, the token
+            is read from the `HF_TOKEN` environment variable or a local HuggingFace login, if
+            either is available.
+
+    Raises:
+        LexiconConnectionError: If HuggingFace could not be reached
+        LexiconDownloadError: If HuggingFace refused the request, or did not report a commit
+    """
+    subject = "the cached lexicons"
+
+    # Resolved up front because `snapshot_download` returns the stored files without raising when
+    # the hub cannot be reached. Only published files are downloaded, so the repository stands in
+    # for a single file's path.
+    with (
+        _suppress_hf_log(HF_HTTP_LOGGER, HF_TOKEN_ADVISORY_TEXT),
+        _translate_hf_errors(subject=subject, repo_path=LEXICON_REPO_ID, revision="main"),
+    ):
+        latest_commit = HfApi().repo_info(LEXICON_REPO_ID, repo_type="dataset", token=hf_token).sha
+
+    if latest_commit is None:
+        raise LexiconDownloadError(
+            "HuggingFace did not report which commit the lexicon repository's default branch "
+            "points to. If you are behind a proxy, check that it passes HuggingFace's responses "
+            "through."
+        )
+
+    with (
+        _suppress_hf_log(HF_HTTP_LOGGER, HF_TOKEN_ADVISORY_TEXT),
+        _translate_hf_errors(subject=subject, repo_path=LEXICON_REPO_ID, revision=latest_commit),
+    ):
+        snapshot_download(
+            repo_id=LEXICON_REPO_ID,
+            repo_type="dataset",
+            revision=latest_commit,
+            local_dir=cache_dir,
+            allow_patterns=repo_paths,
+            token=hf_token,
+        )
