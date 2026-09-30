@@ -1,10 +1,18 @@
+import warnings
 from pathlib import Path
+from typing import Literal
 
 from platformdirs import user_cache_dir
 
 from wordlevel.api.lexicons.types.labmt import labMTLanguage
 from wordlevel.api.lexicons.types.socialsent import SocialSentYear
-from wordlevel.core.lexicons.load import Lexicon, load_lexicon
+from wordlevel.core.lexicons.load import (
+    Lexicon,
+    LexiconConnectionError,
+    load_lexicon,
+    resolve_revision,
+    stored_revision,
+)
 
 
 class LexiconLoader:
@@ -22,14 +30,93 @@ class LexiconLoader:
             A HuggingFace access token to authenticate downloads with. If not given, the token is
             read from the `HF_TOKEN` environment variable or a local HuggingFace login, if either
             is available.
+        revision:
+            Which version of each lexicon to load. `"cached"` loads the cached copy, downloading
+            the latest version only if the lexicon is not already cached. `"latest"` checks
+            HuggingFace for the latest version on every load. Any other value is parsed as a commit
+            hash, branch, or tag of the lexicon repository to load exactly.
     """
 
-    def __init__(self, cache_dir: str | Path | None = None, hf_token: str | None = None):
+    def __init__(
+        self,
+        cache_dir: str | Path | None = None,
+        hf_token: str | None = None,
+        revision: Literal["cached", "latest"] | str = "cached",
+    ):
         if cache_dir is None:
             cache_dir = user_cache_dir("wordlevel/lexicons")
 
         self.cache_dir = cache_dir
         self.hf_token = hf_token
+        self.revision = revision
+
+    def _load(self, lexicon: str, filename: str) -> Lexicon:
+        """
+        Loads a lexicon at the commit that the loader's `revision` calls for
+
+        Args:
+            lexicon:
+                The name of the lexicon
+            filename:
+                The name of the file holding the lexicon's scores within the lexicon's directory
+        """
+        # The commit that we have stored locally. Can be None
+        stored_commit = stored_revision(
+            lexicon=lexicon, filename=filename, subfolder=None, cache_dir=self.cache_dir
+        )
+
+        commit: str
+        if self.revision == "cached":
+            # Already cached, so return that commit
+            if stored_commit is not None:
+                commit = stored_commit
+            # Not yet cached, so fetch the latest commit
+            else:
+                commit = resolve_revision(
+                    lexicon=lexicon,
+                    filename=filename,
+                    subfolder=None,
+                    revision="main",
+                    hf_token=self.hf_token,
+                )
+        elif self.revision == "latest":
+            try:
+                commit = resolve_revision(
+                    lexicon=lexicon,
+                    filename=filename,
+                    subfolder=None,
+                    revision="main",
+                    hf_token=self.hf_token,
+                )
+            except LexiconConnectionError:
+                if stored_commit is None:
+                    raise
+                warnings.warn(
+                    f"Could not reach HuggingFace to check for a newer version of the '{lexicon}' "
+                    f"lexicon, so the cached copy at revision '{stored_commit}' was loaded instead",
+                    stacklevel=3,
+                )
+                commit = stored_commit
+        # A specific commit was requested and we already have it
+        elif self.revision == stored_commit:
+            commit = stored_commit  # type: ignore[assignment]
+        # A specific commit was requested and we need to fetch it because we don't have it cached
+        else:
+            commit = resolve_revision(
+                lexicon=lexicon,
+                filename=filename,
+                subfolder=None,
+                revision=self.revision,
+                hf_token=self.hf_token,
+            )
+
+        return load_lexicon(
+            lexicon=lexicon,
+            filename=filename,
+            revision=commit,
+            cache_dir=self.cache_dir,
+            hf_token=self.hf_token,
+        )
 
     def labMT(self, language: labMTLanguage) -> Lexicon:
         """
@@ -79,12 +166,7 @@ class LexiconLoader:
         Raises:
             LexiconDownloadError: If the lexicon could not be downloaded from HuggingFace
         """
-        return load_lexicon(
-            lexicon="labMT",
-            filename=f"{language}.parquet",
-            cache_dir=self.cache_dir,
-            hf_token=self.hf_token,
-        )
+        return self._load(lexicon="labMT", filename=f"{language}.parquet")
 
     def SocialSent(self, year: SocialSentYear) -> Lexicon:
         """
@@ -122,12 +204,7 @@ class LexiconLoader:
         Raises:
             LexiconDownloadError: If the lexicon could not be downloaded from HuggingFace
         """
-        return load_lexicon(
-            lexicon="SocialSent",
-            filename=f"{year}.parquet",
-            cache_dir=self.cache_dir,
-            hf_token=self.hf_token,
-        )
+        return self._load(lexicon="SocialSent", filename=f"{year}.parquet")
 
 
 lex = LexiconLoader()

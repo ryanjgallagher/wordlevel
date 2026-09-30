@@ -57,7 +57,7 @@ def lexicon(lexicon_f: Path, monkeypatch: pytest.MonkeyPatch) -> Lexicon:
         "wordlevel.core.lexicons.load.hf_hub_download", lambda **kwargs: str(lexicon_f)
     )
 
-    return load_lexicon("labMT", "lexicon.parquet")
+    return load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
 
 def test_center_read_from_parquet_metadata(lexicon: Lexicon) -> None:
@@ -90,7 +90,7 @@ def test_hf_token_passed_to_download(lexicon_f: Path, monkeypatch: pytest.Monkey
 
     monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
 
-    load_lexicon("labMT", "lexicon.parquet", hf_token="hf_abc123")
+    load_lexicon("labMT", "lexicon.parquet", revision=COMMIT, hf_token="hf_abc123")
 
     assert download_kwargs["token"] == "hf_abc123"
 
@@ -109,10 +109,53 @@ def test_cache_dir_passed_as_local_dir(
         return str(lexicon_f)
 
     monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.core.lexicons.load.stored_revision", lambda **kwargs: COMMIT)
 
-    load_lexicon("labMT", "lexicon.parquet", cache_dir=tmp_path)
+    load_lexicon("labMT", "lexicon.parquet", revision=COMMIT, cache_dir=tmp_path)
 
     assert download_kwargs["local_dir"] == tmp_path
+
+
+def test_revision_passed_to_download(lexicon_f: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Checks that the lexicon is downloaded at the requested commit, rather than at whatever the
+    repository's default branch points to
+    """
+    download_kwargs: dict[str, object] = {}
+
+    def fake_hf_hub_download(**kwargs: object) -> str:
+        download_kwargs.update(kwargs)
+        return str(lexicon_f)
+
+    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+
+    load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
+
+    assert download_kwargs["revision"] == COMMIT
+
+
+def test_revision_recorded_on_lexicon(lexicon: Lexicon) -> None:
+    """
+    Checks that the commit a lexicon was loaded at is recorded on it, so that the user can pin it
+    """
+    assert lexicon.revision == COMMIT
+
+
+def test_stored_copy_at_other_commit_raised_as_connection_error(
+    lexicon_f: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Checks that when HuggingFace falls back to a stored copy at a different commit than the one
+    requested, which it does silently when the hub cannot be reached, the load is raised rather
+    than returning the wrong version of the lexicon
+    """
+    monkeypatch.setattr(
+        "wordlevel.core.lexicons.load.hf_hub_download", lambda **kwargs: str(lexicon_f)
+    )
+    monkeypatch.setattr("wordlevel.core.lexicons.load.stored_revision", lambda **kwargs: "b" * 40)
+
+    with pytest.raises(LexiconConnectionError):
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT, cache_dir=tmp_path)
 
 
 def test_hf_token_advisory_suppressed(
@@ -135,7 +178,7 @@ def test_hf_token_advisory_suppressed(
     monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
 
     with caplog.at_level(logging.WARNING, logger=HF_HTTP_LOGGER):
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
     assert caplog.messages == ["Retrying in 1s [Retry 1/5]."]
 
@@ -161,7 +204,7 @@ def test_hub_fallback_message_suppressed(
     monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
 
     with caplog.at_level(logging.WARNING, logger=HF_DOWNLOAD_LOGGER):
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
     assert caplog.messages == ["Some other message."]
 
@@ -210,7 +253,7 @@ def test_download_failures_raised_as_download_error(download_error: Exception) -
     error is kept as the cause so that it is still available for debugging
     """
     with pytest.raises(LexiconDownloadError) as error:
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
     assert error.value.__cause__ is download_error
 
@@ -230,7 +273,7 @@ def test_offline_mode_reported_instead_of_network_failure(
     monkeypatch.setattr("wordlevel.core.lexicons.load.is_offline_mode", lambda: True)
 
     with pytest.raises(LexiconDownloadError, match="offline mode is enabled"):
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
 
 @pytest.mark.parametrize(
@@ -251,7 +294,7 @@ def test_unreachable_hub_raised_as_connection_error(download_error: Exception) -
     callers can fall back to a stored lexicon when the hub cannot be reached
     """
     with pytest.raises(LexiconConnectionError):
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
 
 @pytest.mark.parametrize(
@@ -270,7 +313,7 @@ def test_refused_request_not_raised_as_connection_error(download_error: Exceptio
     callers do not fall back to a stored lexicon when the request itself is wrong
     """
     with pytest.raises(LexiconDownloadError) as error:
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
     assert not isinstance(error.value, LexiconConnectionError)
 
@@ -285,7 +328,7 @@ def test_hf_log_filters_removed_on_error(download_error: Exception, logger_name:
     and not just when it succeeds
     """
     with pytest.raises(LexiconDownloadError):
-        load_lexicon("labMT", "lexicon.parquet")
+        load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
     assert logging.getLogger(logger_name).filters == []
 

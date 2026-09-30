@@ -65,12 +65,16 @@ class Lexicon:
             The column in `lf` that contains the tokens
         score_col:
             The column in `lf` that contains the scores
+        revision:
+            The commit of the HuggingFace repository that the lexicon was downloaded at, if it was
+            downloaded from HuggingFace
     """
 
     lf: pl.LazyFrame
     center: float
     token_col: str = "token"
     score_col: str = "score"
+    revision: str | None = None
 
     @cached_property
     def df(self) -> pl.DataFrame:
@@ -289,6 +293,7 @@ def resolve_revision(
 def load_lexicon(
     lexicon: str,
     filename: str,
+    revision: str,
     subfolder: str | None = None,
     cache_dir: str | Path | None = None,
     hf_token: str | None = None,
@@ -298,14 +303,15 @@ def load_lexicon(
     published, reading the scores from the file's rows and the center of the scoring scale from its
     metadata
 
-    Downloaded files are cached, so a lexicon is only retrieved over the network the first time it
-    is loaded.
+    A lexicon already stored at `revision` is read without calling out to the hub.
 
     Args:
         lexicon:
             The name of the lexicon
         filename:
             The name of the file holding the lexicon's scores within the lexicon's directory
+        revision:
+            The commit hash of the lexicon repository to load the lexicon at
         subfolder:
             A directory nested within the lexicon's directory that `filename` sits in
         cache_dir:
@@ -320,6 +326,7 @@ def load_lexicon(
         A `Lexicon` of tokens and their scores
 
     Raises:
+        LexiconConnectionError: If HuggingFace could not be reached to download the lexicon
         LexiconDownloadError: If the lexicon could not be downloaded from HuggingFace
     """
     full_subfolder = _repo_subfolder(lexicon, subfolder)
@@ -327,18 +334,31 @@ def load_lexicon(
     with (
         _suppress_hf_log(HF_HTTP_LOGGER, HF_TOKEN_ADVISORY_TEXT),
         _suppress_hf_log(HF_DOWNLOAD_LOGGER, HF_STORED_FALLBACK_TEXT),
-        _translate_hf_errors(lexicon, f"{full_subfolder}/{filename}", "main"),
+        _translate_hf_errors(lexicon, f"{full_subfolder}/{filename}", revision),
     ):
         lexicon_f = hf_hub_download(
             repo_id=LEXICON_REPO_ID,
             subfolder=full_subfolder,
             filename=filename,
             repo_type="dataset",
+            revision=revision,
             local_dir=cache_dir,
             token=hf_token,
         )
 
+    # When the hub cannot be reached, HuggingFace returns the stored file whatever commit it was
+    # downloaded at, so check that it is the one requested
+    if cache_dir is not None:
+        downloaded_commit = stored_revision(
+            lexicon=lexicon, filename=filename, subfolder=subfolder, cache_dir=cache_dir
+        )
+        if downloaded_commit != revision:
+            raise LexiconConnectionError(
+                f"Could not reach HuggingFace to download revision '{revision}' of the "
+                f"'{lexicon}' lexicon. Check your network connection and try again."
+            )
+
     lf = pl.scan_parquet(lexicon_f)
     center_score = float(pl.read_parquet_metadata(lexicon_f)["center"])
 
-    return Lexicon(lf=lf, center=center_score)
+    return Lexicon(lf=lf, center=center_score, revision=revision)

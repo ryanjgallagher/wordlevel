@@ -6,18 +6,23 @@ import pytest
 from wordlevel.core.lexicons.load import Lexicon
 
 
+MOCK_COMMIT = "0" * 40
+
+
 @pytest.fixture(autouse=True)
 def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Replace load_lexicon with an in-memory stub so doc-snippet tests never call out to
     HuggingFace. The snippets only need a valid Lexicon to flow through scoring and
     plotting; the tokens below match the vocab used in the snippets so the lexicon join
-    lands real scores.
+    lands real scores. The revision lookups are stubbed too, so that the loader never reads
+    the user's cache or asks the hub which commit to load.
     """
 
     def fake_load_lexicon(
         lexicon: str,
         filename: str,
+        revision: str,
         subfolder: str | None = None,
         cache_dir: str | Path | None = None,
         hf_token: str | None = None,
@@ -30,6 +35,13 @@ def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
                 }
             ),
             center=5.0,
+            revision=revision,
         )
 
     monkeypatch.setattr("wordlevel.api.lexicons.lexicon.load_lexicon", fake_load_lexicon)
+    monkeypatch.setattr(
+        "wordlevel.api.lexicons.lexicon.stored_revision", lambda **kwargs: MOCK_COMMIT
+    )
+    monkeypatch.setattr(
+        "wordlevel.api.lexicons.lexicon.resolve_revision", lambda **kwargs: MOCK_COMMIT
+    )
