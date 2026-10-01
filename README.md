@@ -87,3 +87,22 @@ If you use WordLevel in your research, please cite the following paper:
 ## License
 
 WordLevel is released under the [MIT License](LICENSE).
+
+
+## AI Disclosure
+
+AI tools have been used to assist in the development of this package, including Claude Opus 4 & 5 
+and Gemini 3 Pro. I have opted to use AI for this project because I have found it to be a useful
+sounding board, learning resource, and agent for development. Despite its usefulness, I recognize 
+that AI tools have a variety of negative social, economic, and ecological effects. I do not make 
+excuses for these externalities, and I continue to try and navigate the tension between the
+usefulness of AI tools in software development and their threat as a larger social and political 
+project.
+
+The ideas for this package—including its architecture and design—all came from me and the lessons 
+that I learned developing one of the original packages for word shift graphs, Shifterator. Any and 
+all code produced by AI tools has been reviewed by me for correctness, clarity, and style. Within 
+the bounds of the license, I take responsibility for errors in the code and documentation. 
+
+I have been developing code on this subject for nearly a decade. I hope that you are able to see the 
+care that I have taken to make it accessible through this package.
