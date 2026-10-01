@@ -27,6 +27,11 @@ def _bars_encoding(chart: alt.LayerChart) -> dict:
     return chart.to_dict()["layer"][0]["layer"][0]["encoding"]
 
 
+def _bars_mark(chart: alt.LayerChart) -> dict:
+    """The bars layer's Vega-Lite mark dict."""
+    return chart.to_dict()["layer"][0]["layer"][0]["mark"]
+
+
 def _rows_by_type(chart: alt.LayerChart) -> dict[str, dict]:
     """The bars-layer rows keyed by score type, for per-type lookups."""
     return {row[_SCORE_TYPE_COL]: row for row in _bars_data(chart).to_dicts()}
@@ -308,6 +313,53 @@ class TestConfig:
 
         assert "#000000" in _bars_encoding(chart)["color"]["scale"]["range"]
         assert _rows_by_type(chart)["more_of_positive"][_LABEL_COL] == "Z"
+
+    @pytest.mark.parametrize("grand_total", [True, False])
+    def test_bar_config_sets_outline(self, score_col, score_type_col, grand_total):
+        """Without outlines set in `total_shift_config`, both the grand-total and per-type bars take
+        the `bar_config` outline."""
+        bar_config = InternalBarConfig.from_shift_bar_config(
+            ShiftBarConfig(outline_color="blue", outline_width=2)
+        )
+        df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
+
+        chart = shift_total(
+            df,
+            score_col=score_col,
+            score_type_col=score_type_col,
+            grand_total=grand_total,
+            bar_config=bar_config,
+            width=100,
+        )
+
+        mark = _bars_mark(chart)
+        assert (mark["stroke"], mark["strokeWidth"]) == ("blue", 2)
+
+    @pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
+    def test_total_shift_config_overrides_grand_total_outline(
+        self, score_col, score_type_col, as_dict
+    ):
+        """An outline field set in `total_shift_config` (as object or dict) overrides the
+        `bar_config` outline on the grand-total bar, and unset fields still inherit."""
+        bar_config = InternalBarConfig.from_shift_bar_config(
+            ShiftBarConfig(outline_color="blue", outline_width=2)
+        )
+        overrides = {"outline_color": "red"}
+        total_shift_config = overrides if as_dict else TotalShiftConfig(**overrides)
+        df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
+
+        chart = shift_total(
+            df,
+            score_col=score_col,
+            score_type_col=score_type_col,
+            grand_total=True,
+            bar_config=bar_config,
+            total_shift_config=total_shift_config,
+            width=100,
+        )
+
+        mark = _bars_mark(chart)
+        assert (mark["stroke"], mark["strokeWidth"]) == ("red", 2)
 
     @pytest.mark.parametrize("draw_score_axis, draw_rank_axis", [(True, False), (False, True)])
     def test_border_flags_drive_axis_domains(

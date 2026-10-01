@@ -11,6 +11,15 @@ PERCENT_SCORE_AXIS_TITLE = "Percent contribution"
 
 SYMBOL_SUFFIX = "_symbol"
 
+DEFAULT_BAR_OUTLINE_COLOR = "#888"
+DEFAULT_BAR_OUTLINE_WIDTH: float = 0.1
+
+BAR_OUTLINE_FIELDS = frozenset({"outline_color", "outline_width"})
+"""
+Names of the bar config fields that style every bar's outline. Together with the `*_symbol` fields,
+these are the bar config fields that are not score types
+"""
+
 
 @dataclass
 class BarConfig:
@@ -29,12 +38,18 @@ class BarConfig:
             Symbol labeling the reference contribution in the totals panels
         comparison_symbol:
             Symbol labeling the comparison contribution in the totals panels
+        outline_color:
+            Color of the outline around each bar
+        outline_width:
+            Width of the outline around each bar, in pixels. `0` draws no outline
     """
 
     reference: str = "#F09E2E"
     comparison: str = "#016FBA"
     reference_symbol: str = "Reference"
     comparison_symbol: str = "Comparison"
+    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
+    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
 
 
 @dataclass
@@ -57,12 +72,18 @@ class ScoreSignBarConfig:
             Symbol labeling the reinforcing contribution in the totals panels
         offset_symbol:
             Symbol labeling the offsetting contribution in the totals panels
+        outline_color:
+            Color of the outline around each bar
+        outline_width:
+            Width of the outline around each bar, in pixels. `0` draws no outline
     """
 
     reinforce: str = "#016FBA"
     offset: str = "#E6E6E6"
     reinforce_symbol: str = "Reinforces"
     offset_symbol: str = "Offsets"
+    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
+    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
 
 
 @dataclass
@@ -125,6 +146,10 @@ class ShiftBarConfig:
             Symbol labeling the `lower_score` contribution in the totals panels
         higher_score_symbol:
             Symbol labeling the `higher_score` contribution in the totals panels
+        outline_color:
+            Color of the outline around each bar
+        outline_width:
+            Width of the outline around each bar, in pixels. `0` draws no outline
     """
 
     more_of_negative: str = "#2F7CCE"
@@ -145,10 +170,16 @@ class ShiftBarConfig:
     less_of_negative_symbol: str = "−↓"
     lower_score_symbol: str = "▽"
     higher_score_symbol: str = "△"
+    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
+    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
 
 
 SHIFT_BAR_NAMES = SimpleNamespace(
-    **{f.name: f.name for f in fields(ShiftBarConfig) if not f.name.endswith(SYMBOL_SUFFIX)}
+    **{
+        f.name: f.name
+        for f in fields(ShiftBarConfig)
+        if not f.name.endswith(SYMBOL_SUFFIX) and f.name not in BAR_OUTLINE_FIELDS
+    }
 )
 """
 Namespace of `ShiftBarConfig` field names as strings. Use this as the source of truth for shift type 
@@ -374,7 +405,15 @@ class TotalShiftConfig:
             Color of the grand total bar
         total_symbol:
             Symbol labeling the grand total bar in the totals panels
+        outline_color:
+            Color of the outline around the grand total bar. If `None`, the bar config's
+            `outline_color` is used
+        outline_width:
+            Width of the outline around the grand total bar, in pixels. If `None`, the bar config's
+            `outline_width` is used
     """
 
     total: str = "#888"
     total_symbol: str = "Total"
+    outline_color: str | None = None
+    outline_width: float | None = None

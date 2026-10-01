@@ -4,6 +4,9 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    BAR_OUTLINE_FIELDS,
+    DEFAULT_BAR_OUTLINE_COLOR,
+    DEFAULT_BAR_OUTLINE_WIDTH,
     DEFAULT_SCORE_AXIS_TITLE,
     PERCENT_SCORE_AXIS_TITLE,
     BarConfig,
@@ -917,6 +920,110 @@ def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_c
     """
     with pytest.raises(TypeError, match="Expected a .* or a dict of its fields"):
         make_internal_bar_config(wrong_config)
+
+
+def test_bar_outline_rendered_on_mark(token_col, score_col, score_type_col, rank_col):
+    """
+    The bar mark draws the outline color and width from the `InternalBarConfig`
+    """
+    df = pl.DataFrame({token_col: ["a"], rank_col: [1], score_type_col: ["x"], score_col: [1.0]})
+
+    chart = shift_bars(
+        df,
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bars=InternalBarConfig(
+            colors={"x": "red"}, orders=None, symbols={}, outline_color="blue", outline_width=2
+        ),
+    )
+
+    mark = chart.to_dict()["mark"]
+    assert (mark["stroke"], mark["strokeWidth"]) == ("blue", 2)
+
+
+def test_bar_outline_absent_when_none(token_col, score_col, score_type_col, rank_col):
+    """
+    An outline color and width of `None` leave the mark's stroke to Altair's default
+    """
+    df = pl.DataFrame({token_col: ["a"], rank_col: [1], score_type_col: ["x"], score_col: [1.0]})
+
+    chart = shift_bars(
+        df,
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bars=InternalBarConfig(
+            colors={"x": "red"}, orders=None, symbols={}, outline_color=None, outline_width=None
+        ),
+    )
+
+    mark = chart.to_dict()["mark"]
+    assert "stroke" not in mark
+    assert "strokeWidth" not in mark
+
+
+@pytest.mark.parametrize(
+    "make_internal_bar_config",
+    [
+        lambda config: InternalBarConfig.from_bar_config(config, attributed_by="frequency"),
+        lambda config: InternalBarConfig.from_bar_config(config, attributed_by="score_sign"),
+        lambda config: InternalBarConfig.from_shift_bar_config(config),
+    ],
+    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig"],
+)
+def test_internal_bar_config_default_outline(make_internal_bar_config):
+    """
+    Without a user config, the bars take the default outline color and width
+    """
+    internal = make_internal_bar_config(None)
+    assert (internal.outline_color, internal.outline_width) == (
+        DEFAULT_BAR_OUTLINE_COLOR,
+        DEFAULT_BAR_OUTLINE_WIDTH,
+    )
+
+
+@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
+@pytest.mark.parametrize(
+    "config_cls, make_internal_bar_config",
+    [
+        (BarConfig, lambda c: InternalBarConfig.from_bar_config(c, attributed_by="frequency")),
+        (
+            ScoreSignBarConfig,
+            lambda c: InternalBarConfig.from_bar_config(c, attributed_by="score_sign"),
+        ),
+        (ShiftBarConfig, lambda c: InternalBarConfig.from_shift_bar_config(c)),
+        (TotalShiftConfig, lambda c: InternalBarConfig.from_total_shift_config(c)),
+    ],
+    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig", "TotalShiftConfig"],
+)
+def test_internal_bar_config_custom_outline(config_cls, make_internal_bar_config, as_dict):
+    """
+    A user config's outline color and width carry through to the `InternalBarConfig`, whether passed
+    as a config object or as a dict of the same fields
+    """
+    overrides = {"outline_color": "blue", "outline_width": 2}
+    config = overrides if as_dict else config_cls(**overrides)
+
+    internal = make_internal_bar_config(config)
+    assert (internal.outline_color, internal.outline_width) == ("blue", 2)
+
+
+@pytest.mark.parametrize(
+    "internal_bar_config",
+    [
+        InternalBarConfig.from_bar_config(None, attributed_by="frequency"),
+        InternalBarConfig.from_bar_config(None, attributed_by="score_sign"),
+        InternalBarConfig.from_shift_bar_config(None),
+        InternalBarConfig.from_total_shift_config(None),
+    ],
+    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig", "TotalShiftConfig"],
+)
+def test_internal_bar_config_colors_exclude_bar_outline_fields(internal_bar_config):
+    """
+    The bar outline fields style the bars and are not score types, so they have no bar color
+    """
+    assert BAR_OUTLINE_FIELDS.isdisjoint(internal_bar_config.colors)
 
 
 def test_internal_bar_config_from_bar_config_has_no_orders():

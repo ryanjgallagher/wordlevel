@@ -1,8 +1,6 @@
 """Constants across the package"""
 
-from dataclasses import fields
-
-from wordlevel.configs import SYMBOL_SUFFIX, ShiftBarConfig
+from wordlevel.configs import SHIFT_BAR_NAMES
 
 
 RANK_COL = "score_rank"
@@ -25,7 +23,7 @@ NORMED_FREQ_CMP_COL = "__wl_normed_freq_cmp"
 LEXICON_SCORE_REF_COL = "__wl_lexicon_score_ref"
 LEXICON_SCORE_CMP_COL = "__wl_lexicon_score_cmp"
 
-SHIFT_SCORE_TYPES = [f.name for f in fields(ShiftBarConfig) if not f.name.endswith(SYMBOL_SUFFIX)]
+SHIFT_SCORE_TYPES = list(vars(SHIFT_BAR_NAMES))
 COUNTERACTED_SUFFIX = "_counteracted"
 
 TOKEN = "token"

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import cast
 
 import altair as alt
@@ -223,7 +224,20 @@ def shift_total(
         type_bar_config = bar_config
 
     if grand_total:
-        bar_config = InternalBarConfig.from_total_shift_config(total_shift_config)
+        # The grand total inherits the bar outline unless the `TotalShiftConfig` sets its own
+        bar_config = replace(
+            InternalBarConfig.from_total_shift_config(total_shift_config),
+            outline_color=(
+                total_shift_config.outline_color
+                if total_shift_config.outline_color is not None
+                else type_bar_config.outline_color
+            ),
+            outline_width=(
+                total_shift_config.outline_width
+                if total_shift_config.outline_width is not None
+                else type_bar_config.outline_width
+            ),
+        )
     else:
         bar_config = type_bar_config
 
