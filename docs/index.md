@@ -10,9 +10,9 @@ hide:
 
 
 WordLevel is an open-source library for word-level natural language processing and text analysis.
-It measures how two bodies of text differ token by token, and turns that measurement into a
-publication-ready [word shift graph](documentation/concepts/word_shift_graphs.md): a chart that
-shows not only _which_ words distinguish two corpora, but _how_ each one contributes.
+It allows you to measure how two bodies of text differ token by token, and turn that measurement 
+into a publication-ready [word shift graph](https://wordlevel.dev/documentation/concepts/word_shift_graphs/):
+a chart that shows not only _which_ words distinguish the texts, but also _how_ they do so.
 
 ## Install
 
@@ -24,7 +24,7 @@ pip install wordlevel
 ```
 
 
-## Making a comparison
+## Compare texts
 
 The code below compares the speeches of Presidents Franklin D. Roosevelt and Joe Biden by
 sentiment, scoring each president with a lexicon from each era.
@@ -38,10 +38,10 @@ sentiment, scoring each president with a lexicon from each era.
 ![Word shift graph comparing the sentiment of Joe Biden's speeches against Franklin D. Roosevelt's](assets/images/cover_word_shift_graph_dark.svg#only-dark)
 </figure>
 
-Biden's speeches score lower in sentiment overall, and the graph says why: most of the gap comes
-from words like "nation," "families," and "americans" carrying lower sentiment in the 2000s lexicon
-than the 1940s one $\left( \bigtriangledown \right)$, only partly offset by Biden using relatively
-positive words such as "together" and "well" more often $\left( + \uparrow \right)$.
+Biden's speeches score lower in sentiment overall. From the word shift graph, we can see that 
+most of the gap comes from words like "nation," "families," and "americans" carrying lower sentiment 
+in the 2000s lexicon than the 1940s one (▽), only partly offset by Biden using relatively positive 
+words such as "together" and "well" more often (+↑).
 
 
 ## Where to go next
