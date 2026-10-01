@@ -15,7 +15,7 @@ We will use two small corpora and put them into a `Catalog`. See the [cookbook](
 
 ## Loading a lexicon
 
-WordLevel provides [several pre-made lexicons](../api/lexicons/index.md), constructed by academic researchers. They can be loaded using the `wl.lex` operator. Below, we load the [labMT](../api/lexicons/labMT.md) sentiment lexicon, which rates how positive ("happy") or negative ("sad") a word is on a scale from 1 to 9.
+WordLevel provides [several pre-made lexicons](../api/lexicons/off-the-shelf/index.md), constructed by academic researchers. They can be loaded using the `wl.lex` operator. Below, we load the [labMT](../api/lexicons/off-the-shelf/labMT.md) sentiment lexicon, which rates how positive ("happy") or negative ("sad") a word is on a scale from 1 to 9.
 
 ```python exec="true" source="above" session="scoring_with_lexicons"
 --8<-- "snippets/cookbooks/scoring_with_lexicons.py:load_labmt"

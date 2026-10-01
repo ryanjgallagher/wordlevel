@@ -21,22 +21,36 @@ class LexiconLoader:
     """
     An interface for (down)loading pre-defined lexicons that map tokens to scores.
 
-    Lexicons are downloaded the first time they are loaded and cached locally. Later loads of the
-    same lexicon read from the local cache.
+    `wl.lex` is a ready-made loader with the default options, and is all that most uses need.
+    Construct a `LexiconLoader` to change where lexicons are cached, which HuggingFace token they
+    are downloaded with, or which version of each lexicon is loaded.
+
+    Lexicons are downloaded from
+    [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons) and cached
+    locally. Each lexicon is versioned separately, so updating one does not change the others.
+
+    Example:
+        ```python
+        --8<-- "snippets/lexicons/lexicon.py:revision"
+        ```
 
     Args:
         cache_dir:
             The directory that downloaded lexicons are cached in. Defaults to the user's cache
-            directory.
+            directory, which is shared by every project on the machine. Pass a directory within a
+            project to keep its lexicons separate from other projects.
         hf_token:
             A HuggingFace access token to authenticate downloads with. If not given, the token is
             read from the `HF_TOKEN` environment variable or a local HuggingFace login, if either
             is available.
         revision:
-            Which version of each lexicon to load. `"cached"` loads the cached copy, downloading
-            the latest version only if the lexicon is not already cached. `"latest"` checks
-            HuggingFace for the latest version on every load. Any other value is parsed as a commit
-            hash, branch, or tag of the lexicon repository to load exactly.
+            Which version of each lexicon to load. `"cached"` downloads from HuggingFace the first
+            time that a lexicon is requested, and then only accesses that cached lexicon on later
+            calls. `"latest"` checks HuggingFace for the latest version on every load,
+            updating the cached copy if it has changed; if HuggingFace cannot be reached, the
+            cached copy is loaded with a warning. Any other value is parsed as a commit hash,
+            branch, or tag of the lexicon repository, and exactly that version is loaded, never a
+            substitute. The version a lexicon was loaded at is recorded on its `revision`.
     """
 
     def __init__(
@@ -124,6 +138,13 @@ class LexiconLoader:
         """
         Updates every cached lexicon to its latest version on HuggingFace.
 
+        Only lexicons that have been updated on HuggingFace are downloaded again.
+
+        Example:
+            ```python
+            --8<-- "snippets/lexicons/lexicon.py:update-cached"
+            ```
+
         Raises:
             LexiconConnectionError: If HuggingFace could not be reached
             LexiconDownloadError: If the lexicons could not be downloaded from HuggingFace
@@ -151,9 +172,10 @@ class LexiconLoader:
 
         Note:
             The first call for a given language downloads that lexicon from
-            [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons). Later
-            calls for the same language read from the local cache, so each language is only ever
-            downloaded once.
+            [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons) and
+            caches it. By default, later calls for the same lexicon read the cached copy without
+            contacting HuggingFace. To load the latest or a specific version instead, see
+            [`LexiconLoader`][wordlevel.api.lexicons.lexicon.LexiconLoader].
 
         License:
             This data is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0
@@ -198,9 +220,10 @@ class LexiconLoader:
 
         Note:
             The first call for a given year downloads that lexicon from
-            [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons). Later
-            calls for the same year read from the local cache, so each year is only ever
-            downloaded once.
+            [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons) and
+            caches it. By default, later calls for the same lexicon read the cached copy without
+            contacting HuggingFace. To load the latest or a specific version instead, see
+            [`LexiconLoader`][wordlevel.api.lexicons.lexicon.LexiconLoader].
 
         License:
             This data is made available under the [Public Domain Dedication and License

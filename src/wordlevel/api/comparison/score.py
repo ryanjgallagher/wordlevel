@@ -364,7 +364,7 @@ class Scorer:
             lexicon:
                 Lexicon associating tokens with scores. Accepts a mapping `{token: score}` or a
                 Polars dataframe with columns indicating the tokens and scores. Also accepts a
-                [pre-defined lexicon](../../lexicons/index.md)
+                [pre-defined lexicon](../../lexicons/off-the-shelf/index.md)
             lexicon_reference:
                 Lexicon associating tokens with scores for the reference corpus
             lexicon_comparison:

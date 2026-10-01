@@ -10,7 +10,7 @@ All comparisons can be visualized as a [bar graph](plotting_comparisons.md). If 
 
 We will use an example dataset of US presidential speeches from Franklin D. Roosevelt and Joe Biden. Each document is a speech, and each corpus contains all of the speeches by that particular president. See the [cookbook](constructing_catalogs.md) for more about working with catalogs.
 
-We make two comparisons using [sentiment lexicons](scoring_with_lexicons.md). The first comparison uses the [labMT](../api/lexicons/labMT.md) lexicon for both corpora. The second comparison uses the [SocialSent](../api/lexicons/SocialSent.md) lexicons, which are specific to each decade. We score Roosevelt's speeches with the lexicon from the 1940s, and Biden's speeches with the lexicon from the 2000s, the most recent decade available.
+We make two comparisons using [sentiment lexicons](scoring_with_lexicons.md). The first comparison uses the [labMT](../api/lexicons/off-the-shelf/labMT.md) lexicon for both corpora. The second comparison uses the [SocialSent](../api/lexicons/off-the-shelf/SocialSent.md) lexicons, which are specific to each decade. We score Roosevelt's speeches with the lexicon from the 1940s, and Biden's speeches with the lexicon from the 2000s, the most recent decade available.
 
 ```python exec="true" source="above" session="plotting_word_shifts"
 --8<-- "snippets/cookbooks/plotting_word_shifts.py:setup"

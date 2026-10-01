@@ -1,14 +1,15 @@
 """The node types the API tree is declared with, and the passes that resolve and check it.
 
-A tree is *declared* in `structure.py` out of four kinds of child:
+A tree is *declared* in `structure.py` out of five kinds of child:
 
     Page         one generated markdown file, named outright
+    ClassPage    expands to a Page for a class, with the methods no Discovery claims beneath it
     Discovery    expands to Pages, one per public member of a class or module
     SectionsPer  expands to Sections, one per public member of a class
     Section      a container, holding any of the above
 
-`resolve` replaces the two expanding kinds with what they expand to, so a resolved tree holds only
-Sections and Pages. `validate` reports every way the declaration and the source can disagree.
+`resolve` replaces the three expanding kinds with what they expand to, so a resolved tree holds
+only Sections and Pages. `validate` reports every way the declaration and the source can disagree.
 """
 
 from __future__ import annotations
@@ -39,23 +40,46 @@ Slug = Literal["snake", "verbatim"]
 
 @dataclass(frozen=True)
 class Page:
-    """One generated markdown file: an mkdocstrings stub for a single object."""
+    """One generated markdown file: an mkdocstrings stub for a single object.
+
+    `members` are the object's methods rendered beneath it on the same page. A page without any
+    documents the object alone.
+    """
 
     target: str
     title: str
     filename: str
     nav_label: str | None = None
+    members: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class Discovery:
-    """Expands to one Page per public member of `source`."""
+    """Expands to one Page per public member of `source`.
+
+    `returns` narrows the members to methods whose return annotation is written as that name.
+    """
 
     source: str
     kind: MemberKind
     prefix: str = ""
+    returns: str | None = None
     title: str = "{name}"
     slug: Slug = "snake"
+
+
+@dataclass(frozen=True)
+class ClassPage:
+    """Expands to one Page for a class, rendering its public methods beneath it.
+
+    The methods that `exclude` discovers are left off, since they are given pages of their own.
+    """
+
+    target: str
+    title: str
+    filename: str
+    nav_label: str | None = None
+    exclude: Discovery | None = None
 
 
 @dataclass(frozen=True)
@@ -63,11 +87,13 @@ class SectionsPer:
     """Expands to one Section per public method of `source`.
 
     Each section's pages are the public attributes of a companion module, located by formatting
-    `module` with the member's name (`{name}`) or its lowercased form (`{lower}`).
+    `module` with the member's name (`{name}`) or its lowercased form (`{lower}`). `returns`
+    narrows the methods to those whose return annotation is written as that name.
     """
 
     source: str
     module: str
+    returns: str | None = None
     strip_prefix: bool = False
     slug: Slug = "snake"
 
@@ -95,7 +121,7 @@ class Section:
 
     label: str
     index: Index | None
-    children: tuple[Section | Page | Discovery | SectionsPer, ...]
+    children: tuple[Section | Page | ClassPage | Discovery | SectionsPer, ...]
     slug: Slug = "snake"
 
 
@@ -116,11 +142,37 @@ def page(target: str, *, title: str | None = None, nav_label: str | None = None)
     )
 
 
+def class_page(
+    target: str,
+    *,
+    title: str | None = None,
+    nav_label: str | None = None,
+    exclude: Discovery | None = None,
+) -> ClassPage:
+    """A page for a class and its methods, leaving off the methods `exclude` gives pages of."""
+    name = target.rsplit(".", 1)[-1]
+
+    return ClassPage(
+        target=target,
+        title=title or name,
+        filename=f"{snake_case(name)}.md",
+        nav_label=nav_label,
+        exclude=exclude,
+    )
+
+
 def methods(
-    source: str, *, prefix: str = "", title: str = "{name}", slug: Slug = "snake"
+    source: str,
+    *,
+    prefix: str = "",
+    returns: str | None = None,
+    title: str = "{name}",
+    slug: Slug = "snake",
 ) -> Discovery:
-    """A page per public method a class declares, optionally narrowed to a name prefix."""
-    return Discovery(source=source, kind="methods", prefix=prefix, title=title, slug=slug)
+    """A page per public method a class declares, optionally narrowed by name or return type."""
+    return Discovery(
+        source=source, kind="methods", prefix=prefix, returns=returns, title=title, slug=slug
+    )
 
 
 def classes(source: str, *, title: str = "{name}", slug: Slug = "snake") -> Discovery:
@@ -129,10 +181,17 @@ def classes(source: str, *, title: str = "{name}", slug: Slug = "snake") -> Disc
 
 
 def sections_per(
-    source: str, *, module: str, strip_prefix: bool = False, slug: Slug = "snake"
+    source: str,
+    *,
+    module: str,
+    returns: str | None = None,
+    strip_prefix: bool = False,
+    slug: Slug = "snake",
 ) -> SectionsPer:
     """A sub-section per public method of a class, filled from a companion module."""
-    return SectionsPer(source=source, module=module, strip_prefix=strip_prefix, slug=slug)
+    return SectionsPer(
+        source=source, module=module, returns=returns, strip_prefix=strip_prefix, slug=slug
+    )
 
 
 _SNAKE_FIRST = re.compile(r"(.)([A-Z][a-z]+)")
@@ -167,12 +226,18 @@ def _resolve_section(section: Section) -> Section:
             children.extend(_expand_discovery(child))
         elif isinstance(child, SectionsPer):
             children.extend(_expand_sections_per(child))
+        elif isinstance(child, ClassPage):
+            children.append(_expand_class_page(child))
         elif isinstance(child, Section):
             children.append(_resolve_section(child))
         else:
             children.append(child)
 
     return replace(section, children=tuple(children))
+
+
+def _discovered_names(discovery: Discovery) -> list[str]:
+    return public_members(discovery.source, discovery.kind, discovery.prefix, discovery.returns)
 
 
 def _expand_discovery(discovery: Discovery) -> list[Page]:
@@ -182,16 +247,30 @@ def _expand_discovery(discovery: Discovery) -> list[Page]:
             title=discovery.title.format(name=name),
             filename=f"{slug_name(name, discovery.slug)}.md",
         )
-        for name in public_members(discovery.source, discovery.kind, discovery.prefix)
+        for name in _discovered_names(discovery)
     ]
 
     return sorted(pages, key=lambda page: page.title.lower())
 
 
+def _expand_class_page(spec: ClassPage) -> Page:
+    excluded = set(_discovered_names(spec.exclude)) if spec.exclude is not None else set()
+
+    return Page(
+        target=spec.target,
+        title=spec.title,
+        filename=spec.filename,
+        nav_label=spec.nav_label,
+        members=tuple(
+            name for name in public_members(spec.target, "methods") if name not in excluded
+        ),
+    )
+
+
 def _expand_sections_per(spec: SectionsPer) -> list[Section]:
     sections = []
 
-    for name in public_members(spec.source, "methods"):
+    for name in public_members(spec.source, "methods", returns=spec.returns):
         module = _companion_module(spec, name)
         # The section is named for the member, so it takes the spec's slug. Its pages are named for
         # the parameters inside, which are ordinary identifiers and slug the ordinary way.
@@ -281,7 +360,7 @@ def validate(declared: tuple[Section, ...], resolved: tuple[Section, ...]) -> li
 
 def _declared_nodes(
     sections: tuple[Section, ...],
-) -> Iterator[Section | Page | Discovery | SectionsPer]:
+) -> Iterator[Section | Page | ClassPage | Discovery | SectionsPer]:
     for section in sections:
         yield section
         for child in section.children:
@@ -298,6 +377,9 @@ def _uncovered_members(declared: tuple[Section, ...], resolved: tuple[Section, .
     than pages, and its members are covered by whichever `Discovery` also reads that source.
     """
     documented = {page.target for _, page in walk_pages(resolved)}
+    documented |= {
+        f"{page.target}.{member}" for _, page in walk_pages(resolved) for member in page.members
+    }
     # Grouped by source rather than checked per discovery: a prefix narrows what a discovery
     # claims, not what the source owes, so `methods(Catalog, prefix="from_")` alone must still
     # answer for `with_comparisons`.
@@ -321,7 +403,9 @@ def _uncovered_members(declared: tuple[Section, ...], resolved: tuple[Section, .
 
 def _unresolvable_targets(declared: tuple[Section, ...]) -> list[str]:
     """Hand-written targets are the ones a rename can silently invalidate."""
-    targets = [node.target for node in _declared_nodes(declared) if isinstance(node, Page)]
+    targets = [
+        node.target for node in _declared_nodes(declared) if isinstance(node, Page | ClassPage)
+    ]
     targets += [
         section.index.target
         for section in _declared_nodes(declared)
@@ -374,7 +458,7 @@ def _broken_companion_prefixes(declared: tuple[Section, ...]) -> list[str]:
     for node in _declared_nodes(declared):
         if not isinstance(node, SectionsPer) or not node.strip_prefix:
             continue
-        for name in public_members(node.source, "methods"):
+        for name in public_members(node.source, "methods", returns=node.returns):
             module = _companion_module(node, name)
             for attribute in public_members(module, "attributes"):
                 if not attribute.startswith(name):
@@ -397,6 +481,8 @@ def _broken_docstring_links(resolved: tuple[Section, ...]) -> list[str]:
     problems = []
     for directory, page in walk_pages(resolved):
         problems += _check_links(page.target, directory, generated)
+        for member in page.members:
+            problems += _check_links(f"{page.target}.{member}", directory, generated)
 
     for directory, section in walk_sections(resolved):
         if not isinstance(section.index, Overview):

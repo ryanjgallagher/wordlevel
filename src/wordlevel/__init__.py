@@ -1,6 +1,6 @@
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.comparison.comparison import comp
-from wordlevel.api.lexicons.lexicon import lex
+from wordlevel.api.lexicons.lexicon import LexiconLoader, lex
 from wordlevel.datasets.dataset import Dataset
 
 
@@ -9,4 +9,4 @@ try:
 except ImportError:
     __version__ = "0.0.0"
 
-__all__ = ["Catalog", "Dataset", "__version__", "comp", "lex"]
+__all__ = ["Catalog", "Dataset", "LexiconLoader", "__version__", "comp", "lex"]

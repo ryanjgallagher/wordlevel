@@ -15,8 +15,8 @@ def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
     Replace load_lexicon with an in-memory stub so doc-snippet tests never call out to
     HuggingFace. The snippets only need a valid Lexicon to flow through scoring and
     plotting; the tokens below match the vocab used in the snippets so the lexicon join
-    lands real scores. The revision lookups are stubbed too, so that the loader never reads
-    the user's cache or asks the hub which commit to load.
+    lands real scores. The revision lookups and cache updates are stubbed too, so that the
+    loader never reads the user's cache or calls out to the hub.
     """
 
     def fake_load_lexicon(
@@ -45,3 +45,8 @@ def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "wordlevel.api.lexicons.lexicon.resolve_revision", lambda **kwargs: MOCK_COMMIT
     )
+    monkeypatch.setattr(
+        "wordlevel.api.lexicons.lexicon.stored_lexicon_paths",
+        lambda **kwargs: ["labMT/data/processed/english.parquet"],
+    )
+    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.update_lexicons", lambda **kwargs: None)

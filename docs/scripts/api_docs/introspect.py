@@ -61,11 +61,14 @@ def resolve_object(target: str) -> griffe.Object | griffe.Alias | None:
     return None
 
 
-def public_members(source: str, kind: MemberKind, prefix: str = "") -> list[str]:
+def public_members(
+    source: str, kind: MemberKind, prefix: str = "", returns: str | None = None
+) -> list[str]:
     """Names of a class's or module's own public members of the given kind, in source order.
 
     Aliases are excluded, so a module reports only what it defines rather than what it imports,
-    and a class reports only what it declares rather than what it inherits.
+    and a class reports only what it declares rather than what it inherits. `returns` narrows
+    methods to those whose return annotation is written as that name.
     """
     wanted: griffe.Kind
     if kind == "methods":
@@ -78,8 +81,18 @@ def public_members(source: str, kind: MemberKind, prefix: str = "") -> list[str]
     return [
         name
         for name, member in _own_members(source)
-        if member.kind is wanted and name.startswith(prefix)
+        if member.kind is wanted
+        and name.startswith(prefix)
+        and (returns is None or _returns(member) == returns)
     ]
+
+
+def _returns(member: griffe.Object | griffe.Alias) -> str | None:
+    """A function's return annotation as written in the source, or None for anything else."""
+    if not isinstance(member, griffe.Function) or member.returns is None:
+        return None
+
+    return str(member.returns)
 
 
 def all_public_members(source: str) -> list[str]:

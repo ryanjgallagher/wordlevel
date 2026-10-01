@@ -61,6 +61,9 @@ class Lexicon:
         lf:
             The (lazy) dataframe containing the lexicon's tokens and their scores. Contains one row
             per token.
+        df:
+            The eager dataframe containing the lexicon's tokens and their scores. Contains one row
+            per token.
         center:
             The center of the lexicon's scoring scale, which scores are interpreted relative to
         token_col:

@@ -57,6 +57,31 @@ OVERVIEW_TEMPLATE = dedent(
 )
 
 
+# A page for a class with some of its methods beneath it, set out like an overview
+CLASS_PAGE_TEMPLATE = dedent(
+    """\
+    ---
+    title: {title}
+    ---
+
+    ::: {target}
+        options:
+            heading: {title}
+            heading_level: 1
+            show_root_heading: true
+            show_root_full_path: false
+            members: [{members}]
+            members_order: alphabetical
+            separate_signature: true
+            show_signature_annotations: true
+            docstring_section_style: table
+            merge_init_into_class: true
+            summary: true
+            show_category_heading: true
+    """
+)
+
+
 def render(sections: tuple[Section, ...]) -> dict[PurePosixPath, str]:
     """Every file a resolved tree generates, keyed by its path relative to the API directory."""
     rendered = {
@@ -65,13 +90,19 @@ def render(sections: tuple[Section, ...]) -> dict[PurePosixPath, str]:
         if section.index is not None
     }
     rendered.update(
-        {
-            directory / page.filename: PAGE_TEMPLATE.format(title=page.title, target=page.target)
-            for directory, page in walk_pages(sections)
-        }
+        {directory / page.filename: _render_page(page) for directory, page in walk_pages(sections)}
     )
 
     return rendered
+
+
+def _render_page(page: Page) -> str:
+    if page.members:
+        return CLASS_PAGE_TEMPLATE.format(
+            title=page.title, target=page.target, members=", ".join(page.members)
+        )
+
+    return PAGE_TEMPLATE.format(title=page.title, target=page.target)
 
 
 def _render_index(section: Section) -> str:

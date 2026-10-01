@@ -10,6 +10,7 @@ from .tree import (
     SUMMARY_TABLE,
     Overview,
     Section,
+    class_page,
     classes,
     methods,
     page,
@@ -24,9 +25,15 @@ COMPARISON_MODULE = "wordlevel.api.comparison.comparison"
 SCORER = "wordlevel.api.comparison.score.Scorer"
 EXCLUDER = "wordlevel.api.comparison.exclude.ComparisonExcluder"
 LEXICONS = "wordlevel.api.lexicons.lexicon.LexiconLoader"
+LEXICON = "wordlevel.core.lexicons.load.Lexicon"
 
 # Where the generated tree lives, relative to the docs directory
 API_DIR = "documentation/api"
+
+# The loader's methods that load a lexicon, as opposed to managing the ones already cached. Each
+# is one lexicon, so they are told apart by returning one.
+LEXICON_RETURNS = "Lexicon"
+LEXICON_METHODS = methods(LEXICONS, returns=LEXICON_RETURNS, title="lex.{name}", slug="verbatim")
 
 
 API: tuple[Section, ...] = (
@@ -76,8 +83,12 @@ API: tuple[Section, ...] = (
     ),
     Section(
         "Lexicons",
-        index=SUMMARY_TABLE,
-        children=(methods(LEXICONS, title="Lexicon.{name}", slug="verbatim"),),
+        index=None,
+        children=(
+            Section("Off-the-shelf", index=SUMMARY_TABLE, children=(LEXICON_METHODS,)),
+            class_page(LEXICONS, exclude=LEXICON_METHODS),
+            page(LEXICON),
+        ),
     ),
     Section(
         "Configuration",
@@ -99,6 +110,7 @@ API: tuple[Section, ...] = (
                     sections_per(
                         LEXICONS,
                         module="wordlevel.api.lexicons.types.{lower}",
+                        returns=LEXICON_RETURNS,
                         strip_prefix=True,
                         slug="verbatim",
                     ),

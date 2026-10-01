@@ -67,7 +67,7 @@ We can also use the normalized frequency, or proportion, to exclude tokens.
 
 When a comparison is scored by a [lexicon](scoring_with_lexicons.md), tokens can be excluded by the score that the lexicon assigns them.
 
-For example, say that we score tokens with the [labMT](../api/lexicons/labMT.md) sentiment lexicon, which assigns scores on a scale from 1 to 9. To focus on tokens with "strong" sentiment, we can exclude those with "neutral" sentiment by filtering out tokens with scores between 4 and 6 (inclusive).
+For example, say that we score tokens with the [labMT](../api/lexicons/off-the-shelf/labMT.md) sentiment lexicon, which assigns scores on a scale from 1 to 9. To focus on tokens with "strong" sentiment, we can exclude those with "neutral" sentiment by filtering out tokens with scores between 4 and 6 (inclusive).
 
 ```python exec="true" source="above" session="excluding_tokens"
 --8<-- "snippets/cookbooks/excluding_tokens.py:by_lexicon_score"
