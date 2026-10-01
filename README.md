@@ -11,9 +11,9 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 WordLevel is an open-source library for word-level natural language processing and text analysis.
-It measures how two bodies of text differ token by token, and turns that measurement into a
-publication-ready [word shift graph](https://wordlevel.dev/documentation/concepts/word_shift_graphs/):
-a chart that shows not only _which_ words distinguish two corpora, but _how_ each one contributes.
+It allows you to measure how two bodies of text differ token by token, and turn that measurement 
+into a publication-ready [word shift graph](https://wordlevel.dev/documentation/concepts/word_shift_graphs/):
+a chart that shows not only _which_ words distinguish the texts, but also _how_ they do so.
 
 ## Install
 
