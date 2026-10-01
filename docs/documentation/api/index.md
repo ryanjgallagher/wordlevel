@@ -27,7 +27,7 @@ generated from the source, so it always describes the version you have installed
 
     Load a sentiment lexicon to score a comparison with.
 
-    [:octicons-arrow-right-24: Lexicons](lexicons/index.md)
+    [:octicons-arrow-right-24: Lexicons](lexicons/off-the-shelf/index.md)
 
 -   __Configurations__
 

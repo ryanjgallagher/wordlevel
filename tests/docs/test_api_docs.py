@@ -139,6 +139,19 @@ def test_lexicon_types_are_discovered_from_the_companion_module() -> None:
     assert "configuration/lexicons/labMT/language.md" in paths
 
 
+def test_loader_page_holds_only_the_methods_that_are_not_lexicons() -> None:
+    """
+    Checks that the loader's methods are split by what they return: each lexicon gets a page of its
+    own, while the methods that manage the cache are rendered on the loader's page rather than being
+    listed as lexicons
+    """
+    pages = {page.target: page for _, page in walk_pages(resolve(structure.API))}
+
+    assert f"{structure.LEXICONS}.labMT" in pages
+    assert f"{structure.LEXICONS}.update_cached" not in pages
+    assert pages[structure.LEXICONS].members == ("update_cached",)
+
+
 # =============================================================================
 # Navigation
 # =============================================================================
