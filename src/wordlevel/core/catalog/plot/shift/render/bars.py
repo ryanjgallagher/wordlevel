@@ -5,6 +5,7 @@ import polars as pl
 from typing_extensions import Self
 
 from wordlevel.configs import (
+    BAR_OUTLINE_FIELDS,
     DEFAULT_SCORE_AXIS_TITLE,
     PERCENT_SCORE_AXIS_TITLE,
     SYMBOL_SUFFIX,
@@ -197,7 +198,11 @@ class InternalBarConfig:
         """
         data = asdict(config)
 
-        colors = {k: v for k, v in data.items() if not k.endswith(SYMBOL_SUFFIX)}
+        colors = {
+            k: v
+            for k, v in data.items()
+            if not k.endswith(SYMBOL_SUFFIX) and k not in BAR_OUTLINE_FIELDS
+        }
         symbols = {
             k.removesuffix(SYMBOL_SUFFIX): v for k, v in data.items() if k.endswith(SYMBOL_SUFFIX)
         }

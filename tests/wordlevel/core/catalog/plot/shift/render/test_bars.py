@@ -4,6 +4,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import (
+    BAR_OUTLINE_FIELDS,
     DEFAULT_SCORE_AXIS_TITLE,
     PERCENT_SCORE_AXIS_TITLE,
     BarConfig,
@@ -917,6 +918,23 @@ def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_c
     """
     with pytest.raises(TypeError, match="Expected a .* or a dict of its fields"):
         make_internal_bar_config(wrong_config)
+
+
+@pytest.mark.parametrize(
+    "internal_bar_config",
+    [
+        InternalBarConfig.from_bar_config(None, attributed_by="frequency"),
+        InternalBarConfig.from_bar_config(None, attributed_by="score_sign"),
+        InternalBarConfig.from_shift_bar_config(None),
+        InternalBarConfig.from_total_shift_config(None),
+    ],
+    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig", "TotalShiftConfig"],
+)
+def test_internal_bar_config_colors_exclude_bar_outline_fields(internal_bar_config):
+    """
+    The bar outline fields style the bars and are not score types, so they have no bar color
+    """
+    assert BAR_OUTLINE_FIELDS.isdisjoint(internal_bar_config.colors)
 
 
 def test_internal_bar_config_from_bar_config_has_no_orders():
