@@ -6,6 +6,8 @@ from typing_extensions import Self
 
 from wordlevel.configs import (
     BAR_OUTLINE_FIELDS,
+    DEFAULT_BAR_OUTLINE_COLOR,
+    DEFAULT_BAR_OUTLINE_WIDTH,
     DEFAULT_SCORE_AXIS_TITLE,
     PERCENT_SCORE_AXIS_TITLE,
     SYMBOL_SUFFIX,
@@ -82,7 +84,7 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
 @dataclass
 class InternalBarConfig:
     """
-    Internal configuration of bar colors, stacking orders, and totals symbols.
+    Internal configuration of bar colors, stacking orders, totals symbols, and outlines.
 
     Attributes:
         colors:
@@ -92,11 +94,17 @@ class InternalBarConfig:
             applicable (e.g., for a bar plot whose bars are not stacked)
         symbols:
             Mapping from score type name to symbol to use in the "totals" chart
+        outline_color:
+            Color of the outline around each bar. If `None`, Altair's default is used
+        outline_width:
+            Width of the outline around each bar, in pixels. If `None`, Altair's default is used
     """
 
     colors: dict[str, str]
     orders: dict[str, int] | None
     symbols: dict[str, str]
+    outline_color: str | None = DEFAULT_BAR_OUTLINE_COLOR
+    outline_width: float | None = DEFAULT_BAR_OUTLINE_WIDTH
 
     @classmethod
     def from_bar_config(
@@ -118,7 +126,13 @@ class InternalBarConfig:
         resolved_config = cls._resolve_config(config, expected_config)
         colors, symbols = cls._get_colors_and_symbols(resolved_config)
 
-        return cls(colors=colors, orders=None, symbols=symbols)
+        return cls(
+            colors=colors,
+            orders=None,
+            symbols=symbols,
+            outline_color=resolved_config.outline_color,
+            outline_width=resolved_config.outline_width,
+        )
 
     @classmethod
     def from_shift_bar_config(cls, config: ShiftBarConfig | dict | None) -> Self:
@@ -129,7 +143,13 @@ class InternalBarConfig:
         resolved_config = cls._resolve_config(config, ShiftBarConfig)
         colors, symbols = cls._get_colors_and_symbols(resolved_config)
 
-        return cls(colors=colors, orders=_SHIFT_TYPE_ORDERS, symbols=symbols)
+        return cls(
+            colors=colors,
+            orders=_SHIFT_TYPE_ORDERS,
+            symbols=symbols,
+            outline_color=resolved_config.outline_color,
+            outline_width=resolved_config.outline_width,
+        )
 
     @classmethod
     def from_score_types(cls, score_types: list[str]) -> Self:
@@ -155,7 +175,13 @@ class InternalBarConfig:
         resolved_config = cls._resolve_config(config, TotalShiftConfig)
         colors, symbols = cls._get_colors_and_symbols(resolved_config)
 
-        return cls(colors=colors, orders=None, symbols=symbols)
+        return cls(
+            colors=colors,
+            orders=None,
+            symbols=symbols,
+            outline_color=resolved_config.outline_color,
+            outline_width=resolved_config.outline_width,
+        )
 
     @staticmethod
     def _resolve_config(
@@ -429,7 +455,10 @@ def shift_bars(
     # Create chart layer
     bars_chart = (
         alt.Chart(df)
-        .mark_bar()
+        .mark_bar(
+            stroke=to_altair_optional(bars.outline_color),
+            strokeWidth=to_altair_optional(bars.outline_width),
+        )
         .encode(x=x_axis, y=y_axis, color=color, order=score_type_orders)
         .properties(**chart_params)
     )
