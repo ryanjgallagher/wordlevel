@@ -6,7 +6,7 @@ import polars as pl
 from typing_extensions import Self
 
 from wordlevel.configs import BorderConfig, RankAxisConfig, ScoreAxisConfig
-from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.plots.core.utils import to_altair_optional
 
 
 _TRANSLATE_PX = 0.5

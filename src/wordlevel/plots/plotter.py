@@ -27,12 +27,12 @@ from wordlevel.constants import (
     RANK_COL,
     SCORE_COL,
 )
-from wordlevel.core.catalog.plot.shift.render.bars import (
+from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
-from wordlevel.core.catalog.plot.shift.render.shift import shift
-from wordlevel.core.catalog.plot.shift.transform import (
+from wordlevel.plots.core.shift.shift import shift
+from wordlevel.plots.core.shift.transform import (
     append_borrow_symbol_to_tokens,
     bar_plot_df,
     shift_plot_df,
@@ -118,7 +118,7 @@ class Plotter:
         See Also:
             | Plot | Description |
             |------|-------------|
-            | [`Catalog.plot.shift`][wordlevel.api.catalog.plot.Plotter.shift] | Detailed bar plot of comparisons scored with weighted averages |
+            | [`Catalog.plot.shift`][wordlevel.plots.plotter.Plotter.shift] | Detailed bar plot of comparisons scored with weighted averages |
 
         Args:
             comparison:
@@ -259,7 +259,7 @@ class Plotter:
 
         Word shift graphs can only be used with scores derived from weighted averages. For comparing
         corpora using measures that are not weighted averages, use
-        [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] instead.
+        [`Catalog.plot.bar`][wordlevel.plots.plotter.Plotter.bar] instead.
 
         Reference:
             For more details, see the following paper:
@@ -272,7 +272,7 @@ class Plotter:
         See Also:
             | Plot | Description |
             |------|-------------|
-            | [`Catalog.plot.bar`][wordlevel.api.catalog.plot.Plotter.bar] | Concise bar plot of comparisons scored with any measure |
+            | [`Catalog.plot.bar`][wordlevel.plots.plotter.Plotter.bar] | Concise bar plot of comparisons scored with any measure |
 
         Args:
             comparison:

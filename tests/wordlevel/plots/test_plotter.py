@@ -5,7 +5,6 @@ import polars as pl
 import pytest
 
 from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.api.catalog.plot import PlotCacheKey, Plotter, PlotType
 from wordlevel.comparison.comparison import comp
 from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalShiftConfig
 from wordlevel.constants import (
@@ -14,6 +13,7 @@ from wordlevel.constants import (
     RANK_COL,
     SCORE_COL,
 )
+from wordlevel.plots.plotter import PlotCacheKey, Plotter, PlotType
 
 
 @pytest.fixture

@@ -17,13 +17,13 @@ from wordlevel.configs import (
     TotalShiftConfig,
 )
 from wordlevel.constants import SHIFT_SCORE_TYPES
-from wordlevel.core.catalog.plot.shift.render.bars import (
+from wordlevel.plots.core.shift.bars import (
     _SHIFT_TYPE_ORDERS,
     InternalBarConfig,
     InternalScoreAxisConfig,
     shift_bars,
 )
-from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig
+from wordlevel.plots.core.shift.border import InternalBorderConfig
 
 
 def test_returns_chart(make_mock_df, score_col, score_type_col, rank_col):

@@ -3,8 +3,8 @@ import polars as pl
 import pytest
 
 from wordlevel.configs import BorderConfig, RankAxisConfig, ScoreAxisConfig
-from wordlevel.core.catalog.plot.shift.render.bars import shift_bars
-from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig, shift_borders
+from wordlevel.plots.core.shift.bars import shift_bars
+from wordlevel.plots.core.shift.border import InternalBorderConfig, shift_borders
 
 
 @pytest.fixture

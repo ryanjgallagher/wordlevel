@@ -3,7 +3,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.constants import SHIFT_SCORE_TYPES
-from wordlevel.core.catalog.plot.shift.transform import bar_plot_df, shift_plot_df
+from wordlevel.plots.core.shift.transform import bar_plot_df, shift_plot_df
 
 
 class TestBarPlotDf:

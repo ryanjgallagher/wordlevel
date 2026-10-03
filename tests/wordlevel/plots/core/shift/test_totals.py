@@ -5,9 +5,9 @@ import polars as pl
 import pytest
 
 from wordlevel.configs import ShiftBarConfig, TotalShiftConfig
-from wordlevel.core.catalog.plot.shift.render.bars import InternalBarConfig
-from wordlevel.core.catalog.plot.shift.render.border import InternalBorderConfig
-from wordlevel.core.catalog.plot.shift.render.totals import (
+from wordlevel.plots.core.shift.bars import InternalBarConfig
+from wordlevel.plots.core.shift.border import InternalBorderConfig
+from wordlevel.plots.core.shift.totals import (
     _ALIGNMENT_COL,
     _LABEL_COL,
     _POSITION_COL,

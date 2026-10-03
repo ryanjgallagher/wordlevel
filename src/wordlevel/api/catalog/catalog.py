@@ -19,9 +19,9 @@ from wordlevel.api.catalog.constructors import (
     from_wl_dataset,
     is_dataframe,
 )
-from wordlevel.api.catalog.plot import Plotter
 from wordlevel.comparison.comparison import Comparison, ComparisonResult
 from wordlevel.datasets.dataset import Dataset
+from wordlevel.plots.plotter import Plotter
 
 
 class Catalog:

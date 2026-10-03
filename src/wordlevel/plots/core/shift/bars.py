@@ -19,8 +19,8 @@ from wordlevel.configs import (
     ShiftBarConfig,
     TotalShiftConfig,
 )
-from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX, InternalBorderConfig
-from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
+from wordlevel.plots.core.utils import to_altair_optional
 
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {

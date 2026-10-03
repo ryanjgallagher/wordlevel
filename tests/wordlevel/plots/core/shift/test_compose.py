@@ -6,8 +6,8 @@ import polars as pl
 import pytest
 
 from wordlevel.configs import BorderConfig, TotalShiftConfig, ZeroLineConfig
-from wordlevel.core.catalog.plot.shift.render.shift import shift
-from wordlevel.core.catalog.plot.shift.render.totals import _LABEL_COL, _SCORE_TYPE_COL
+from wordlevel.plots.core.shift.shift import shift
+from wordlevel.plots.core.shift.totals import _LABEL_COL, _SCORE_TYPE_COL
 
 
 def _shift(

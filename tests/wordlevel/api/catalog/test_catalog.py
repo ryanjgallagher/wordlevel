@@ -6,9 +6,9 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.api.catalog.plot import Plotter
 from wordlevel.comparison.comparison import comp
 from wordlevel.constants import RANK_COL, SCORE_COL
+from wordlevel.plots.plotter import Plotter
 
 
 @pytest.fixture

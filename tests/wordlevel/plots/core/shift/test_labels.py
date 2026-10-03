@@ -6,7 +6,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.configs import LabelConfig
-from wordlevel.core.catalog.plot.shift.render.labels import (
+from wordlevel.plots.core.shift.labels import (
     get_label_positions,
     get_position_params,
     shift_labels,

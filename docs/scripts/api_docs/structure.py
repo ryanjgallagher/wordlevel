@@ -19,7 +19,7 @@ from .tree import (
 
 
 CATALOG = "wordlevel.api.catalog.catalog.Catalog"
-PLOTTER = "wordlevel.api.catalog.plot.Plotter"
+PLOTTER = "wordlevel.plots.plotter.Plotter"
 COMPARISON = "wordlevel.comparison.comparison.Comparison"
 COMPARISON_MODULE = "wordlevel.comparison.comparison"
 SCORER = "wordlevel.comparison.score.Scorer"

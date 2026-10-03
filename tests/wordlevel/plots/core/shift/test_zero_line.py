@@ -1,8 +1,8 @@
 import pytest
 
 from wordlevel.configs import BorderConfig, ZeroLineConfig
-from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX
-from wordlevel.core.catalog.plot.shift.render.shift import shift, zero_line
+from wordlevel.plots.core.shift.border import _TRANSLATE_PX
+from wordlevel.plots.core.shift.shift import shift, zero_line
 
 
 @pytest.mark.parametrize("vertical, channel", [(True, "x"), (False, "y")])

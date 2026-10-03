@@ -5,7 +5,7 @@ import polars as pl
 from polars import col
 
 from wordlevel.configs import LabelConfig
-from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.plots.core.utils import to_altair_optional
 
 
 def shift_labels(

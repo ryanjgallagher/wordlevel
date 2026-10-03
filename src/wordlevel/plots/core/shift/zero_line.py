@@ -1,8 +1,8 @@
 import altair as alt
 
 from wordlevel.configs import BorderConfig, ZeroLineConfig
-from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX
-from wordlevel.core.catalog.plot.utils import to_altair_optional
+from wordlevel.plots.core.shift.border import _TRANSLATE_PX
+from wordlevel.plots.core.utils import to_altair_optional
 
 
 def zero_line(
