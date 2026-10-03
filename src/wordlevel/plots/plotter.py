@@ -40,7 +40,7 @@ from wordlevel.plots.core.shift.transform import (
 
 
 if TYPE_CHECKING:
-    from wordlevel.api.catalog.catalog import Catalog
+    from wordlevel.catalog.catalog import Catalog
 
 
 PlotType = Literal["bar", "shift"]
@@ -123,7 +123,7 @@ class Plotter:
         Args:
             comparison:
                 The alias of a comparison in the catalog. See
-                [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
+                [`Catalog.with_comparisons`][wordlevel.catalog.catalog.Catalog.with_comparisons]
                 and [`Comparison.alias`][wordlevel.comparison.comparison.Comparison.alias]
             max_rank:
                 The maximum number of top-contributing tokens to display
@@ -277,7 +277,7 @@ class Plotter:
         Args:
             comparison:
                 The alias of a comparison in the catalog. See
-                [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
+                [`Catalog.with_comparisons`][wordlevel.catalog.catalog.Catalog.with_comparisons]
                 and [`Comparison.alias`][wordlevel.comparison.comparison.Comparison.alias]
             max_rank:
                 The maximum number of top-contributing tokens to display

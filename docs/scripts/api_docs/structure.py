@@ -18,7 +18,7 @@ from .tree import (
 )
 
 
-CATALOG = "wordlevel.api.catalog.catalog.Catalog"
+CATALOG = "wordlevel.catalog.catalog.Catalog"
 PLOTTER = "wordlevel.plots.plotter.Plotter"
 COMPARISON = "wordlevel.comparison.comparison.Comparison"
 COMPARISON_MODULE = "wordlevel.comparison.comparison"
@@ -122,9 +122,9 @@ API: tuple[Section, ...] = (
         "Types",
         index=SUMMARY_TABLE,
         children=(
-            page("wordlevel.api.catalog.constructors.DictOfFreqs"),
+            page("wordlevel.catalog.constructors.DictOfFreqs"),
             page("wordlevel.comparison.core.exclude.ExcludeCorpus"),
-            page("wordlevel.api.catalog.constructors.ListOfFreqs"),
+            page("wordlevel.catalog.constructors.ListOfFreqs"),
             page("wordlevel.comparison.core.normalization.NormalizeBy"),
             page("wordlevel.comparison.core.score.lexicon.ScoredInOneLexicon"),
         ),

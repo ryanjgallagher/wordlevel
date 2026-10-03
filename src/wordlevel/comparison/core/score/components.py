@@ -3,7 +3,7 @@ from typing import Literal
 import polars as pl
 from polars import col
 
-from wordlevel.core.utils import are_same_sign, normalize_freqs
+from wordlevel.utils import are_same_sign, normalize_freqs
 
 
 # --------------------------------------------------------------------

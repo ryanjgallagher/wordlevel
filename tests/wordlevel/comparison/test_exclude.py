@@ -5,7 +5,7 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal
 
-from wordlevel.api.catalog.catalog import Catalog
+from wordlevel.catalog.catalog import Catalog
 from wordlevel.comparison.comparison import Comparison, comp
 from wordlevel.comparison.core.exclude import ExcludeCorpus
 from wordlevel.comparison.score import Scorer

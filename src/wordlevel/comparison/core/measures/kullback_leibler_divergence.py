@@ -1,7 +1,7 @@
 import polars as pl
 
 from wordlevel.comparison.core.measures.entropy import tsallis_entropy_dual_dist_scores
-from wordlevel.core.utils import alias_expressions, normalize_freqs
+from wordlevel.utils import alias_expressions, normalize_freqs
 
 
 def kullback_leibler_divergence_dual_dist_scores(

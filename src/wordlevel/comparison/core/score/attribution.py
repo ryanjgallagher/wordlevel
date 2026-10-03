@@ -8,7 +8,7 @@ from wordlevel.constants import (
     REFERENCE_ATTRIBUTION,
     REINFORCE_ATTRIBUTION,
 )
-from wordlevel.core.utils import are_same_sign, normalize_freqs
+from wordlevel.utils import are_same_sign, normalize_freqs
 
 
 ATTRIBUTION_TYPE = Literal["frequency", "rank", "score_sign"]

@@ -4,7 +4,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.api.catalog.catalog import Catalog
+from wordlevel.catalog.catalog import Catalog
 from wordlevel.comparison.comparison import comp
 from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalShiftConfig
 from wordlevel.constants import (

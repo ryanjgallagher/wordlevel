@@ -1,6 +1,6 @@
 import polars as pl
 
-from wordlevel.core.utils import alias_expressions, mixed_distribution, normalize_freqs
+from wordlevel.utils import alias_expressions, mixed_distribution, normalize_freqs
 
 
 def jensen_shannon_divergence_dual_dist_scores(

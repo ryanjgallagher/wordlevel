@@ -8,7 +8,7 @@ from wordlevel.constants import (
     NORMED_FREQ_CMP_COL,
     NORMED_FREQ_REF_COL,
 )
-from wordlevel.core.utils import normalize_freqs
+from wordlevel.utils import normalize_freqs
 
 
 def select_corpora(
