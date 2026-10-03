@@ -1,6 +1,6 @@
 """Constants across the package"""
 
-from wordlevel.configs import SHIFT_BAR_NAMES
+from types import SimpleNamespace
 
 
 RANK_COL = "score_rank"
@@ -23,8 +23,20 @@ NORMED_FREQ_CMP_COL = "__wl_normed_freq_cmp"
 LEXICON_SCORE_REF_COL = "__wl_lexicon_score_ref"
 LEXICON_SCORE_CMP_COL = "__wl_lexicon_score_cmp"
 
-SHIFT_SCORE_TYPES = list(vars(SHIFT_BAR_NAMES))
 COUNTERACTED_SUFFIX = "_counteracted"
+SHIFT_BASE_SCORE_TYPES = (
+    "more_of_negative",
+    "more_of_positive",
+    "less_of_positive",
+    "less_of_negative",
+    "lower_score",
+    "higher_score",
+)
+SHIFT_SCORE_TYPES = [
+    *SHIFT_BASE_SCORE_TYPES,
+    *(f"{name}{COUNTERACTED_SUFFIX}" for name in SHIFT_BASE_SCORE_TYPES),
+]
+SHIFT_SCORE_TYPE_NAMES = SimpleNamespace(**{name: name for name in SHIFT_BASE_SCORE_TYPES})
 
 TOKEN = "token"
 NORMALIZATION_SUFFIX = "__wl_normed"

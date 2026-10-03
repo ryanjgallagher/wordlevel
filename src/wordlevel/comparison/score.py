@@ -31,7 +31,6 @@ from wordlevel.comparison.core.score.plan import (
     lexicon_join_plan,
     weighted_average_score_plan,
 )
-from wordlevel.configs import SHIFT_BAR_NAMES
 from wordlevel.constants import (
     ATTRIBUTION_COL,
     COUNTERACTED_SUFFIX,
@@ -44,6 +43,7 @@ from wordlevel.constants import (
     NORMED_FREQ_REF_COL,
     RANK_COL,
     SCORE_COL,
+    SHIFT_SCORE_TYPE_NAMES,
 )
 from wordlevel.lexicons.core.load import Lexicon
 
@@ -163,12 +163,12 @@ class Scorer:
                 passthrough_cols=passthrough_cols,
                 score_alias=SCORE_COL,
                 rank_alias=RANK_COL,
-                more_of_positive_alias=SHIFT_BAR_NAMES.more_of_positive,
-                less_of_negative_alias=SHIFT_BAR_NAMES.less_of_negative,
-                more_of_negative_alias=SHIFT_BAR_NAMES.more_of_negative,
-                less_of_positive_alias=SHIFT_BAR_NAMES.less_of_positive,
-                higher_score_alias=SHIFT_BAR_NAMES.higher_score,
-                lower_score_alias=SHIFT_BAR_NAMES.lower_score,
+                more_of_positive_alias=SHIFT_SCORE_TYPE_NAMES.more_of_positive,
+                less_of_negative_alias=SHIFT_SCORE_TYPE_NAMES.less_of_negative,
+                more_of_negative_alias=SHIFT_SCORE_TYPE_NAMES.more_of_negative,
+                less_of_positive_alias=SHIFT_SCORE_TYPE_NAMES.less_of_positive,
+                higher_score_alias=SHIFT_SCORE_TYPE_NAMES.higher_score,
+                lower_score_alias=SHIFT_SCORE_TYPE_NAMES.lower_score,
                 counteracted_suffix=COUNTERACTED_SUFFIX,
                 attribution_alias=ATTRIBUTION_COL,
             )

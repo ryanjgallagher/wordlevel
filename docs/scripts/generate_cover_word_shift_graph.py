@@ -26,7 +26,7 @@ from typing import Any
 import altair as alt
 
 from wordlevel.configs import ShiftBarConfig
-from wordlevel.constants import COUNTERACTED_SUFFIX, SHIFT_SCORE_TYPES
+from wordlevel.constants import COUNTERACTED_SUFFIX, SHIFT_BASE_SCORE_TYPES
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -61,10 +61,11 @@ def _blend(color: str, toward: str, fraction: float) -> str:
 def _dark_bar_config() -> dict[str, str]:
     """Re-fade every `*_counteracted` bar color against the dark background."""
     defaults = ShiftBarConfig()
-    base_names = [name for name in SHIFT_SCORE_TYPES if not name.endswith(COUNTERACTED_SUFFIX)]
     return {
-        f"{name}_counteracted": _blend(getattr(defaults, name), DARK_BACKGROUND, COUNTERACTED_FADE)
-        for name in base_names
+        f"{name}{COUNTERACTED_SUFFIX}": _blend(
+            getattr(defaults, name), DARK_BACKGROUND, COUNTERACTED_FADE
+        )
+        for name in SHIFT_BASE_SCORE_TYPES
     }
 
 

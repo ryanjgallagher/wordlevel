@@ -1,7 +1,6 @@
 """Configuration classes for wordlevel"""
 
-from dataclasses import dataclass, fields
-from types import SimpleNamespace
+from dataclasses import dataclass
 
 
 DEFAULT_LABEL_SIZE: float = 11
@@ -172,20 +171,6 @@ class ShiftBarConfig:
     higher_score_symbol: str = "△"
     outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
     outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
-
-
-SHIFT_BAR_NAMES = SimpleNamespace(
-    **{
-        f.name: f.name
-        for f in fields(ShiftBarConfig)
-        if not f.name.endswith(SYMBOL_SUFFIX) and f.name not in BAR_OUTLINE_FIELDS
-    }
-)
-"""
-Namespace of `ShiftBarConfig` field names as strings. Use this as the source of truth for shift type 
-name strings in code that lives outside `ShiftBarConfig` (e.g., score plan aliases,
-dataframe column names).
-"""
 
 
 @dataclass
