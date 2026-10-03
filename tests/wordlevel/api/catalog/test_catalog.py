@@ -7,7 +7,7 @@ from polars.testing import assert_frame_equal
 
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.catalog.plot import Plotter
-from wordlevel.api.comparison.comparison import comp
+from wordlevel.comparison.comparison import comp
 from wordlevel.constants import RANK_COL, SCORE_COL
 
 

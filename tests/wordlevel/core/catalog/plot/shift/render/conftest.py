@@ -5,8 +5,7 @@ import polars as pl
 import pytest
 from polars import col
 
-from wordlevel.constants import SHIFT_SCORE_TYPES
-from wordlevel.core.comparison.score.components import (
+from wordlevel.comparison.core.score.components import (
     frequency_diff,
     higher_score,
     less_of_negative,
@@ -17,6 +16,7 @@ from wordlevel.core.comparison.score.components import (
     reference_score_diff,
     weighted_score_diff,
 )
+from wordlevel.constants import SHIFT_SCORE_TYPES
 
 
 negative_score_types = {

@@ -106,7 +106,7 @@ def test_companion_module_must_prefix_its_attributes_with_the_member_name() -> N
             children=(
                 sections_per(
                     structure.LEXICONS,
-                    module="wordlevel.core.comparison.normalization",
+                    module="wordlevel.comparison.core.normalization",
                     strip_prefix=True,
                 ),
             ),

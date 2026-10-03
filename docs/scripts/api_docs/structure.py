@@ -20,10 +20,10 @@ from .tree import (
 
 CATALOG = "wordlevel.api.catalog.catalog.Catalog"
 PLOTTER = "wordlevel.api.catalog.plot.Plotter"
-COMPARISON = "wordlevel.api.comparison.comparison.Comparison"
-COMPARISON_MODULE = "wordlevel.api.comparison.comparison"
-SCORER = "wordlevel.api.comparison.score.Scorer"
-EXCLUDER = "wordlevel.api.comparison.exclude.ComparisonExcluder"
+COMPARISON = "wordlevel.comparison.comparison.Comparison"
+COMPARISON_MODULE = "wordlevel.comparison.comparison"
+SCORER = "wordlevel.comparison.score.Scorer"
+EXCLUDER = "wordlevel.comparison.exclude.ComparisonExcluder"
 LEXICONS = "wordlevel.lexicons.lexicon.LexiconLoader"
 LEXICON = "wordlevel.lexicons.core.load.Lexicon"
 
@@ -123,10 +123,10 @@ API: tuple[Section, ...] = (
         index=SUMMARY_TABLE,
         children=(
             page("wordlevel.api.catalog.constructors.DictOfFreqs"),
-            page("wordlevel.core.comparison.exclude.ExcludeCorpus"),
+            page("wordlevel.comparison.core.exclude.ExcludeCorpus"),
             page("wordlevel.api.catalog.constructors.ListOfFreqs"),
-            page("wordlevel.core.comparison.normalization.NormalizeBy"),
-            page("wordlevel.core.comparison.score.lexicon.ScoredInOneLexicon"),
+            page("wordlevel.comparison.core.normalization.NormalizeBy"),
+            page("wordlevel.comparison.core.score.lexicon.ScoredInOneLexicon"),
         ),
     ),
 )

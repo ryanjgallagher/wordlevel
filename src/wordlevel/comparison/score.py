@@ -7,6 +7,30 @@ from typing import TYPE_CHECKING, Any, Literal, get_args
 import polars as pl
 from polars import col
 
+from wordlevel.comparison.core.measures.entropy import (
+    tsallis_entropy_clean_dual_dist_scores,
+    tsallis_entropy_dual_dist_scores,
+)
+from wordlevel.comparison.core.measures.frequency import frequency_difference
+from wordlevel.comparison.core.measures.jensen_shannon_divergence import (
+    jensen_shannon_divergence_clean_dual_dist_scores,
+    jensen_shannon_divergence_dual_dist_scores,
+)
+from wordlevel.comparison.core.measures.kullback_leibler_divergence import (
+    kullback_leibler_divergence_clean_dual_dist_scores,
+    kullback_leibler_divergence_dual_dist_scores,
+)
+from wordlevel.comparison.core.measures.rank_divergence import rank_divergence
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE
+from wordlevel.comparison.core.score.lexicon import ScoredInOneLexicon
+from wordlevel.comparison.core.score.plan import (
+    DualCleanScoreFunc,
+    DualScoreFunc,
+    ScoreFunc,
+    basic_score_plan,
+    lexicon_join_plan,
+    weighted_average_score_plan,
+)
 from wordlevel.configs import SHIFT_BAR_NAMES
 from wordlevel.constants import (
     ATTRIBUTION_COL,
@@ -21,36 +45,12 @@ from wordlevel.constants import (
     RANK_COL,
     SCORE_COL,
 )
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
-from wordlevel.core.comparison.score.lexicon import ScoredInOneLexicon
-from wordlevel.core.comparison.score.metrics.entropy import (
-    tsallis_entropy_clean_dual_dist_scores,
-    tsallis_entropy_dual_dist_scores,
-)
-from wordlevel.core.comparison.score.metrics.frequency import frequency_difference
-from wordlevel.core.comparison.score.metrics.jensen_shannon_divergence import (
-    jensen_shannon_divergence_clean_dual_dist_scores,
-    jensen_shannon_divergence_dual_dist_scores,
-)
-from wordlevel.core.comparison.score.metrics.kullback_leibler_divergence import (
-    kullback_leibler_divergence_clean_dual_dist_scores,
-    kullback_leibler_divergence_dual_dist_scores,
-)
-from wordlevel.core.comparison.score.metrics.rank_divergence import rank_divergence
-from wordlevel.core.comparison.score.plan import (
-    DualCleanScoreFunc,
-    DualScoreFunc,
-    ScoreFunc,
-    basic_score_plan,
-    lexicon_join_plan,
-    weighted_average_score_plan,
-)
 from wordlevel.lexicons.core.load import Lexicon
 
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.comparison import Comparison
-    from wordlevel.api.comparison.state import PlanStage
+    from wordlevel.comparison.comparison import Comparison
+    from wordlevel.comparison.state import PlanStage
 
 
 def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
@@ -229,8 +229,8 @@ class Scorer:
         See Also:
             | Score | Description |
             |-------|-------------|
-            | [`Comparison.score.proportion`][wordlevel.api.comparison.score.Scorer.proportion] | Scores corpora by normalized frequencies |
-            | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
+            | [`Comparison.score.proportion`][wordlevel.comparison.score.Scorer.proportion] | Scores corpora by normalized frequencies |
+            | [`Comparison.score.shannon_entropy`][wordlevel.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
 
         Returns:
             A new `Comparison` with the corpora scored by frequency differences
@@ -282,8 +282,8 @@ class Scorer:
         See Also:
             | Score | Description |
             |-------|-------------|
-            | [`Comparison.score.frequency`][wordlevel.api.comparison.score.Scorer.frequency] | Scores corpora by raw frequencies |
-            | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
+            | [`Comparison.score.frequency`][wordlevel.comparison.score.Scorer.frequency] | Scores corpora by raw frequencies |
+            | [`Comparison.score.shannon_entropy`][wordlevel.comparison.score.Scorer.shannon_entropy] | Scores corpora by normalized frequencies weighted by surprisals |
 
         Returns:
             A new `Comparison` with the corpora scored by proportion differences
@@ -510,7 +510,7 @@ class Scorer:
         See Also:
             | Score | Description |
             |-------|-------------|
-            | [`Comparison.score.shannon_entropy`][wordlevel.api.comparison.score.Scorer.shannon_entropy] | Scores corpora in the special case when $\alpha=1$ |
+            | [`Comparison.score.shannon_entropy`][wordlevel.comparison.score.Scorer.shannon_entropy] | Scores corpora in the special case when $\alpha=1$ |
 
         Args:
             alpha:
@@ -584,7 +584,7 @@ class Scorer:
         See Also:
             | Score | Description |
             |-------|-------------|
-            | [`Comparison.score.tsallis_entropy`][wordlevel.api.comparison.score.Scorer.tsallis_entropy] | Scores corpora using generalized entropy |
+            | [`Comparison.score.tsallis_entropy`][wordlevel.comparison.score.Scorer.tsallis_entropy] | Scores corpora using generalized entropy |
 
         Args:
             base:
@@ -636,7 +636,7 @@ class Scorer:
         See Also:
             | Score | Description |
             |-------|-------------|
-            | [`Comparison.score.jensen_shannon_divergence`][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence] | Scores corpora using a bounded, symmetric, entropy-based divergence |
+            | [`Comparison.score.jensen_shannon_divergence`][wordlevel.comparison.score.Scorer.jensen_shannon_divergence] | Scores corpora using a bounded, symmetric, entropy-based divergence |
 
         Args:
             base:
@@ -649,9 +649,9 @@ class Scorer:
             ValueError:
                 If the comparison corpus contains any token absent from the reference corpus, which
                 causes the KLD to be infinite. Use a symmetric measure like the
-                [Jensen-Shannon divergence][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence],
+                [Jensen-Shannon divergence][wordlevel.comparison.score.Scorer.jensen_shannon_divergence],
                 or drop those tokens with
-                [`Comparison.exclude.unshared_tokens`][wordlevel.api.comparison.exclude.ComparisonExcluder.unshared_tokens]
+                [`Comparison.exclude.unshared_tokens`][wordlevel.comparison.exclude.ComparisonExcluder.unshared_tokens]
         """
         # The reference score does not affect token contributions for the KLD.
         plan = self._make_weighted_avg_score_plan(
@@ -703,7 +703,7 @@ class Scorer:
         Calculates the Kullback-Leibler divergence (KLD) between the reference and comparison corpora.
 
         Alias for
-        [`kullback_leibler_divergence`][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence];
+        [`kullback_leibler_divergence`][wordlevel.comparison.score.Scorer.kullback_leibler_divergence];
         see that method for more details.
 
         Args:
@@ -734,7 +734,7 @@ class Scorer:
             ```
 
         The JSD is a symmetric, bounded measure of how two corpora differ. It averages the
-        [Kullback-Leibler divergence][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence]
+        [Kullback-Leibler divergence][wordlevel.comparison.score.Scorer.kullback_leibler_divergence]
         of the reference corpus $R$ and the comparison corpus $C$ against a synthetic mixture corpus
         $M$ representing the combination of both. When $\alpha = 1$:
 
@@ -767,7 +767,7 @@ class Scorer:
         See Also:
             | Score | Description |
             |-------|-------------|
-            | [`Comparison.score.kullback_leibler_divergence`][wordlevel.api.comparison.score.Scorer.kullback_leibler_divergence] | Scores corpora using an asymmetric entropy-based divergence |
+            | [`Comparison.score.kullback_leibler_divergence`][wordlevel.comparison.score.Scorer.kullback_leibler_divergence] | Scores corpora using an asymmetric entropy-based divergence |
 
         Args:
             alpha:
@@ -831,7 +831,7 @@ class Scorer:
         Calculates the Jensen-Shannon divergence (JSD) between the reference and comparison corpora.
 
         Alias for
-        [`jensen_shannon_divergence`][wordlevel.api.comparison.score.Scorer.jensen_shannon_divergence];
+        [`jensen_shannon_divergence`][wordlevel.comparison.score.Scorer.jensen_shannon_divergence];
         see that method for more details.
 
         Args:

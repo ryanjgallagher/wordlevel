@@ -4,19 +4,19 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
+from wordlevel.comparison.core.normalization import (
+    NormalizeBy,
+    normalize_scores,
+)
 from wordlevel.constants import (
     NORMALIZATION_CONSTANT_COL,
     SCORE_COL,
     SHIFT_SCORE_TYPES,
 )
-from wordlevel.core.comparison.normalization import (
-    NormalizeBy,
-    normalize_scores,
-)
 
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.state import PlanStage
+    from wordlevel.comparison.state import PlanStage
 
 
 _ZERO_CONSTANT_DESCRIPTION: dict[NormalizeBy, str] = {

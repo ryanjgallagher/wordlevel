@@ -3,7 +3,7 @@ import polars.testing
 import pytest
 from polars import col
 
-from wordlevel.core.comparison.score.components import (
+from wordlevel.comparison.core.score.components import (
     frequency_diff,
     get_shift_components,
     get_shift_plot_components,

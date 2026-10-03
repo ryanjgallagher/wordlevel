@@ -4,18 +4,18 @@ from typing import Literal, Protocol
 import polars as pl
 from polars import col
 
-from wordlevel.constants import IS_BORROWED_COL
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE, attribute_scores
-from wordlevel.core.comparison.score.components import (
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE, attribute_scores
+from wordlevel.comparison.core.score.components import (
     get_shift_components,
     get_shift_plot_components,
 )
-from wordlevel.core.comparison.score.lexicon import (
+from wordlevel.comparison.core.score.lexicon import (
     DEFAULT_LEXICON_SCORE_COL,
     ScoredInOneLexicon,
     get_imputation_expression,
     join_lexicon,
 )
+from wordlevel.constants import IS_BORROWED_COL
 from wordlevel.lexicons.core.load import Lexicon
 
 

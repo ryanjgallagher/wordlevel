@@ -2,7 +2,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.comparison.score.lexicon import (
+from wordlevel.comparison.core.score.lexicon import (
     DEFAULT_LEXICON_SCORE_COL,
     get_imputation_expression,
     join_lexicon,

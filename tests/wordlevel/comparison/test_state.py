@@ -2,8 +2,8 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from wordlevel.api.comparison.comparison import comp
-from wordlevel.api.comparison.state import ComparisonState
+from wordlevel.comparison.comparison import comp
+from wordlevel.comparison.state import ComparisonState
 from wordlevel.constants import (
     FREQ_CMP_COL,
     FREQ_REF_COL,

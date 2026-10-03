@@ -4,7 +4,7 @@ import polars as pl
 import polars.testing
 import pytest
 
-from wordlevel.core.comparison.score.metrics.entropy import (
+from wordlevel.comparison.core.measures.entropy import (
     shannon_entropy,
     tsallis_entropy,
     tsallis_entropy_dist_scores,

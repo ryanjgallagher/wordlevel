@@ -5,9 +5,9 @@ from typing import Any, Protocol, get_args
 
 import polars as pl
 
-from wordlevel.core.comparison.normalization import NormalizeBy
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
-from wordlevel.core.comparison.state import (
+from wordlevel.comparison.core.normalization import NormalizeBy
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE
+from wordlevel.comparison.core.state import (
     renormalize_freqs,
     restore_corpus_names,
     select_corpora,
@@ -17,7 +17,7 @@ from wordlevel.core.comparison.state import (
 class PlanStage(Protocol):
     """
     A plan for a single stage of the pipeline that a
-    [`Comparison`][wordlevel.api.comparison.comparison.Comparison] executes.
+    [`Comparison`][wordlevel.comparison.comparison.Comparison] executes.
 
     A plan takes corpus data and transforms it, so that plans can be applied one after another to
     build up the full comparison.
@@ -33,7 +33,7 @@ class PlanStage(Protocol):
 @dataclass(frozen=True)
 class ComparisonState:
     """
-    The state of a [`Comparison`][wordlevel.api.comparison.comparison.Comparison], indicating the
+    The state of a [`Comparison`][wordlevel.comparison.comparison.Comparison], indicating the
     corpora it compares, the metadata describing how they are scored, and the plans that transform
     and score them.
 

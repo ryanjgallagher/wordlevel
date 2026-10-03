@@ -4,8 +4,8 @@ import polars as pl
 import pytest
 from polars.testing import assert_series_equal
 
-from wordlevel.api.comparison.comparison import Comparison, comp
-from wordlevel.api.comparison.score import Scorer
+from wordlevel.comparison.comparison import Comparison, comp
+from wordlevel.comparison.score import Scorer
 from wordlevel.constants import NORMALIZATION_CONSTANT_COL, SCORE_COL
 
 

@@ -3,8 +3,8 @@ import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
 
-from wordlevel.api.comparison.comparison import Comparison
-from wordlevel.api.comparison.score import Scorer
+from wordlevel.comparison.comparison import Comparison
+from wordlevel.comparison.score import Scorer
 from wordlevel.constants import (
     COMPARISON_ATTRIBUTION,
     IS_BORROWED_COL,

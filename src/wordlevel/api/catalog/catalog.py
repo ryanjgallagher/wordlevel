@@ -20,7 +20,7 @@ from wordlevel.api.catalog.constructors import (
     is_dataframe,
 )
 from wordlevel.api.catalog.plot import Plotter
-from wordlevel.api.comparison.comparison import Comparison, ComparisonResult
+from wordlevel.comparison.comparison import Comparison, ComparisonResult
 from wordlevel.datasets.dataset import Dataset
 
 

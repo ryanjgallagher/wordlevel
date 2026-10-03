@@ -2,7 +2,7 @@ import polars as pl
 import polars.testing
 import pytest
 
-from wordlevel.core.comparison.normalization import (
+from wordlevel.comparison.core.normalization import (
     normalization_constant_expr,
     normalize_scores,
 )

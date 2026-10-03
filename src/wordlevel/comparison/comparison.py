@@ -7,13 +7,13 @@ from typing import Any
 import polars as pl
 from typing_extensions import Self
 
-from wordlevel.api.comparison.exclude import ComparisonExcluder
-from wordlevel.api.comparison.normalization import make_normalized_plan
-from wordlevel.api.comparison.score import Scorer
-from wordlevel.api.comparison.state import ComparisonState
+from wordlevel.comparison.core.normalization import NormalizeBy
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
+from wordlevel.comparison.exclude import ComparisonExcluder
+from wordlevel.comparison.normalization import make_normalized_plan
+from wordlevel.comparison.score import Scorer
+from wordlevel.comparison.state import ComparisonState
 from wordlevel.constants import NORMALIZATION_CONSTANT_COL
-from wordlevel.core.comparison.normalization import NormalizeBy
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE
 
 
 class Comparison:
@@ -36,7 +36,7 @@ class Comparison:
 
         Args:
             changes:
-                The [`ComparisonState`][wordlevel.api.comparison.state.ComparisonState] fields
+                The [`ComparisonState`][wordlevel.comparison.state.ComparisonState] fields
                 to replace, and the values to replace them with
         """
         comparison = self.__class__(self._state.reference, self._state.comparison)
@@ -147,7 +147,7 @@ class Comparison:
 def comp(reference: str, comparison: str) -> Comparison:
     """
     Convenience constructor for a
-    [`Comparison`][wordlevel.api.comparison.comparison.Comparison].
+    [`Comparison`][wordlevel.comparison.comparison.Comparison].
 
     Equivalent to `Comparison(reference=reference, comparison=comparison)`.
 
@@ -171,7 +171,7 @@ def comp(reference: str, comparison: str) -> Comparison:
 @dataclass(frozen=True)
 class ComparisonResult:
     """
-    The result of a [`Comparison`][wordlevel.api.comparison.comparison.Comparison] when a plan is
+    The result of a [`Comparison`][wordlevel.comparison.comparison.Comparison] when a plan is
     applied to corpus data.
 
     Attributes:

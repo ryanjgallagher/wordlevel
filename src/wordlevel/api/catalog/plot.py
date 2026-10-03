@@ -7,7 +7,7 @@ import altair as alt
 import polars as pl
 from polars import col
 
-from wordlevel.api.comparison.comparison import ComparisonResult
+from wordlevel.comparison.comparison import ComparisonResult
 from wordlevel.configs import (
     BarConfig,
     BorderConfig,
@@ -124,7 +124,7 @@ class Plotter:
             comparison:
                 The alias of a comparison in the catalog. See
                 [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
-                and [`Comparison.alias`][wordlevel.api.comparison.comparison.Comparison.alias]
+                and [`Comparison.alias`][wordlevel.comparison.comparison.Comparison.alias]
             max_rank:
                 The maximum number of top-contributing tokens to display
             vertical:
@@ -278,7 +278,7 @@ class Plotter:
             comparison:
                 The alias of a comparison in the catalog. See
                 [`Catalog.with_comparisons`][wordlevel.api.catalog.catalog.Catalog.with_comparisons]
-                and [`Comparison.alias`][wordlevel.api.comparison.comparison.Comparison.alias]
+                and [`Comparison.alias`][wordlevel.comparison.comparison.Comparison.alias]
             max_rank:
                 The maximum number of top-contributing tokens to display
             vertical:

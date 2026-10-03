@@ -4,6 +4,7 @@ import altair as alt
 import polars as pl
 from typing_extensions import Self
 
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE
 from wordlevel.configs import (
     BAR_OUTLINE_FIELDS,
     DEFAULT_BAR_OUTLINE_COLOR,
@@ -20,7 +21,6 @@ from wordlevel.configs import (
 )
 from wordlevel.core.catalog.plot.shift.render.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.core.catalog.plot.utils import to_altair_optional
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_TYPE
 
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {

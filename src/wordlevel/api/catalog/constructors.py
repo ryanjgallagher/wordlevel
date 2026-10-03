@@ -16,7 +16,7 @@ from wordlevel.datasets.dataset import Dataset
 
 if TYPE_CHECKING:
     from wordlevel.api.catalog.catalog import Catalog
-    from wordlevel.api.comparison.comparison import ComparisonResult
+    from wordlevel.comparison.comparison import ComparisonResult
 
 
 @dataclass

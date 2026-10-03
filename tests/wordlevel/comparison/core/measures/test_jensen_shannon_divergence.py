@@ -4,13 +4,13 @@ import polars as pl
 import polars.testing
 import pytest
 
-from wordlevel.core.comparison.score.metrics.entropy import tsallis_entropy
-from wordlevel.core.comparison.score.metrics.jensen_shannon_divergence import (
+from wordlevel.comparison.core.measures.entropy import tsallis_entropy
+from wordlevel.comparison.core.measures.jensen_shannon_divergence import (
     jensen_shannon_divergence,
     jensen_shannon_divergence_dual_dist_scores,
     mixed_distribution,
 )
-from wordlevel.core.comparison.score.metrics.kullback_leibler_divergence import (
+from wordlevel.comparison.core.measures.kullback_leibler_divergence import (
     kullback_leibler_divergence,
 )
 

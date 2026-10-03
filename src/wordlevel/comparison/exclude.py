@@ -5,6 +5,11 @@ from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import polars as pl
 
+from wordlevel.comparison.core.exclude import (
+    ExcludeCorpus,
+    exclude_by_range,
+    exclude_tokens,
+)
 from wordlevel.constants import (
     FREQ_CMP_COL,
     FREQ_REF_COL,
@@ -13,15 +18,10 @@ from wordlevel.constants import (
     NORMED_FREQ_CMP_COL,
     NORMED_FREQ_REF_COL,
 )
-from wordlevel.core.comparison.exclude import (
-    ExcludeCorpus,
-    exclude_by_range,
-    exclude_tokens,
-)
 
 
 if TYPE_CHECKING:
-    from wordlevel.api.comparison.comparison import Comparison
+    from wordlevel.comparison.comparison import Comparison
 
 
 EXCLUSION_RANGE_KIND = Literal["lexicon_score", "frequency", "proportion"]

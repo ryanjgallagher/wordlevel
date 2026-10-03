@@ -4,14 +4,14 @@ import pytest
 from polars import col
 from polars.testing import assert_series_equal, assert_series_not_equal
 
-from wordlevel.constants import IS_BORROWED_COL, SHIFT_SCORE_TYPES
-from wordlevel.core.comparison.score.attribution import ATTRIBUTION_LABELS
-from wordlevel.core.comparison.score.lexicon import DEFAULT_LEXICON_SCORE_COL
-from wordlevel.core.comparison.score.plan import (
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_LABELS
+from wordlevel.comparison.core.score.lexicon import DEFAULT_LEXICON_SCORE_COL
+from wordlevel.comparison.core.score.plan import (
     basic_score_plan,
     lexicon_join_plan,
     weighted_average_score_plan,
 )
+from wordlevel.constants import IS_BORROWED_COL, SHIFT_SCORE_TYPES
 from wordlevel.lexicons.core.load import Lexicon
 
 

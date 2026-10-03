@@ -6,9 +6,9 @@ from polars import col
 from polars.testing import assert_frame_equal
 
 from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.api.comparison.comparison import Comparison, comp
-from wordlevel.api.comparison.score import Scorer
-from wordlevel.core.comparison.exclude import ExcludeCorpus
+from wordlevel.comparison.comparison import Comparison, comp
+from wordlevel.comparison.core.exclude import ExcludeCorpus
+from wordlevel.comparison.score import Scorer
 
 
 LEXICON = {"the": 1.0, "cat": 5.0, "dog": 2.0, "ran": 3.0}

@@ -6,7 +6,7 @@ import pytest
 
 from wordlevel.api.catalog.catalog import Catalog
 from wordlevel.api.catalog.plot import PlotCacheKey, Plotter, PlotType
-from wordlevel.api.comparison.comparison import comp
+from wordlevel.comparison.comparison import comp
 from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalShiftConfig
 from wordlevel.constants import (
     PLOT_CONTRIBUTION_COL,

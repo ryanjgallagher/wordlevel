@@ -4,7 +4,7 @@ import polars as pl
 import polars.testing
 import pytest
 
-from wordlevel.core.comparison.score.metrics.rank_divergence import (
+from wordlevel.comparison.core.measures.rank_divergence import (
     rank,
     rank_divergence,
     rank_divergence_norm_summands,

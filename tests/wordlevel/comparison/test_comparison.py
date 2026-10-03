@@ -1,8 +1,8 @@
 import pytest
 
-from wordlevel.api.comparison.comparison import Comparison, comp
-from wordlevel.api.comparison.exclude import ComparisonExcluder
-from wordlevel.api.comparison.score import Scorer
+from wordlevel.comparison.comparison import Comparison, comp
+from wordlevel.comparison.exclude import ComparisonExcluder
+from wordlevel.comparison.score import Scorer
 
 
 def test_initialization_defaults() -> None:

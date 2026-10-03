@@ -4,8 +4,8 @@ import polars as pl
 import polars.testing
 import pytest
 
-from wordlevel.core.comparison.score.metrics.entropy import tsallis_entropy_dist_scores
-from wordlevel.core.comparison.score.metrics.kullback_leibler_divergence import (
+from wordlevel.comparison.core.measures.entropy import tsallis_entropy_dist_scores
+from wordlevel.comparison.core.measures.kullback_leibler_divergence import (
     kullback_leibler_divergence,
     kullback_leibler_divergence_dual_dist_scores,
 )

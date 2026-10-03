@@ -2,7 +2,7 @@ import polars as pl
 import pytest
 from polars.testing import assert_series_equal
 
-from wordlevel.core.comparison.score.attribution import (
+from wordlevel.comparison.core.score.attribution import (
     attribute_scores,
     frequency_attribution,
     rank_attribution,
