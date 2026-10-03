@@ -80,7 +80,7 @@ def test_shift_bar_width_controls_rank_dimension(
         score_type_col=score_type_col,
         max_rank=50,
         vertical=vertical,
-        rank_axis=RankAxisConfig(bar_width=bar_width),
+        rank_axis_config=RankAxisConfig(bar_width=bar_width),
     )
 
     spec = chart.to_dict()
@@ -174,8 +174,8 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
             score_type_col=score_type_col,
             width=100,
             vertical=True,
-            rank_axis=rank_config,
-            score_axis=score_config,
+            rank_axis_config=rank_config,
+            score_axis_config=score_config,
             bar_config=InternalBarConfig.from_shift_bar_config(shift_bar_config),
             label_config=label_config,
         )

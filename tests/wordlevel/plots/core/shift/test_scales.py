@@ -222,7 +222,7 @@ def test_max_rank_filter(score_col, rank_col, token_col):
             max_rank=2,
             filter_max_rank=filter_max_rank,
             width=600,
-            config={"size": 11},
+            label_config={"size": 11},
         )
         return _chart_positive_limit(chart)
 
@@ -232,10 +232,15 @@ def test_max_rank_filter(score_col, rank_col, token_col):
 def test_default_fontsize(make_mock_df, score_col, rank_col, token_col):
     """ """
     chart_config = shift_scales(
-        make_mock_df(), score_col, rank_col, token_col, width=10, config=LabelConfig()
+        make_mock_df(), score_col, rank_col, token_col, width=10, label_config=LabelConfig()
     )
     chart_none = shift_scales(
-        make_mock_df(), score_col, rank_col, token_col, width=10, config=LabelConfig(size=None)
+        make_mock_df(),
+        score_col,
+        rank_col,
+        token_col,
+        width=10,
+        label_config=LabelConfig(size=None),
     )
 
     data_config = list(chart_config.to_dict()["datasets"].values())[0]  # ruff: ignore[RUF015]

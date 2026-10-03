@@ -75,9 +75,9 @@ def shift_borders(
     charts: list[alt.Chart | alt.LayerChart],
     score_col: str,
     rank_col: str,
-    rank_axis: RankAxisConfig,
-    score_axis: ScoreAxisConfig,
-    border: InternalBorderConfig,
+    rank_axis_config: RankAxisConfig,
+    score_axis_config: ScoreAxisConfig,
+    border_config: InternalBorderConfig,
     vertical: bool = True,
 ) -> alt.LayerChart:
     """
@@ -95,11 +95,11 @@ def shift_borders(
         rank_col:
             Column in the dataframe indicating the rank of each token, taking into account all of
             its contributing scores
-        rank_axis:
-            Configuration for the rank axis. Its `color` overrides `border.color`
-        score_axis:
-            Configuration for the score axis. Its `color` overrides `border.color`
-        border:
+        rank_axis_config:
+            Configuration for the rank axis. Its `color` overrides `border_config.color`
+        score_axis_config:
+            Configuration for the score axis. Its `color` overrides `border_config.color`
+        border_config:
             Configuration for the border
         vertical:
             Whether to orient the chart vertically, where tokens are listed top-to-bottom and bars
@@ -113,20 +113,24 @@ def shift_borders(
     dim2params = {
         rank_col: {
             "field": f"{rank_col}:O",
-            "color": rank_axis.axis_color if rank_axis.axis_color is not None else border.color,
+            "color": rank_axis_config.axis_color
+            if rank_axis_config.axis_color is not None
+            else border_config.color,
             "orient": "right" if vertical else "top",
         },
         score_col: {
             "field": f"{score_col}:Q",
-            "color": score_axis.axis_color if score_axis.axis_color is not None else border.color,
+            "color": score_axis_config.axis_color
+            if score_axis_config.axis_color is not None
+            else border_config.color,
             "orient": "top" if vertical else "right",
         },
     }
 
     dimension_to_draw: list[str] = []
-    if border.draw_border_opposite_rank_axis:
+    if border_config.draw_border_opposite_rank_axis:
         dimension_to_draw.append(rank_col)
-    if border.draw_border_opposite_score_axis:
+    if border_config.draw_border_opposite_score_axis:
         dimension_to_draw.append(score_col)
 
     borders: list[alt.Chart] = []
@@ -134,7 +138,7 @@ def shift_borders(
         axis = alt.Axis(
             domain=True,
             domainColor=to_altair_optional(dim2params[dim]["color"]),
-            domainWidth=border.width,
+            domainWidth=border_config.width,
             orient=dim2params[dim]["orient"],  # type: ignore[arg-type]
             title=None,
             titlePadding=0,

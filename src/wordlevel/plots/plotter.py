@@ -80,8 +80,8 @@ class Plotter:
         height: float | None = None,
         width: float | None = None,
         show_totals: bool = False,
-        rank_axis: RankAxisConfig | dict | None = None,
-        score_axis: ScoreAxisConfig | dict | None = None,
+        rank_axis_config: RankAxisConfig | dict | None = None,
+        score_axis_config: ScoreAxisConfig | dict | None = None,
         bar_config: BarConfig | ScoreSignBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
@@ -138,10 +138,10 @@ class Plotter:
             show_totals:
                 Whether to show the overall total contributions of each score type and overall as an
                 additional chart appended to the main chart
-            rank_axis:
+            rank_axis_config:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
-            score_axis:
+            score_axis_config:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
                 the same fields
             bar_config:
@@ -206,9 +206,9 @@ class Plotter:
             height=height,
             width=width,
             show_totals=show_totals,
-            rank_axis=rank_axis,
-            score_axis=InternalScoreAxisConfig.from_config(
-                score_axis,
+            rank_axis_config=rank_axis_config,
+            score_axis_config=InternalScoreAxisConfig.from_config(
+                score_axis_config,
                 all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative,
                 percent=comp.normalized,
             ),
@@ -229,8 +229,8 @@ class Plotter:
         height: float | None = None,
         width: float | None = None,
         show_totals: bool = False,
-        rank_axis: RankAxisConfig | dict | None = None,
-        score_axis: ScoreAxisConfig | dict | None = None,
+        rank_axis_config: RankAxisConfig | dict | None = None,
+        score_axis_config: ScoreAxisConfig | dict | None = None,
         bar_config: ShiftBarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
@@ -292,10 +292,10 @@ class Plotter:
             show_totals:
                 Whether to show the overall total contributions of each score type and overall as an
                 additional chart appended to the main chart
-            rank_axis:
+            rank_axis_config:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
-            score_axis:
+            score_axis_config:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
                 the same fields
             bar_config:
@@ -358,9 +358,9 @@ class Plotter:
             height=height,
             width=width,
             show_totals=show_totals,
-            rank_axis=rank_axis,
-            score_axis=InternalScoreAxisConfig.from_config(
-                score_axis,
+            rank_axis_config=rank_axis_config,
+            score_axis_config=InternalScoreAxisConfig.from_config(
+                score_axis_config,
                 all_positive_labels=False,
                 percent=comp.normalized,
             ),

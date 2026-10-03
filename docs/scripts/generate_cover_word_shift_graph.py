@@ -75,13 +75,13 @@ def _dark_chart(catalog: Any, comparison: str) -> alt.LayerChart | alt.VConcatCh
         show_totals=True,
         bar_config=_dark_bar_config(),
         label_config={"color": DARK_TEXT},
-        score_axis={
+        score_axis_config={
             "title_color": DARK_MUTED_TEXT,
             "label_color": DARK_MUTED_TEXT,
             "tick_color": DARK_LINE,
             "axis_color": DARK_LINE,
         },
-        rank_axis={
+        rank_axis_config={
             "title_color": DARK_MUTED_TEXT,
             "label_color": DARK_MUTED_TEXT,
             "tick_color": DARK_LINE,

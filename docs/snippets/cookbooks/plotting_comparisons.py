@@ -76,7 +76,7 @@ chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=20, width=500)
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=5,
-    rank_axis={"bar_width": 24},
+    rank_axis_config={"bar_width": 24},
 )
 # --8<-- [end:height]
 
@@ -87,7 +87,7 @@ chart = cl.plot.bar(
     max_rank=20,
     vertical=False,
     height=300,
-    rank_axis={"bar_width": 24},
+    rank_axis_config={"bar_width": 24},
 )
 # --8<-- [end:horizontal_size]
 
@@ -106,13 +106,13 @@ chart = cl.plot.bar(
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
-    rank_axis={
+    rank_axis_config={
         "title": "Position",
         "title_color": "#7B3294",
         "label_tick_step": 3,
         "label_fontsize": 12,
     },
-    score_axis={
+    score_axis_config={
         "title": "Percent contribution to the JSD",
         "title_fontsize": 14,
         "label_color": "#7B3294",

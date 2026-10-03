@@ -246,10 +246,10 @@ def shift_bars(
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis: RankAxisConfig | dict | None = None,
-    score_axis: InternalScoreAxisConfig | dict | None = None,
-    bars: InternalBarConfig | None = None,
-    border: InternalBorderConfig | None = None,
+    rank_axis_config: RankAxisConfig | dict | None = None,
+    score_axis_config: InternalScoreAxisConfig | dict | None = None,
+    bar_config: InternalBarConfig | None = None,
+    border_config: InternalBorderConfig | None = None,
     show_legend: bool = False,
     score_axis_opposite: bool = False,
 ) -> alt.Chart:
@@ -282,13 +282,13 @@ def shift_bars(
         width:
             The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
             `RankAxisConfig.bar_width` to control the width
-        rank_axis:
+        rank_axis_config:
             Configuration for the rank axis
-        score_axis:
+        score_axis_config:
             Configuration for the score axis
-        bars:
+        bar_config:
             Configuration for the bars
-        border:
+        border_config:
             Configuration for the axes and border
         show_legend:
             Whether to show the chart legend
@@ -304,22 +304,22 @@ def shift_bars(
         df = df.filter(pl.col(rank_col) <= max_rank)
 
     # Configure defaults for rank and score axes and the bars
-    if isinstance(rank_axis, dict):
-        rank_axis = RankAxisConfig(**rank_axis)
-    elif rank_axis is None:
-        rank_axis = RankAxisConfig()
+    if isinstance(rank_axis_config, dict):
+        rank_axis_config = RankAxisConfig(**rank_axis_config)
+    elif rank_axis_config is None:
+        rank_axis_config = RankAxisConfig()
 
-    if isinstance(score_axis, dict):
-        score_axis = InternalScoreAxisConfig(**score_axis)
-    elif score_axis is None:
-        score_axis = InternalScoreAxisConfig()
+    if isinstance(score_axis_config, dict):
+        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
+    elif score_axis_config is None:
+        score_axis_config = InternalScoreAxisConfig()
 
-    if bars is None:
+    if bar_config is None:
         score_types = df[score_type_col].unique().to_list()
-        bars = InternalBarConfig.from_score_types(score_types)
+        bar_config = InternalBarConfig.from_score_types(score_types)
 
-    if border is None:
-        border = InternalBorderConfig()
+    if border_config is None:
+        border_config = InternalBorderConfig()
 
     # Configure the legend
     if show_legend:
@@ -328,18 +328,18 @@ def shift_bars(
         # To show the legend, we overwrite that it's "undefined" according to Altair
         legend = None
 
-    # Configure the chart size. We always use `rank_axis.bar_width` to control the size of the bars,
+    # Configure the chart size. We always use `rank_axis_config.bar_width` to control the size of the bars,
     # implicitly controlling the size of the whole rank axis. If the corresponding dimension param
     # is passed, it is ignored
     # For the configurable dimension, Altair does not allow them to be None or alt.Undefined, so we
     # unpack them from a dict (default is that they're not in the dictionary).
     chart_params = {}
     if vertical:
-        chart_params["height"] = alt.Step(rank_axis.bar_width)
+        chart_params["height"] = alt.Step(rank_axis_config.bar_width)
         if width is not None:
             chart_params["width"] = width
     else:
-        chart_params["width"] = alt.Step(rank_axis.bar_width)
+        chart_params["width"] = alt.Step(rank_axis_config.bar_width)
         if height is not None:
             chart_params["height"] = height
 
@@ -347,14 +347,14 @@ def shift_bars(
     chart_params["view"] = alt.ViewConfig(strokeWidth=0)
 
     # Configure the rank axis tick values and labels
-    if rank_axis.label_tick_values is not None:
+    if rank_axis_config.label_tick_values is not None:
         # Case 1: User passed ticks explicitly
-        rank_tick_values = rank_axis.label_tick_values
-    elif rank_axis.label_tick_step is not None:
+        rank_tick_values = rank_axis_config.label_tick_values
+    elif rank_axis_config.label_tick_step is not None:
         # Case 2: User followed defaults, i.e. did not pass ticks and did not opt out of tick step
-        step = rank_axis.label_tick_step
+        step = rank_axis_config.label_tick_step
         ticks = list(range(step, max_rank + 1, step))
-        if rank_axis.label_first_tick and (step != 1):
+        if rank_axis_config.label_first_tick and (step != 1):
             ticks = [1] + ticks
         rank_tick_values = ticks
     else:
@@ -369,65 +369,75 @@ def shift_bars(
     # Discover score types from the data and look up colors by name. Sorted for a deterministic
     # alphabetical legend order across runs.
     score_types = sorted(df[score_type_col].unique().to_list())
-    score_type_colors = [bars.colors[score_type] for score_type in score_types]
+    score_type_colors = [bar_config.colors[score_type] for score_type in score_types]
 
     # Configure the orders of stacked bars
-    if bars.orders is not None:
-        df = df.with_columns(pl.col(score_type_col).replace(bars.orders).alias("stacked_bar_order"))
+    if bar_config.orders is not None:
+        df = df.with_columns(
+            pl.col(score_type_col).replace(bar_config.orders).alias("stacked_bar_order")
+        )
         score_type_orders = alt.Order("stacked_bar_order:Q", sort="ascending")
     else:
         score_type_orders = alt.Undefined
 
     # Configure the score axis tick labels: optionally force positive values (for non-negative
     # measures shown in both directions) and optionally suffix a percent sign.
-    if score_axis.all_positive_labels or score_axis.percent:
-        if score_axis.all_positive_labels:
+    if score_axis_config.all_positive_labels or score_axis_config.percent:
+        if score_axis_config.all_positive_labels:
             base = "abs(datum.value)"
         else:
             base = "datum.value"
-        suffix = " + '%'" if score_axis.percent else ""
+        suffix = " + '%'" if score_axis_config.percent else ""
         score_tick_label_expr = base + suffix
     else:
         score_tick_label_expr = alt.Undefined
 
     # Create aspects of the plot
     score_alt_axis = alt.Axis(
-        title=score_axis.title,
-        titleColor=to_altair_optional(score_axis.title_color),
-        titleFontSize=to_altair_optional(score_axis.title_fontsize),
-        labelColor=to_altair_optional(score_axis.label_color),
-        labelFontSize=to_altair_optional(score_axis.label_fontsize),
+        title=score_axis_config.title,
+        titleColor=to_altair_optional(score_axis_config.title_color),
+        titleFontSize=to_altair_optional(score_axis_config.title_fontsize),
+        labelColor=to_altair_optional(score_axis_config.label_color),
+        labelFontSize=to_altair_optional(score_axis_config.label_fontsize),
         labelExpr=score_tick_label_expr,
         orient="right" if (score_axis_opposite and not vertical) else alt.Undefined,
-        grid=score_axis.grid,
-        gridColor=to_altair_optional(score_axis.grid_color),
-        domain=border.draw_score_axis,
+        grid=score_axis_config.grid,
+        gridColor=to_altair_optional(score_axis_config.grid_color),
+        domain=border_config.draw_score_axis,
         domainColor=to_altair_optional(
-            score_axis.axis_color if score_axis.axis_color is not None else border.color
+            score_axis_config.axis_color
+            if score_axis_config.axis_color is not None
+            else border_config.color
         ),
-        domainWidth=score_axis.width,
+        domainWidth=score_axis_config.width,
         tickColor=to_altair_optional(
-            score_axis.tick_color if score_axis.tick_color is not None else border.color
+            score_axis_config.tick_color
+            if score_axis_config.tick_color is not None
+            else border_config.color
         ),
         translate=_TRANSLATE_PX,
     )
     rank_alt_axis = alt.Axis(
-        title=rank_axis.title,
-        titleColor=to_altair_optional(rank_axis.title_color),
-        titleFontSize=to_altair_optional(rank_axis.title_fontsize),
-        labelColor=to_altair_optional(rank_axis.label_color),
-        labelFontSize=to_altair_optional(rank_axis.label_fontsize),
+        title=rank_axis_config.title,
+        titleColor=to_altair_optional(rank_axis_config.title_color),
+        titleFontSize=to_altair_optional(rank_axis_config.title_fontsize),
+        labelColor=to_altair_optional(rank_axis_config.label_color),
+        labelFontSize=to_altair_optional(rank_axis_config.label_fontsize),
         values=rank_tick_values,
         labelAngle=rank_label_rotation,
-        grid=rank_axis.grid,
-        gridColor=to_altair_optional(rank_axis.grid_color),
-        domain=border.draw_rank_axis,
+        grid=rank_axis_config.grid,
+        gridColor=to_altair_optional(rank_axis_config.grid_color),
+        domain=border_config.draw_rank_axis,
         domainColor=to_altair_optional(
-            rank_axis.axis_color if rank_axis.axis_color is not None else border.color
+            rank_axis_config.axis_color
+            if rank_axis_config.axis_color is not None
+            else border_config.color
         ),
-        domainWidth=rank_axis.width,
+        domainWidth=rank_axis_config.width,
         tickColor=to_altair_optional(
-            rank_axis.tick_color if rank_axis.tick_color is not None else border.color
+            rank_axis_config.tick_color
+            if rank_axis_config.tick_color is not None
+            else border_config.color
         ),
         translate=_TRANSLATE_PX,
     )
@@ -435,7 +445,7 @@ def shift_bars(
     # `nice=False` is needed to align ticks correctly with the border
     score_alt_scale = alt.Scale(nice=False)
     rank_alt_scale = alt.Scale(
-        paddingOuter=rank_axis.axis_padding, paddingInner=rank_axis.bar_padding
+        paddingOuter=rank_axis_config.axis_padding, paddingInner=rank_axis_config.bar_padding
     )
 
     color = alt.Color(
@@ -456,8 +466,8 @@ def shift_bars(
     bars_chart = (
         alt.Chart(df)
         .mark_bar(
-            stroke=to_altair_optional(bars.outline_color),
-            strokeWidth=to_altair_optional(bars.outline_width),
+            stroke=to_altair_optional(bar_config.outline_color),
+            strokeWidth=to_altair_optional(bar_config.outline_width),
         )
         .encode(x=x_axis, y=y_axis, color=color, order=score_type_orders)
         .properties(**chart_params)

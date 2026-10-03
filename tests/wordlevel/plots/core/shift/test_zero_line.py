@@ -41,10 +41,12 @@ def test_zero_line_width_and_color():
 
 def test_zero_line_color_falls_back_to_border():
     """When the zero line has no color it uses the border color; an explicit color overrides it."""
-    fallback = zero_line(ZeroLineConfig(width=1), border=BorderConfig(color="black"))
+    fallback = zero_line(ZeroLineConfig(width=1), border_config=BorderConfig(color="black"))
     assert fallback.to_dict()["mark"]["color"] == "black"
 
-    override = zero_line(ZeroLineConfig(color="red", width=1), border=BorderConfig(color="black"))
+    override = zero_line(
+        ZeroLineConfig(color="red", width=1), border_config=BorderConfig(color="black")
+    )
     assert override.to_dict()["mark"]["color"] == "red"
 
 

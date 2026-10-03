@@ -279,7 +279,7 @@ def test_label_config(make_mock_df, score_col, rank_col, token_col, color, size,
         df = make_mock_df()
 
         chart = shift_labels(
-            df, score_col=score_col, rank_col=rank_col, token_col=token_col, config=config
+            df, score_col=score_col, rank_col=rank_col, token_col=token_col, label_config=config
         )
         chart_json = chart.to_dict()
 
@@ -320,7 +320,7 @@ def test_label_config_on_bar_ends(
         rank_col=rank_col,
         token_col=token_col,
         vertical=vertical,
-        config=LabelConfig(on_bar_ends=on_bar_ends),
+        label_config=LabelConfig(on_bar_ends=on_bar_ends),
     )
 
     chart_json = chart.to_dict()
@@ -352,7 +352,7 @@ def test_label_config_mirror_rotation(
         score_col=score_col,
         rank_col=rank_col,
         token_col=token_col,
-        config=LabelConfig(rotation=rotation, mirror_rotation=mirror_rotation),
+        label_config=LabelConfig(rotation=rotation, mirror_rotation=mirror_rotation),
     )
 
     chart_json = chart.to_dict()["encoding"]

@@ -59,10 +59,10 @@ def _score_side_lines(panel: dict, score_col: str, vertical: bool) -> dict[str, 
     lines: dict[str, list[float]] = {}
 
     # Native score-axis domain (drawn on `orient`, which may be flipped to the opposite side)
-    score_axis = panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
-    if score_axis.get("domain"):
-        side = score_axis.get("orient", default_orient)
-        lines.setdefault(side, []).append(score_axis["domainWidth"])
+    score_axis_config = panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
+    if score_axis_config.get("domain"):
+        side = score_axis_config.get("orient", default_orient)
+        lines.setdefault(side, []).append(score_axis_config["domainWidth"])
 
     # Opposite-score border edges (the frame layers encoding the score field)
     for layer in panel["layer"][1:]:
@@ -349,7 +349,7 @@ class TestFrameConsistency:
             show_totals=True,
             vertical=vertical,
             border_config=BorderConfig(width=0),
-            score_axis={"width": 3},
+            score_axis_config={"width": 3},
         )
 
         edges = set().union(*(_border_edges(panel) for panel in _panels(chart)))

@@ -57,9 +57,9 @@ def test_opposite_edges_drawn(
         [base_chart],
         rank_col="rank",
         score_col="score",
-        rank_axis=RankAxisConfig(),
-        score_axis=ScoreAxisConfig(),
-        border=InternalBorderConfig(
+        rank_axis_config=RankAxisConfig(),
+        score_axis_config=ScoreAxisConfig(),
+        border_config=InternalBorderConfig(
             width=1,
             draw_border_opposite_rank_axis=draw_opposite_rank,
             draw_border_opposite_score_axis=draw_opposite_score,
@@ -78,9 +78,9 @@ def test_border_edges_color_and_width(base_chart):
         [base_chart],
         rank_col="rank",
         score_col="score",
-        rank_axis=RankAxisConfig(),
-        score_axis=ScoreAxisConfig(),
-        border=InternalBorderConfig(
+        rank_axis_config=RankAxisConfig(),
+        score_axis_config=ScoreAxisConfig(),
+        border_config=InternalBorderConfig(
             color="purple",
             width=3,
             draw_border_opposite_rank_axis=True,
@@ -103,9 +103,9 @@ def test_border_edges_use_axis_color_over_border_color(base_chart):
         [base_chart],
         rank_col="rank",
         score_col="score",
-        rank_axis=RankAxisConfig(axis_color="red"),
-        score_axis=ScoreAxisConfig(axis_color="green"),
-        border=InternalBorderConfig(
+        rank_axis_config=RankAxisConfig(axis_color="red"),
+        score_axis_config=ScoreAxisConfig(axis_color="green"),
+        border_config=InternalBorderConfig(
             color="black",
             width=1,
             draw_border_opposite_rank_axis=True,
@@ -127,9 +127,9 @@ def test_border_edges_are_non_interactive(base_chart):
         [base_chart],
         rank_col="rank",
         score_col="score",
-        rank_axis=RankAxisConfig(),
-        score_axis=ScoreAxisConfig(),
-        border=InternalBorderConfig(
+        rank_axis_config=RankAxisConfig(),
+        score_axis_config=ScoreAxisConfig(),
+        border_config=InternalBorderConfig(
             width=1,
             draw_border_opposite_rank_axis=True,
             draw_border_opposite_score_axis=True,
@@ -154,9 +154,9 @@ def test_base_layers_grouped_not_flattened(base_chart, df_mock):
         [base_chart, extra],
         rank_col="rank",
         score_col="score",
-        rank_axis=RankAxisConfig(),
-        score_axis=ScoreAxisConfig(),
-        border=InternalBorderConfig(
+        rank_axis_config=RankAxisConfig(),
+        score_axis_config=ScoreAxisConfig(),
+        border_config=InternalBorderConfig(
             width=1,
             draw_border_opposite_rank_axis=True,
             draw_border_opposite_score_axis=True,

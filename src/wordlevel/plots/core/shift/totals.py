@@ -138,8 +138,8 @@ def shift_total(
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis: RankAxisConfig | dict | None = None,
-    score_axis: InternalScoreAxisConfig | dict | None = None,
+    rank_axis_config: RankAxisConfig | dict | None = None,
+    score_axis_config: InternalScoreAxisConfig | dict | None = None,
     bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
     border_config: InternalBorderConfig | None = None,
@@ -173,9 +173,9 @@ def shift_total(
         width:
             The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
             `RankAxisConfig.bar_width` to control the width
-        rank_axis:
+        rank_axis_config:
             Configuration for the rank axis
-        score_axis:
+        score_axis_config:
             Configuration for the score axis
         bar_config:
             Configuration for the bars, controls the colors and symbols used to plot per shift type
@@ -197,15 +197,15 @@ def shift_total(
         An Altair chart of word shift total(s)
     """
     # Initialize necessary configs
-    if isinstance(rank_axis, dict):
-        rank_axis = RankAxisConfig(**rank_axis)
-    elif rank_axis is None:
-        rank_axis = RankAxisConfig()
+    if isinstance(rank_axis_config, dict):
+        rank_axis_config = RankAxisConfig(**rank_axis_config)
+    elif rank_axis_config is None:
+        rank_axis_config = RankAxisConfig()
 
-    if isinstance(score_axis, dict):
-        score_axis = InternalScoreAxisConfig(**score_axis)
-    elif score_axis is None:
-        score_axis = InternalScoreAxisConfig()
+    if isinstance(score_axis_config, dict):
+        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
+    elif score_axis_config is None:
+        score_axis_config = InternalScoreAxisConfig()
 
     if isinstance(total_shift_config, dict):
         total_shift_config = TotalShiftConfig(**total_shift_config)
@@ -294,10 +294,10 @@ def shift_total(
         score_type_col=_SCORE_TYPE_COL,
         filter_max_rank=False,
         vertical=vertical,
-        rank_axis=rank_axis,
-        score_axis=score_axis,
-        bars=bar_config,
-        border=border_config,
+        rank_axis_config=rank_axis_config,
+        score_axis_config=score_axis_config,
+        bar_config=bar_config,
+        border_config=border_config,
         show_legend=False,
         **size_param,
     )
@@ -308,7 +308,7 @@ def shift_total(
         token_col=_LABEL_COL,
         filter_max_rank=False,
         vertical=vertical,
-        config=label_config,
+        label_config=label_config,
         alignment_col=None if grand_total else _ALIGNMENT_COL,
     )
     scales = shift_scales(
@@ -318,11 +318,13 @@ def shift_total(
         token_col=_LABEL_COL,
         filter_max_rank=False,
         vertical=vertical,
-        config=label_config,
+        label_config=label_config,
         scale_factor=scale_factor,
         **size_param,
     )
-    zero_rule = zero_line(config=zero_line_config, border=border_config, vertical=vertical)
+    zero_rule = zero_line(
+        zero_line_config=zero_line_config, border_config=border_config, vertical=vertical
+    )
 
     # Modify the returned bar axes to hide information (labels, ticks, etc.)
     if vertical:
@@ -332,9 +334,11 @@ def shift_total(
 
     modified_score_axis = score_channel.axis(
         domain=border_config.draw_score_axis,
-        domainWidth=score_axis.width,
+        domainWidth=score_axis_config.width,
         domainColor=to_altair_optional(
-            score_axis.axis_color if score_axis.axis_color is not None else border_config.color
+            score_axis_config.axis_color
+            if score_axis_config.axis_color is not None
+            else border_config.color
         ),
         title=None,
         labels=False,
@@ -345,15 +349,17 @@ def shift_total(
 
     modified_rank_axis = rank_channel.axis(
         domain=border_config.draw_rank_axis,
-        domainWidth=rank_axis.width,
+        domainWidth=rank_axis_config.width,
         domainColor=to_altair_optional(
-            rank_axis.axis_color if rank_axis.axis_color is not None else border_config.color
+            rank_axis_config.axis_color
+            if rank_axis_config.axis_color is not None
+            else border_config.color
         ),
         title=None
-        if rank_axis.title is None
+        if rank_axis_config.title is None
         else "l",  # Hidden, but needed to align axes with main chart
         titleColor="transparent",
-        titleFontSize=to_altair_optional(rank_axis.title_fontsize),
+        titleFontSize=to_altair_optional(rank_axis_config.title_fontsize),
         ticks=False,
         labelExpr="format(datum.value, '02d')",  # Hidden, but needed to align axes with main chart
         labelColor="transparent",
@@ -368,11 +374,11 @@ def shift_total(
 
     chart = shift_borders(
         [modified_bars, labels, scales, zero_rule],
-        border=border_config,
+        border_config=border_config,
         rank_col=_POSITION_COL,
         score_col=score_col,
-        rank_axis=rank_axis,
-        score_axis=score_axis,
+        rank_axis_config=rank_axis_config,
+        score_axis_config=score_axis_config,
         vertical=vertical,
     )
 

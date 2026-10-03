@@ -20,7 +20,7 @@ these are the bar config fields that are not score types
 """
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BarConfig:
     """
     Configuration for the bar colors of token contributions attributed by frequency or rank.
@@ -51,7 +51,7 @@ class BarConfig:
     outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ScoreSignBarConfig:
     """
     Configuration for the bar colors of token contributions attributed by score sign.
@@ -85,7 +85,7 @@ class ScoreSignBarConfig:
     outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ShiftBarConfig:
     """
     Configuration for the bar colors of a word shift plot.
@@ -173,7 +173,7 @@ class ShiftBarConfig:
     outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ScoreAxisConfig:
     """
     Configuration for the score axis of a bar or word shift plot.
@@ -218,7 +218,7 @@ class ScoreAxisConfig:
     width: float = 1
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RankAxisConfig:
     """
     Configuration for the rank axis of a bar or word shift plot.
@@ -289,7 +289,7 @@ class RankAxisConfig:
     width: float = 1
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LabelConfig:
     """
     Configuration for the token labels of a bar or word shift plot.
@@ -337,7 +337,7 @@ class LabelConfig:
     borrow_symbol: str | None = "*"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BorderConfig:
     """
     Configuration for the border of the entire chart, regardless of axis.
@@ -357,7 +357,7 @@ class BorderConfig:
     width: float = 0
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ZeroLineConfig:
     """
     Configuration for the zero line drawn at the score-axis origin.
@@ -377,7 +377,7 @@ class ZeroLineConfig:
     width: float = 1.0
 
 
-@dataclass
+@dataclass(kw_only=True)
 class TotalShiftConfig:
     """
     Configuration for the totals panels above a word shift plot.

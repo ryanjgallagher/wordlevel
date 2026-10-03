@@ -32,8 +32,8 @@ def shift(
     height: float | None = None,
     width: float | None = None,
     show_totals: bool = False,
-    rank_axis: RankAxisConfig | dict | None = None,
-    score_axis: InternalScoreAxisConfig | dict | None = None,
+    rank_axis_config: RankAxisConfig | dict | None = None,
+    score_axis_config: InternalScoreAxisConfig | dict | None = None,
     bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
     border_config: BorderConfig | dict | None = None,
@@ -74,9 +74,9 @@ def shift(
         show_totals:
             Whether to show the overall total contributions of each score type and overall as an
             additional chart appended to the main shift chart
-        rank_axis:
+        rank_axis_config:
             Configuration for the rank axis
-        score_axis:
+        score_axis_config:
             Configuration for the score axis
         bar_config:
             Configuration for the bars
@@ -117,15 +117,15 @@ def shift(
             size_param["height"] = height
 
     # Resolve the axis and border configs once so they can be shared with the border framing
-    if isinstance(rank_axis, dict):
-        rank_axis = RankAxisConfig(**rank_axis)
-    elif rank_axis is None:
-        rank_axis = RankAxisConfig()
+    if isinstance(rank_axis_config, dict):
+        rank_axis_config = RankAxisConfig(**rank_axis_config)
+    elif rank_axis_config is None:
+        rank_axis_config = RankAxisConfig()
 
-    if isinstance(score_axis, dict):
-        score_axis = InternalScoreAxisConfig(**score_axis)
-    elif score_axis is None:
-        score_axis = InternalScoreAxisConfig()
+    if isinstance(score_axis_config, dict):
+        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
+    elif score_axis_config is None:
+        score_axis_config = InternalScoreAxisConfig()
 
     if isinstance(border_config, dict):
         border_config = BorderConfig(**border_config)
@@ -143,7 +143,7 @@ def shift(
     # even when the border box is off. They then take the score axis width, matching the score-axis
     # domain that already separates the two totals panels. Note, `border_is_visible` is derived from
     # the user-facing width above, so this override cannot turn the border box back on
-    seam_width = border_config.width if border_is_visible else score_axis.width
+    seam_width = border_config.width if border_is_visible else score_axis_config.width
 
     main_border = InternalBorderConfig.from_config(
         border_config,
@@ -166,10 +166,10 @@ def shift(
         max_rank=max_rank,
         filter_max_rank=False,
         vertical=vertical,
-        rank_axis=rank_axis,
-        score_axis=score_axis,
-        bars=bar_config,
-        border=main_border,
+        rank_axis_config=rank_axis_config,
+        score_axis_config=score_axis_config,
+        bar_config=bar_config,
+        border_config=main_border,
         show_legend=show_legend,
         score_axis_opposite=score_axis_on_far_side,
         **size_param,
@@ -182,7 +182,7 @@ def shift(
         max_rank=max_rank,
         filter_max_rank=False,
         vertical=vertical,
-        config=label_config,
+        label_config=label_config,
     )
     scales = shift_scales(
         df_filt,
@@ -192,7 +192,7 @@ def shift(
         max_rank=max_rank,
         filter_max_rank=False,
         vertical=vertical,
-        config=label_config,
+        label_config=label_config,
         scale_factor=scale_factor,
         **size_param,
     )
@@ -202,9 +202,9 @@ def shift(
         [bars, labels, scales, zero_rule],
         rank_col=rank_col,
         score_col=score_col,
-        rank_axis=rank_axis,
-        score_axis=score_axis,
-        border=main_border,
+        rank_axis_config=rank_axis_config,
+        score_axis_config=score_axis_config,
+        border_config=main_border,
         vertical=vertical,
     )
 
@@ -215,8 +215,8 @@ def shift(
             score_type_col=score_type_col,
             grand_total=True,
             vertical=vertical,
-            rank_axis=rank_axis,
-            score_axis=score_axis,
+            rank_axis_config=rank_axis_config,
+            score_axis_config=score_axis_config,
             bar_config=bar_config,
             label_config=label_config,
             border_config=InternalBorderConfig.from_config(
@@ -240,8 +240,8 @@ def shift(
             score_type_col=score_type_col,
             grand_total=False,
             vertical=vertical,
-            rank_axis=rank_axis,
-            score_axis=score_axis,
+            rank_axis_config=rank_axis_config,
+            score_axis_config=score_axis_config,
             bar_config=bar_config,
             label_config=label_config,
             border_config=InternalBorderConfig.from_config(
