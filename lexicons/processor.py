@@ -17,9 +17,7 @@ class LexiconProcessor(ABC):
         self.raw_dir = self.base_dir / "data" / "raw"
         self.processed_dir = self.base_dir / "data" / "processed"
 
-        self.types_dir = (
-            self.base_dir.parents[1] / "src" / "wordlevel" / "api" / "lexicons" / "types"
-        )
+        self.types_dir = self.base_dir.parents[1] / "src" / "wordlevel" / "lexicons" / "types"
         self.types_f = self.types_dir / f"{self.lexicon_name.lower()}.py"
 
     @property

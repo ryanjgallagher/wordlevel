@@ -8,7 +8,7 @@ on:
       # Only trigger this workflow if files inside the lexicons/ folder change, or if the types
       # that the lexicons generate are edited directly
       - 'lexicons/**'
-      - 'src/wordlevel/api/lexicons/types/**'
+      - 'src/wordlevel/lexicons/types/**'
 
 permissions:
   contents: read
@@ -85,7 +85,7 @@ jobs:
       - name: Generate the types of every lexicon
         run: |
           uv run --no-sync python -m lexicons.generate_types --strict lexicons/processor.py
-          uv run --no-sync ruff format --check src/wordlevel/api/lexicons/types
+          uv run --no-sync ruff format --check src/wordlevel/lexicons/types
 
       - name: Check that the generated types are committed
         run: |
