@@ -42,7 +42,7 @@ class TestGetPlotDf:
     @pytest.mark.parametrize("plot_type", ["bar", "shift"])
     def test_output_columns(self, catalog: Catalog, plot_type: PlotType) -> None:
         """Output DataFrame has exactly the four expected columns regardless of plot type."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
 
         df_result = plotter._get_plot_df(
             comparison=catalog.comparisons["entropy_comp"],
@@ -59,7 +59,7 @@ class TestGetPlotDf:
 
     def test_caching_same_max_rank(self, catalog: Catalog) -> None:
         """The same DataFrame object is returned on repeated calls with the same max_rank."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         comp_result = catalog.comparisons["entropy_comp"]
 
         df1 = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=50)
@@ -73,7 +73,7 @@ class TestGetPlotDf:
 
     def test_caching_smaller_max_rank(self, catalog: Catalog) -> None:
         """A smaller max_rank returns a filtered view from the cache without recomputing."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         comp_result = catalog.comparisons["entropy_comp"]
 
         df_large = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=50)
@@ -88,7 +88,7 @@ class TestGetPlotDf:
 
     def test_caching_larger_max_rank_recomputes(self, catalog: Catalog) -> None:
         """A larger max_rank triggers recomputation and overwrites the cache entry."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         comp_result = catalog.comparisons["entropy_comp"]
 
         df_small = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=2)
@@ -103,7 +103,7 @@ class TestGetPlotDf:
 
     def test_caching_isolates_by_split_flag(self, catalog: Catalog) -> None:
         """Different split_nonnegative_by_corpus values produce independent cache entries."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         comp_result = catalog.comparisons["entropy_comp"]
 
         df_split = plotter._get_plot_df(
@@ -119,7 +119,7 @@ class TestGetPlotDf:
     def test_show_totals_fetches_full_vocab_and_caches_separately(self, catalog: Catalog) -> None:
         """`show_totals` keeps the full vocabulary (so totals sum over every token) and is cached
         under a separate key from the top-`max_rank` (totals-hidden) df."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         comp_result = catalog.comparisons["entropy_comp"]
 
         df_top2 = plotter._get_plot_df(
@@ -146,7 +146,7 @@ class TestGetPlotDf:
     def test_caching_serves_concrete_from_full_df(self, catalog: Catalog) -> None:
         """A concrete max_rank request is served (filtered) from a cached full (`None`) df without
         recomputing or overwriting the cache entry."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         comp_result = catalog.comparisons["entropy_comp"]
 
         df_full = plotter._get_plot_df(comparison=comp_result, plot_type="bar", max_rank=None)
@@ -180,7 +180,7 @@ class TestBorrowSymbol:
 
     def test_symbol_appended_to_borrowed_tokens_only(self, borrow_catalog: Catalog) -> None:
         """Tokens with a borrowed score end in the symbol; tokens in both lexicons are unchanged."""
-        plotter = Plotter(borrow_catalog)
+        plotter = Plotter(borrow_catalog.comparisons, "word")
 
         df_result = plotter._get_plot_df(
             comparison=borrow_catalog.comparisons["borrow_comp"],
@@ -193,7 +193,7 @@ class TestBorrowSymbol:
 
     def test_no_symbol_appended_when_symbol_is_none(self, borrow_catalog: Catalog) -> None:
         """Without a symbol, borrowed tokens keep their original labels."""
-        plotter = Plotter(borrow_catalog)
+        plotter = Plotter(borrow_catalog.comparisons, "word")
 
         df_result = plotter._get_plot_df(
             comparison=borrow_catalog.comparisons["borrow_comp"],
@@ -206,7 +206,7 @@ class TestBorrowSymbol:
 
     def test_symbol_is_not_cached_with_the_plot_df(self, borrow_catalog: Catalog) -> None:
         """A later call re-labels from the cached, unsuffixed tokens rather than the labelled ones."""
-        plotter = Plotter(borrow_catalog)
+        plotter = Plotter(borrow_catalog.comparisons, "word")
         comp_result = borrow_catalog.comparisons["borrow_comp"]
 
         plotter._get_plot_df(
@@ -221,7 +221,7 @@ class TestBorrowSymbol:
 
     def test_symbol_ignored_when_the_comparison_cannot_borrow(self, catalog: Catalog) -> None:
         """A symbol is a no-op for a measure that never borrows scores, rather than an error."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
 
         df_result = plotter._get_plot_df(
             comparison=catalog.comparisons["entropy_comp"],
@@ -246,7 +246,7 @@ def _score_axis_title(chart: alt.TopLevelMixin) -> str:
 class TestBar:
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """bar() returns a LayerChart with 4 layers and the correct number of data rows."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.bar("freq_comp")
 
         assert isinstance(chart, alt.LayerChart)
@@ -267,7 +267,7 @@ class TestBar:
         self, catalog: Catalog, bar_config: BarConfig | dict
     ) -> None:
         """`bar_config` accepts either a `BarConfig` instance or a matching dict."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.bar("freq_comp", bar_config=bar_config)
 
         # The reference color override should propagate to the bars layer's color range
@@ -285,7 +285,7 @@ class TestBar:
         self, catalog: Catalog, bar_config: ScoreSignBarConfig | dict
     ) -> None:
         """For a score-sign measure, `bar_config` accepts an `ScoreSignBarConfig` or matching dict."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.bar("entropy_comp", bar_config=bar_config)
 
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
@@ -293,7 +293,7 @@ class TestBar:
 
     def test_default_score_sign_bar_uses_reinforce_offset_domain(self, catalog: Catalog) -> None:
         """A score-sign comparison colors its bars by the reinforce/offset labels, not by corpus."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.bar("entropy_comp")
 
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
@@ -321,7 +321,7 @@ class TestBar:
         A config of the wrong class raises a TypeError, whereas a dict whose keys don't match the
         comparison's attribution raises a ValueError
         """
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         with pytest.raises(expected_error):
             plotter.bar(comparison, bar_config=bad_config)
 
@@ -336,7 +336,7 @@ class TestBar:
         self, catalog: Catalog, total_shift_config: TotalShiftConfig | dict
     ) -> None:
         """"""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.bar("freq_comp", show_totals=True, total_shift_config=total_shift_config)
 
         scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]
@@ -347,7 +347,7 @@ class TestBar:
     ) -> None:
         """With totals shown, bar() fetches the full-vocabulary df (so the totals sum over every
         token), even when only the top `max_rank` are displayed."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         plotter.bar("freq_comp", max_rank=2, show_totals=True)
 
         totals_entries = [
@@ -363,14 +363,14 @@ class TestBar:
 class TestShift:
     def test_non_weighted_avg_raises(self, catalog: Catalog) -> None:
         """shift() raises ValueError when the comparison is not a weighted average."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
 
         with pytest.raises(ValueError):
             plotter.shift("freq_comp")
 
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """shift() returns a LayerChart with 4 layers and the correct number of data rows."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.shift("entropy_comp")
 
         assert isinstance(chart, alt.LayerChart)
@@ -385,7 +385,7 @@ class TestShift:
     ) -> None:
         """With totals shown, shift() fetches the full-vocabulary df (so the totals sum over every
         token), even when only the top `max_rank` are displayed."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         plotter.shift("entropy_comp", max_rank=2, show_totals=True)
 
         totals_entries = [
@@ -408,7 +408,7 @@ class TestShift:
         self, catalog: Catalog, bar_config: ShiftBarConfig | dict
     ) -> None:
         """`bar_config` accepts either a `ShiftBarConfig` instance or a matching dict."""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.shift("entropy_comp", bar_config=bar_config)
 
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
@@ -416,7 +416,7 @@ class TestShift:
 
     def test_total_shift_config_reaches_the_grand_total_bar(self, catalog: Catalog) -> None:
         """"""
-        plotter = Plotter(catalog)
+        plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.shift(
             "entropy_comp", show_totals=True, total_shift_config={"total": "#ff0000"}
         )

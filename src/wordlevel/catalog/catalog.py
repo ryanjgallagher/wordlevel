@@ -333,7 +333,7 @@ class Catalog:
         """
         Namespace for plotting methods. See [available plots](plot/index.md).
         """
-        return Plotter(self)
+        return Plotter(self.comparisons, self._token_col)
 
     def with_comparisons(self, *comparisons: Comparison) -> Catalog:
         """

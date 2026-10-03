@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import altair as alt
 import polars as pl
@@ -39,10 +40,6 @@ from wordlevel.plots.core.shift.transform import (
 )
 
 
-if TYPE_CHECKING:
-    from wordlevel.catalog.catalog import Catalog
-
-
 PlotType = Literal["bar", "shift"]
 
 
@@ -70,8 +67,9 @@ class Plotter:
     not do unnecessary recomputation.
     """
 
-    def __init__(self, catalog: Catalog):
-        self._catalog = catalog
+    def __init__(self, comparisons: Mapping[str, ComparisonResult], token_col: str):
+        self._comparisons = comparisons
+        self._token_col = token_col
         self._plot_dfs: dict[PlotCacheKey, PlotCachedDataFrame] = {}
 
     def bar(
@@ -181,7 +179,7 @@ class Plotter:
         Raises:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
         """
-        comp = self._catalog.comparisons[comparison]
+        comp = self._comparisons[comparison]
 
         if label_config is None:
             label_config = LabelConfig()
@@ -199,7 +197,7 @@ class Plotter:
 
         return shift(
             df=df_plot,
-            token_col=self._catalog._token_col,
+            token_col=self._token_col,
             rank_col=RANK_COL,
             score_col=PLOT_CONTRIBUTION_COL,
             score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
@@ -329,7 +327,7 @@ class Plotter:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
             ValueError: If the comparison's measure is not a weighted average
         """
-        comp = self._catalog.comparisons[comparison]
+        comp = self._comparisons[comparison]
         if not comp.is_weighted_avg:
             raise ValueError(
                 "Cannot make a word shift plot for measures that are not weighted averages"
@@ -351,7 +349,7 @@ class Plotter:
 
         return shift(
             df=df_plot,
-            token_col=self._catalog._token_col,
+            token_col=self._token_col,
             rank_col=RANK_COL,
             score_col=PLOT_CONTRIBUTION_COL,
             score_type_col=PLOT_CONTRIBUTION_TYPE_COL,
@@ -438,7 +436,7 @@ class Plotter:
             if plot_type == "bar":
                 df_plot = bar_plot_df(
                     lf=comparison._lf,
-                    token_col=self._catalog._token_col,
+                    token_col=self._token_col,
                     score_col=SCORE_COL,
                     rank_col=RANK_COL,
                     attribution_col=ATTRIBUTION_COL,
@@ -454,7 +452,7 @@ class Plotter:
             elif plot_type == "shift":
                 df_plot = shift_plot_df(
                     df=comparison._lf,
-                    token_col=self._catalog._token_col,
+                    token_col=self._token_col,
                     rank_col=RANK_COL,
                     contribution_alias=PLOT_CONTRIBUTION_COL,
                     contribution_type_alias=PLOT_CONTRIBUTION_TYPE_COL,
@@ -470,7 +468,7 @@ class Plotter:
         # Append symbols after caching, so the cache can still be used even if the symbols change
         df_plot = append_borrow_symbol_to_tokens(
             df=df_plot,
-            token_col=self._catalog._token_col,
+            token_col=self._token_col,
             borrow_col=IS_BORROWED_COL,
             borrow_symbol=borrow_symbol,
         )
