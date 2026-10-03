@@ -24,8 +24,8 @@ COMPARISON = "wordlevel.api.comparison.comparison.Comparison"
 COMPARISON_MODULE = "wordlevel.api.comparison.comparison"
 SCORER = "wordlevel.api.comparison.score.Scorer"
 EXCLUDER = "wordlevel.api.comparison.exclude.ComparisonExcluder"
-LEXICONS = "wordlevel.api.lexicons.lexicon.LexiconLoader"
-LEXICON = "wordlevel.core.lexicons.load.Lexicon"
+LEXICONS = "wordlevel.lexicons.lexicon.LexiconLoader"
+LEXICON = "wordlevel.lexicons.core.load.Lexicon"
 
 # Where the generated tree lives, relative to the docs directory
 API_DIR = "documentation/api"
@@ -109,7 +109,7 @@ API: tuple[Section, ...] = (
                 children=(
                     sections_per(
                         LEXICONS,
-                        module="wordlevel.api.lexicons.types.{lower}",
+                        module="wordlevel.lexicons.types.{lower}",
                         returns=LEXICON_RETURNS,
                         strip_prefix=True,
                         slug="verbatim",

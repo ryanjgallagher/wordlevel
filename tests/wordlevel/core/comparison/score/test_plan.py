@@ -12,7 +12,7 @@ from wordlevel.core.comparison.score.plan import (
     lexicon_join_plan,
     weighted_average_score_plan,
 )
-from wordlevel.core.lexicons.load import Lexicon
+from wordlevel.lexicons.core.load import Lexicon
 
 
 _TOKEN_COL = "word"

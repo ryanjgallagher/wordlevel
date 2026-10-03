@@ -16,7 +16,7 @@ from huggingface_hub.errors import (
 from huggingface_hub.file_download import HfFileMetadata
 from polars.testing import assert_frame_equal
 
-from wordlevel.core.lexicons.load import (
+from wordlevel.lexicons.core.load import (
     HF_DOWNLOAD_LOGGER,
     HF_HTTP_LOGGER,
     Lexicon,
@@ -57,7 +57,7 @@ def lexicon(lexicon_f: Path, monkeypatch: pytest.MonkeyPatch) -> Lexicon:
     out to the hub
     """
     monkeypatch.setattr(
-        "wordlevel.core.lexicons.load.hf_hub_download", lambda **kwargs: str(lexicon_f)
+        "wordlevel.lexicons.core.load.hf_hub_download", lambda **kwargs: str(lexicon_f)
     )
 
     return load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
@@ -91,7 +91,7 @@ def test_hf_token_passed_to_download(lexicon_f: Path, monkeypatch: pytest.Monkey
         download_kwargs.update(kwargs)
         return str(lexicon_f)
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_download", fake_hf_hub_download)
 
     load_lexicon("labMT", "lexicon.parquet", revision=COMMIT, hf_token="hf_abc123")
 
@@ -111,8 +111,8 @@ def test_cache_dir_passed_as_local_dir(
         download_kwargs.update(kwargs)
         return str(lexicon_f)
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
-    monkeypatch.setattr("wordlevel.core.lexicons.load.stored_revision", lambda **kwargs: COMMIT)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.stored_revision", lambda **kwargs: COMMIT)
 
     load_lexicon("labMT", "lexicon.parquet", revision=COMMIT, cache_dir=tmp_path)
 
@@ -130,7 +130,7 @@ def test_revision_passed_to_download(lexicon_f: Path, monkeypatch: pytest.Monkey
         download_kwargs.update(kwargs)
         return str(lexicon_f)
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_download", fake_hf_hub_download)
 
     load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
 
@@ -153,9 +153,9 @@ def test_stored_copy_at_other_commit_raised_as_connection_error(
     than returning the wrong version of the lexicon
     """
     monkeypatch.setattr(
-        "wordlevel.core.lexicons.load.hf_hub_download", lambda **kwargs: str(lexicon_f)
+        "wordlevel.lexicons.core.load.hf_hub_download", lambda **kwargs: str(lexicon_f)
     )
-    monkeypatch.setattr("wordlevel.core.lexicons.load.stored_revision", lambda **kwargs: "b" * 40)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.stored_revision", lambda **kwargs: "b" * 40)
 
     with pytest.raises(LexiconConnectionError):
         load_lexicon("labMT", "lexicon.parquet", revision=COMMIT, cache_dir=tmp_path)
@@ -178,7 +178,7 @@ def test_hf_token_advisory_suppressed(
         hf_logger.warning("Retrying in 1s [Retry 1/5].")
         return str(lexicon_f)
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_download", fake_hf_hub_download)
 
     with caplog.at_level(logging.WARNING, logger=HF_HTTP_LOGGER):
         load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
@@ -204,7 +204,7 @@ def test_hub_fallback_message_suppressed(
         hf_logger.warning("Some other message.")
         return str(lexicon_f)
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_download", fake_hf_hub_download)
 
     with caplog.at_level(logging.WARNING, logger=HF_DOWNLOAD_LOGGER):
         load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
@@ -231,7 +231,7 @@ def download_error(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPat
     def fake_hf_hub_download(**kwargs: object) -> str:
         raise download_error
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_download", fake_hf_hub_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_download", fake_hf_hub_download)
 
     return download_error
 
@@ -273,7 +273,7 @@ def test_offline_mode_reported_instead_of_network_failure(
     failure to find the file locally, so the two are only told apart by asking it whether offline
     mode is on
     """
-    monkeypatch.setattr("wordlevel.core.lexicons.load.is_offline_mode", lambda: True)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.is_offline_mode", lambda: True)
 
     with pytest.raises(LexiconDownloadError, match="offline mode is enabled"):
         load_lexicon("labMT", "lexicon.parquet", revision=COMMIT)
@@ -382,9 +382,9 @@ def test_resolve_revision_requests_given_revision(monkeypatch: pytest.MonkeyPatc
         url_kwargs.update(kwargs)
         return "https://huggingface.co"
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.hf_hub_url", fake_hf_hub_url)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.hf_hub_url", fake_hf_hub_url)
     monkeypatch.setattr(
-        "wordlevel.core.lexicons.load.get_hf_file_metadata",
+        "wordlevel.lexicons.core.load.get_hf_file_metadata",
         lambda url, token: HfFileMetadata(
             commit_hash=COMMIT, etag="etag", location=url, size=1, xet_file_data=None
         ),
@@ -402,7 +402,7 @@ def test_resolve_revision_raises_without_commit(monkeypatch: pytest.MonkeyPatch)
     revision that cannot be pinned
     """
     monkeypatch.setattr(
-        "wordlevel.core.lexicons.load.get_hf_file_metadata",
+        "wordlevel.lexicons.core.load.get_hf_file_metadata",
         lambda url, token: HfFileMetadata(
             commit_hash=None, etag="etag", location=url, size=1, xet_file_data=None
         ),
@@ -424,7 +424,7 @@ def test_resolve_revision_unreachable_hub_raised_as_connection_error(
         raise httpx.ConnectError("Connection refused")
 
     monkeypatch.setattr(
-        "wordlevel.core.lexicons.load.get_hf_file_metadata", fake_get_hf_file_metadata
+        "wordlevel.lexicons.core.load.get_hf_file_metadata", fake_get_hf_file_metadata
     )
 
     with pytest.raises(LexiconConnectionError):
@@ -472,8 +472,8 @@ def test_update_lexicons_downloads_stored_paths_at_latest_commit(
         snapshot_kwargs.update(kwargs)
         return str(tmp_path)
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.HfApi", FakeHfApi)
-    monkeypatch.setattr("wordlevel.core.lexicons.load.snapshot_download", fake_snapshot_download)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.HfApi", FakeHfApi)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.snapshot_download", fake_snapshot_download)
 
     repo_paths = ["labMT/data/processed/english.parquet"]
     update_lexicons(cache_dir=tmp_path, repo_paths=repo_paths, hf_token=None)
@@ -494,7 +494,7 @@ def test_update_lexicons_unreachable_hub_raised_as_connection_error(
         def repo_info(self, repo_id: str, **kwargs: object) -> SimpleNamespace:
             raise httpx.ConnectError("Connection refused")
 
-    monkeypatch.setattr("wordlevel.core.lexicons.load.HfApi", UnreachableHfApi)
+    monkeypatch.setattr("wordlevel.lexicons.core.load.HfApi", UnreachableHfApi)
 
     with pytest.raises(LexiconConnectionError):
         update_lexicons(

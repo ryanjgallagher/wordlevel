@@ -4,7 +4,7 @@ from typing import Literal, TypeAlias
 import polars as pl
 from polars import col
 
-from wordlevel.core.lexicons.load import Lexicon
+from wordlevel.lexicons.core.load import Lexicon
 
 
 DEFAULT_LEXICON_SCORE_COL = "lexicon_score"

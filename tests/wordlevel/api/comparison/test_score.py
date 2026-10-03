@@ -14,7 +14,7 @@ from wordlevel.constants import (
     REINFORCE_ATTRIBUTION,
     SCORE_COL,
 )
-from wordlevel.core.lexicons.load import Lexicon
+from wordlevel.lexicons.core.load import Lexicon
 
 
 @pytest.fixture

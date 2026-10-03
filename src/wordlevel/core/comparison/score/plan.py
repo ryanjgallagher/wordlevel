@@ -16,7 +16,7 @@ from wordlevel.core.comparison.score.lexicon import (
     get_imputation_expression,
     join_lexicon,
 )
-from wordlevel.core.lexicons.load import Lexicon
+from wordlevel.lexicons.core.load import Lexicon
 
 
 class ScoreFunc(Protocol):

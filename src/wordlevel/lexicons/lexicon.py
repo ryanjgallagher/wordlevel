@@ -4,9 +4,7 @@ from typing import Literal
 
 from platformdirs import user_cache_dir
 
-from wordlevel.api.lexicons.types.labmt import labMTLanguage
-from wordlevel.api.lexicons.types.socialsent import SocialSentYear
-from wordlevel.core.lexicons.load import (
+from wordlevel.lexicons.core.load import (
     Lexicon,
     LexiconConnectionError,
     load_lexicon,
@@ -15,6 +13,8 @@ from wordlevel.core.lexicons.load import (
     stored_revision,
     update_lexicons,
 )
+from wordlevel.lexicons.types.labmt import labMTLanguage
+from wordlevel.lexicons.types.socialsent import SocialSentYear
 
 
 class LexiconLoader:
@@ -175,7 +175,7 @@ class LexiconLoader:
             [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons) and
             caches it. By default, later calls for the same lexicon read the cached copy without
             contacting HuggingFace. To load the latest or a specific version instead, see
-            [`LexiconLoader`][wordlevel.api.lexicons.lexicon.LexiconLoader].
+            [`LexiconLoader`][wordlevel.lexicons.lexicon.LexiconLoader].
 
         License:
             This data is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0
@@ -223,7 +223,7 @@ class LexiconLoader:
             [HuggingFace](https://huggingface.co/datasets/ryanjgallag/wordlevel-lexicons) and
             caches it. By default, later calls for the same lexicon read the cached copy without
             contacting HuggingFace. To load the latest or a specific version instead, see
-            [`LexiconLoader`][wordlevel.api.lexicons.lexicon.LexiconLoader].
+            [`LexiconLoader`][wordlevel.lexicons.lexicon.LexiconLoader].
 
         License:
             This data is made available under the [Public Domain Dedication and License

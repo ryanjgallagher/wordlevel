@@ -3,8 +3,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from wordlevel.api.lexicons.lexicon import LexiconLoader
-from wordlevel.core.lexicons.load import Lexicon, LexiconConnectionError
+from wordlevel.lexicons.core.load import Lexicon, LexiconConnectionError
+from wordlevel.lexicons.lexicon import LexiconLoader
 
 
 STORED_COMMIT = "a" * 40
@@ -23,7 +23,7 @@ def load_kwargs(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
         load_kwargs.update(kwargs)
         return Lexicon(lf=pl.LazyFrame({"token": ["good"], "score": [8.0]}), center=5.0)
 
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.load_lexicon", fake_load_lexicon)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.load_lexicon", fake_load_lexicon)
 
     return load_kwargs
 
@@ -33,7 +33,7 @@ def stub_stored_revision(monkeypatch: pytest.MonkeyPatch, commit: str | None) ->
     Stubs out `stored_revision` so that the lexicon appears to be stored at `commit`, or not stored
     at all if `commit` is `None`
     """
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.stored_revision", lambda **kwargs: commit)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.stored_revision", lambda **kwargs: commit)
 
 
 def stub_resolve_revision(monkeypatch: pytest.MonkeyPatch, commit: str) -> list[str]:
@@ -47,7 +47,7 @@ def stub_resolve_revision(monkeypatch: pytest.MonkeyPatch, commit: str) -> list[
         requested_revisions.append(str(kwargs["revision"]))
         return commit
 
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.resolve_revision", fake_resolve_revision)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.resolve_revision", fake_resolve_revision)
 
     return requested_revisions
 
@@ -60,7 +60,7 @@ def stub_unreachable_hub(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_resolve_revision(**kwargs: object) -> str:
         raise LexiconConnectionError("Could not reach HuggingFace")
 
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.resolve_revision", fake_resolve_revision)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.resolve_revision", fake_resolve_revision)
 
 
 @pytest.mark.parametrize("input_token", ["hf_abc123", None])
@@ -215,10 +215,10 @@ def test_update_cached_updates_stored_lexicons(
     update_kwargs: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "wordlevel.api.lexicons.lexicon.stored_lexicon_paths", lambda **kwargs: repo_paths
+        "wordlevel.lexicons.lexicon.stored_lexicon_paths", lambda **kwargs: repo_paths
     )
     monkeypatch.setattr(
-        "wordlevel.api.lexicons.lexicon.update_lexicons",
+        "wordlevel.lexicons.lexicon.update_lexicons",
         lambda **kwargs: update_kwargs.update(kwargs),
     )
 
@@ -240,9 +240,9 @@ def test_update_cached_skips_hub_when_nothing_stored(
     """
     update_kwargs: dict[str, object] = {}
 
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.stored_lexicon_paths", lambda **kwargs: [])
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.stored_lexicon_paths", lambda **kwargs: [])
     monkeypatch.setattr(
-        "wordlevel.api.lexicons.lexicon.update_lexicons",
+        "wordlevel.lexicons.lexicon.update_lexicons",
         lambda **kwargs: update_kwargs.update(kwargs),
     )
 

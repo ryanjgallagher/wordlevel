@@ -3,7 +3,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from wordlevel.core.lexicons.load import Lexicon
+from wordlevel.lexicons.core.load import Lexicon
 
 
 MOCK_COMMIT = "0" * 40
@@ -38,15 +38,11 @@ def mock_lexicons(monkeypatch: pytest.MonkeyPatch) -> None:
             revision=revision,
         )
 
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.load_lexicon", fake_load_lexicon)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.load_lexicon", fake_load_lexicon)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.stored_revision", lambda **kwargs: MOCK_COMMIT)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.resolve_revision", lambda **kwargs: MOCK_COMMIT)
     monkeypatch.setattr(
-        "wordlevel.api.lexicons.lexicon.stored_revision", lambda **kwargs: MOCK_COMMIT
-    )
-    monkeypatch.setattr(
-        "wordlevel.api.lexicons.lexicon.resolve_revision", lambda **kwargs: MOCK_COMMIT
-    )
-    monkeypatch.setattr(
-        "wordlevel.api.lexicons.lexicon.stored_lexicon_paths",
+        "wordlevel.lexicons.lexicon.stored_lexicon_paths",
         lambda **kwargs: ["labMT/data/processed/english.parquet"],
     )
-    monkeypatch.setattr("wordlevel.api.lexicons.lexicon.update_lexicons", lambda **kwargs: None)
+    monkeypatch.setattr("wordlevel.lexicons.lexicon.update_lexicons", lambda **kwargs: None)

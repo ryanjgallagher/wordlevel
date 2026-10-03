@@ -3,7 +3,7 @@ import pathlib
 
 import pytest
 
-import wordlevel.api.lexicons.types
+import wordlevel.lexicons.types
 from lexicons.generate_types import enumerate_processors
 from lexicons.processor import LexiconProcessor
 
@@ -85,7 +85,7 @@ def test_types_dir_matches_package_types_module(processor: LexiconProcessor) -> 
     imports them from. The processor builds its path from `base_dir`, so this catches the two
     drifting apart if the package is restructured
     """
-    package_types_dir = pathlib.Path(wordlevel.api.lexicons.types.__file__).parent
+    package_types_dir = pathlib.Path(wordlevel.lexicons.types.__file__).parent
 
     assert processor.types_dir == package_types_dir
 
@@ -95,8 +95,6 @@ def test_types_file_is_importable(processor: LexiconProcessor) -> None:
     Checks that the types file the processor writes is the module that `wordlevel` imports, which
     the directory alone does not guarantee if the file is named differently than the module
     """
-    module = importlib.import_module(
-        f"wordlevel.api.lexicons.types.{processor.lexicon_name.lower()}"
-    )
+    module = importlib.import_module(f"wordlevel.lexicons.types.{processor.lexicon_name.lower()}")
 
     assert pathlib.Path(module.__file__) == processor.types_f
