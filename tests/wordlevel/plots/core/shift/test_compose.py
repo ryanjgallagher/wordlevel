@@ -5,7 +5,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import BorderConfig, TotalShiftConfig, ZeroLineConfig
+from wordlevel.configs import BorderConfig, TotalsConfig, ZeroLineConfig
 from wordlevel.plots.core.shift.shift import shift
 from wordlevel.plots.core.shift.totals import _LABEL_COL, _SCORE_TYPE_COL
 
@@ -198,7 +198,7 @@ class TestShowTotals:
     def test_forwards_total_shift_config(
         self, make_mock_df, score_col, rank_col, token_col, score_type_col
     ):
-        """`shift` forwards `total_shift_config` into the grand-total panel."""
+        """`shift` forwards `totals_config` into the grand-total panel."""
         chart = _shift(
             make_mock_df(n=50),
             score_col=score_col,
@@ -206,7 +206,7 @@ class TestShowTotals:
             token_col=token_col,
             score_type_col=score_type_col,
             show_totals=True,
-            total_shift_config=TotalShiftConfig(total_symbol="Ω"),
+            totals_config=TotalsConfig(grand_total_label="Ω"),
         )
 
         grand_bars = _panel_bars_data(cast(alt.VConcatChart, chart).vconcat[1])

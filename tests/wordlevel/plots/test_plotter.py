@@ -6,7 +6,7 @@ import pytest
 
 from wordlevel.catalog.catalog import Catalog
 from wordlevel.comparison.comparison import comp
-from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalShiftConfig
+from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalsConfig
 from wordlevel.constants import (
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
@@ -326,18 +326,18 @@ class TestBar:
             plotter.bar(comparison, bar_config=bad_config)
 
     @pytest.mark.parametrize(
-        "total_shift_config",
+        "totals_config",
         [
-            TotalShiftConfig(total="#ff0000"),
-            {"total": "#ff0000"},
+            TotalsConfig(grand_total_color="#ff0000"),
+            {"grand_total_color": "#ff0000"},
         ],
     )
     def test_total_shift_config_reaches_the_grand_total_bar(
-        self, catalog: Catalog, total_shift_config: TotalShiftConfig | dict
+        self, catalog: Catalog, totals_config: TotalsConfig | dict
     ) -> None:
         """"""
         plotter = Plotter(catalog.comparisons, "word")
-        chart = plotter.bar("freq_comp", show_totals=True, total_shift_config=total_shift_config)
+        chart = plotter.bar("freq_comp", show_totals=True, totals_config=totals_config)
 
         scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]
         assert scale["range"] == ["#ff0000"]
@@ -418,7 +418,7 @@ class TestShift:
         """"""
         plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.shift(
-            "entropy_comp", show_totals=True, total_shift_config={"total": "#ff0000"}
+            "entropy_comp", show_totals=True, totals_config={"grand_total_color": "#ff0000"}
         )
 
         scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]

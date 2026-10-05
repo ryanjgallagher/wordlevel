@@ -14,9 +14,14 @@ from wordlevel.configs import (
     ScoreAxisConfig,
     ScoreSignBarConfig,
     ShiftBarConfig,
-    TotalShiftConfig,
+    TotalsConfig,
 )
-from wordlevel.constants import COUNTERACTED_SUFFIX, SHIFT_BASE_SCORE_TYPES, SHIFT_SCORE_TYPES
+from wordlevel.constants import (
+    COUNTERACTED_SUFFIX,
+    GRAND_TOTAL_SCORE_TYPE,
+    SHIFT_BASE_SCORE_TYPES,
+    SHIFT_SCORE_TYPES,
+)
 from wordlevel.plots.core.shift.bars import (
     _SHIFT_TYPE_ORDERS,
     InternalBarConfig,
@@ -771,7 +776,7 @@ def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, 
             rank_col=rank_col,
             score_col=score_col,
             score_type_col=score_type_col,
-            bar_config=InternalBarConfig(colors={"lower_score": "red"}, orders=None, symbols={}),
+            bar_config=InternalBarConfig(colors={"lower_score": "red"}, orders=None),
         )
 
 
@@ -867,16 +872,16 @@ def test_bar_config_custom_colors(
     assert color_mapping == {first: "#000000", second: getattr(config_cls(), second)}
 
 
-def test_total_shift_config_default_color(token_col, score_col, score_type_col, rank_col):
+def test_totals_config_default_color(token_col, score_col, score_type_col, rank_col):
     """
-    `InternalBarConfig.from_total_shift_config` colors the single grand-total bar with the
-    TotalShiftConfig's default `total` color
+    `InternalBarConfig.from_totals_config` colors the single grand-total bar with the
+    TotalsConfig's default `grand_total_color`
     """
     df = pl.DataFrame(
         {
             token_col: ["a"],
             rank_col: [1],
-            score_type_col: ["total"],
+            score_type_col: [GRAND_TOTAL_SCORE_TYPE],
             score_col: [1.0],
         }
     )
@@ -886,29 +891,31 @@ def test_total_shift_config_default_color(token_col, score_col, score_type_col, 
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_total_shift_config(None),
+        bar_config=InternalBarConfig.from_totals_config(None),
     )
 
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
     color_mapping = dict(zip(scale["domain"], scale["range"]))
-    assert color_mapping == {"total": TotalShiftConfig().total}
+    assert color_mapping == {GRAND_TOTAL_SCORE_TYPE: TotalsConfig().grand_total_color}
     assert "order" not in chart_json["encoding"]
 
 
 @pytest.mark.parametrize("as_dict", [False, True])
-def test_total_shift_config_custom_color(token_col, score_col, score_type_col, rank_col, as_dict):
+def test_totals_config_custom_color(token_col, score_col, score_type_col, rank_col, as_dict):
     """
-    A custom config overrides the grand-total bar's `total` color, whether passed as a
-    TotalShiftConfig object or as a dict of the same fields
+    A custom config overrides the grand-total bar's `grand_total_color`, whether passed as a
+    TotalsConfig object or as a dict of the same fields
     """
-    config = {"total": "#000000"} if as_dict else TotalShiftConfig(total="#000000")
+    config = (
+        {"grand_total_color": "#000000"} if as_dict else TotalsConfig(grand_total_color="#000000")
+    )
     df = pl.DataFrame(
         {
             token_col: ["a"],
             rank_col: [1],
-            score_type_col: ["total"],
+            score_type_col: [GRAND_TOTAL_SCORE_TYPE],
             score_col: [1.0],
         }
     )
@@ -918,12 +925,12 @@ def test_total_shift_config_custom_color(token_col, score_col, score_type_col, r
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_total_shift_config(config),
+        bar_config=InternalBarConfig.from_totals_config(config),
     )
 
     scale = chart.to_dict()["encoding"]["color"]["scale"]
     color_mapping = dict(zip(scale["domain"], scale["range"]))
-    assert color_mapping == {"total": "#000000"}
+    assert color_mapping == {GRAND_TOTAL_SCORE_TYPE: "#000000"}
 
 
 @pytest.mark.parametrize(
@@ -931,9 +938,9 @@ def test_total_shift_config_custom_color(token_col, score_col, score_type_col, r
     [
         lambda config: InternalBarConfig.from_bar_config(config, attributed_by="frequency"),
         lambda config: InternalBarConfig.from_shift_bar_config(config),
-        lambda config: InternalBarConfig.from_total_shift_config(config),
+        lambda config: InternalBarConfig.from_totals_config(config),
     ],
-    ids=["from_bar_config", "from_shift_bar_config", "from_total_shift_config"],
+    ids=["from_bar_config", "from_shift_bar_config", "from_totals_config"],
 )
 def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
     """
@@ -951,9 +958,9 @@ def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
             ShiftBarConfig(),
         ),
         (lambda config: InternalBarConfig.from_shift_bar_config(config), BarConfig()),
-        (lambda config: InternalBarConfig.from_total_shift_config(config), BarConfig()),
+        (lambda config: InternalBarConfig.from_totals_config(config), BarConfig()),
     ],
-    ids=["from_bar_config", "from_shift_bar_config", "from_total_shift_config"],
+    ids=["from_bar_config", "from_shift_bar_config", "from_totals_config"],
 )
 def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_config):
     """
@@ -975,7 +982,7 @@ def test_bar_outline_rendered_on_mark(token_col, score_col, score_type_col, rank
         score_col=score_col,
         score_type_col=score_type_col,
         bar_config=InternalBarConfig(
-            colors={"x": "red"}, orders=None, symbols={}, outline_color="blue", outline_width=2
+            colors={"x": "red"}, orders=None, outline_color="blue", outline_width=2
         ),
     )
 
@@ -995,7 +1002,7 @@ def test_bar_outline_absent_when_none(token_col, score_col, score_type_col, rank
         score_col=score_col,
         score_type_col=score_type_col,
         bar_config=InternalBarConfig(
-            colors={"x": "red"}, orders=None, symbols={}, outline_color=None, outline_width=None
+            colors={"x": "red"}, orders=None, outline_color=None, outline_width=None
         ),
     )
 
@@ -1034,9 +1041,8 @@ def test_internal_bar_config_default_outline(make_internal_bar_config):
             lambda c: InternalBarConfig.from_bar_config(c, attributed_by="score_sign"),
         ),
         (ShiftBarConfig, lambda c: InternalBarConfig.from_shift_bar_config(c)),
-        (TotalShiftConfig, lambda c: InternalBarConfig.from_total_shift_config(c)),
     ],
-    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig", "TotalShiftConfig"],
+    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig"],
 )
 def test_internal_bar_config_custom_outline(config_cls, make_internal_bar_config, as_dict):
     """
@@ -1050,15 +1056,28 @@ def test_internal_bar_config_custom_outline(config_cls, make_internal_bar_config
     assert (internal.outline_color, internal.outline_width) == ("blue", 2)
 
 
+@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
+def test_internal_bar_config_custom_grand_total_outline(as_dict):
+    """
+    The grand total bar's outline is named for the bar it styles, since a `TotalsConfig` carries no
+    outline for any other bar
+    """
+    overrides = {"grand_total_outline_color": "blue", "grand_total_outline_width": 2}
+    config = overrides if as_dict else TotalsConfig(**overrides)
+
+    internal = InternalBarConfig.from_totals_config(config)
+    assert (internal.outline_color, internal.outline_width) == ("blue", 2)
+
+
 @pytest.mark.parametrize(
     "internal_bar_config",
     [
         InternalBarConfig.from_bar_config(None, attributed_by="frequency"),
         InternalBarConfig.from_bar_config(None, attributed_by="score_sign"),
         InternalBarConfig.from_shift_bar_config(None),
-        InternalBarConfig.from_total_shift_config(None),
+        InternalBarConfig.from_totals_config(None),
     ],
-    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig", "TotalShiftConfig"],
+    ids=["BarConfig", "ScoreSignBarConfig", "ShiftBarConfig", "TotalsConfig"],
 )
 def test_internal_bar_config_colors_exclude_bar_outline_fields(internal_bar_config):
     """

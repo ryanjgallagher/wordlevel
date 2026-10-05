@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import asdict, replace
 from typing import cast
 
 import altair as alt
@@ -6,12 +6,17 @@ import polars as pl
 from polars import col
 
 from wordlevel.configs import (
+    LABEL_SUFFIX,
     LabelConfig,
     RankAxisConfig,
-    TotalShiftConfig,
+    TotalsConfig,
     ZeroLineConfig,
 )
-from wordlevel.constants import COUNTERACTED_SUFFIX, DEFAULT_SCORE_AXIS_PIXEL_SIZE
+from wordlevel.constants import (
+    COUNTERACTED_SUFFIX,
+    DEFAULT_SCORE_AXIS_PIXEL_SIZE,
+    GRAND_TOTAL_SCORE_TYPE,
+)
 from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
@@ -45,6 +50,20 @@ _SHIFT_TYPE_SUMMARY_POSITIONS: dict[str, int] = {
 _SHIFT_SUMMARY_DROP_IF_EMPTY: frozenset[str] = frozenset({"higher_score", "lower_score"})
 
 
+def _get_score_type_labels(config: TotalsConfig) -> dict[str, str]:
+    """
+    Resolves a `TotalsConfig` into its score type to label mapping. The config carries a label for
+    every contribution type of either plot, so the labels that do not name a score type present in
+    the data simply never match. The grand total is labeled separately, since it is a sum across
+    contribution types rather than one of them
+    """
+    return {
+        name.removesuffix(LABEL_SUFFIX): label
+        for name, label in asdict(config).items()
+        if name.endswith(LABEL_SUFFIX) and name != "grand_total_label"
+    }
+
+
 def _get_total(
     df: pl.DataFrame | pl.LazyFrame, score_col: str, label: str
 ) -> pl.DataFrame | pl.LazyFrame:
@@ -54,7 +73,7 @@ def _get_total(
     annotation plotted next to the bar
     """
     return df.select(
-        pl.lit("total").alias(_SCORE_TYPE_COL),
+        pl.lit(GRAND_TOTAL_SCORE_TYPE).alias(_SCORE_TYPE_COL),
         pl.lit(1).alias(_POSITION_COL),
         pl.lit(label).alias(_LABEL_COL),
         col(score_col).sum(),
@@ -75,8 +94,8 @@ def _get_score_type_totals(
     """
     # score_type -> label
     label_expr = pl.when(False).then(pl.lit(""))
-    for score_type, symbol in labels.items():
-        label_expr = label_expr.when(col(score_type_col) == score_type).then(pl.lit(symbol))
+    for score_type, label in labels.items():
+        label_expr = label_expr.when(col(score_type_col) == score_type).then(pl.lit(label))
 
     # score_type -> position
     pos_expr = pl.when(False).then(pl.lit(0))
@@ -143,7 +162,7 @@ def shift_total(
     bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
     border_config: InternalBorderConfig | None = None,
-    total_shift_config: TotalShiftConfig | dict | None = None,
+    totals_config: TotalsConfig | dict | None = None,
     zero_line_config: ZeroLineConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
@@ -178,15 +197,14 @@ def shift_total(
         score_axis_config:
             Configuration for the score axis
         bar_config:
-            Configuration for the bars, controls the colors and symbols used to plot per shift type
-            totals
+            Configuration for the bars, controls the colors used to plot per score type totals
         label_config:
             Configuration for the bar labels
         border_config:
             Configuration for the axes and border
-        total_shift_config:
-            Configuration for the grand total bar, controls the color and symbol used to plot the
-            grand total
+        totals_config:
+            Configuration for the totals panels, controls the label plotted next to each bar and
+            the color of the grand total bar
         zero_line_config:
             Configuration for the zero line at the score-axis origin
         scale_factor:
@@ -207,10 +225,10 @@ def shift_total(
     elif score_axis_config is None:
         score_axis_config = InternalScoreAxisConfig()
 
-    if isinstance(total_shift_config, dict):
-        total_shift_config = TotalShiftConfig(**total_shift_config)
-    elif total_shift_config is None:
-        total_shift_config = TotalShiftConfig()
+    if isinstance(totals_config, dict):
+        totals_config = TotalsConfig(**totals_config)
+    elif totals_config is None:
+        totals_config = TotalsConfig()
 
     # The score type and grand total configs need to be resolved separately since they're both used
     if isinstance(bar_config, dict):
@@ -224,17 +242,17 @@ def shift_total(
         type_bar_config = replace(bar_config, opacities=None)
 
     if grand_total:
-        # The grand total inherits the bar outline unless the `TotalShiftConfig` sets its own
+        # The grand total inherits the bar outline unless the `TotalsConfig` sets its own
         bar_config = replace(
-            InternalBarConfig.from_total_shift_config(total_shift_config),
+            InternalBarConfig.from_totals_config(totals_config),
             outline_color=(
-                total_shift_config.outline_color
-                if total_shift_config.outline_color is not None
+                totals_config.grand_total_outline_color
+                if totals_config.grand_total_outline_color is not None
                 else type_bar_config.outline_color
             ),
             outline_width=(
-                total_shift_config.outline_width
-                if total_shift_config.outline_width is not None
+                totals_config.grand_total_outline_width
+                if totals_config.grand_total_outline_width is not None
                 else type_bar_config.outline_width
             ),
         )
@@ -263,13 +281,13 @@ def shift_total(
             _get_total(
                 df=df,
                 score_col=score_col,
-                label=total_shift_config.total_symbol,
+                label=totals_config.grand_total_label,
             ).lazy(),
             _get_score_type_totals(
                 df=df,
                 score_col=score_col,
                 score_type_col=score_type_col,
-                labels=type_bar_config.symbols,
+                labels=_get_score_type_labels(totals_config),
             ).lazy(),
         ]
     )

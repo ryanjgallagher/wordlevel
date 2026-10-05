@@ -17,7 +17,7 @@ from wordlevel.configs import (
     ScoreAxisConfig,
     ScoreSignBarConfig,
     ShiftBarConfig,
-    TotalShiftConfig,
+    TotalsConfig,
     ZeroLineConfig,
 )
 from wordlevel.constants import (
@@ -86,7 +86,7 @@ class Plotter:
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
         zero_line_config: ZeroLineConfig | dict | None = None,
-        total_shift_config: TotalShiftConfig | dict | None = None,
+        totals_config: TotalsConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
         split_nonnegative_by_corpus: bool = True,
@@ -157,10 +157,10 @@ class Plotter:
             zero_line_config:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
-            total_shift_config:
-                Configuration for the grand total bar in the totals panels. Accepts a
-                `TotalShiftConfig` or a dict with the same fields. Ignored if `show_totals` is
-                `False`
+            totals_config:
+                Configuration for the totals panels, which labels each total bar and colors the
+                grand total bar. Accepts a `TotalsConfig` or a dict with the same fields. Ignored
+                if `show_totals` is `False`
             scale_factor:
                 Multiplier applied to the score axis when fitting it to the bar labels. Increasing
                 it provides more space for the bar labels
@@ -216,7 +216,7 @@ class Plotter:
             label_config=label_config,
             border_config=border_config,
             zero_line_config=zero_line_config,
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
         )
@@ -235,7 +235,7 @@ class Plotter:
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
         zero_line_config: ZeroLineConfig | dict | None = None,
-        total_shift_config: TotalShiftConfig | dict | None = None,
+        totals_config: TotalsConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
     ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
@@ -310,10 +310,10 @@ class Plotter:
             zero_line_config:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
-            total_shift_config:
-                Configuration for the grand total bar in the totals panels. Accepts a
-                `TotalShiftConfig` or a dict with the same fields. Ignored if `show_totals` is
-                `False`
+            totals_config:
+                Configuration for the totals panels, which labels each total bar and colors the
+                grand total bar. Accepts a `TotalsConfig` or a dict with the same fields. Ignored
+                if `show_totals` is `False`
             scale_factor:
                 Multiplier applied to the score axis when fitting it to the bar labels. Increasing
                 it provides more space for the bar labels
@@ -368,7 +368,7 @@ class Plotter:
             label_config=label_config,
             border_config=border_config,
             zero_line_config=zero_line_config,
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
         )

@@ -12,21 +12,20 @@ from wordlevel.configs import (
     DEFAULT_SCORE_AXIS_TITLE,
     NON_COLOR_FIELDS,
     PERCENT_SCORE_AXIS_TITLE,
-    SYMBOL_SUFFIX,
     BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
     ScoreSignBarConfig,
     ShiftBarConfig,
-    TotalShiftConfig,
+    TotalsConfig,
 )
-from wordlevel.constants import COUNTERACTED_SUFFIX
+from wordlevel.constants import COUNTERACTED_SUFFIX, GRAND_TOTAL_SCORE_TYPE
 from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.plots.core.utils import to_altair_optional
 
 
 _BarConfigT = TypeVar(
-    "_BarConfigT", bound=BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig
+    "_BarConfigT", bound=BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalsConfig
 )
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
@@ -90,7 +89,7 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
 @dataclass
 class InternalBarConfig:
     """
-    Internal configuration of bar colors, stacking orders, totals symbols, and outlines.
+    Internal configuration of bar colors, stacking orders, opacities, and outlines.
 
     Attributes:
         colors:
@@ -98,8 +97,6 @@ class InternalBarConfig:
         orders:
             Mapping from score type name to stacking order. `None` when stacking order is not
             applicable (e.g., for a bar plot whose bars are not stacked)
-        symbols:
-            Mapping from score type name to symbol to use in the "totals" chart
         opacities:
             Mapping from score type name to bar opacity. `None` when every bar is opaque
         outline_color:
@@ -110,7 +107,6 @@ class InternalBarConfig:
 
     colors: dict[str, str]
     orders: dict[str, int] | None
-    symbols: dict[str, str]
     opacities: dict[str, float] | None = None
     outline_color: str | None = DEFAULT_BAR_OUTLINE_COLOR
     outline_width: float | None = DEFAULT_BAR_OUTLINE_WIDTH
@@ -133,12 +129,10 @@ class InternalBarConfig:
             expected_config = BarConfig
 
         resolved_config = cls._resolve_config(config, expected_config)
-        colors, symbols = cls._get_colors_and_symbols(resolved_config)
 
         return cls(
-            colors=colors,
+            colors=cls._get_colors(resolved_config),
             orders=None,
-            symbols=symbols,
             outline_color=resolved_config.outline_color,
             outline_width=resolved_config.outline_width,
         )
@@ -150,7 +144,7 @@ class InternalBarConfig:
         `from_bar_config` is that it enforces the order of the different bar types
         """
         resolved_config = cls._resolve_config(config, ShiftBarConfig)
-        base_colors, symbols = cls._get_colors_and_symbols(resolved_config)
+        base_colors = cls._get_colors(resolved_config)
 
         # The config declares only the six base colors, but we need the counteracted ones too
         colors: dict[str, str] = {}
@@ -166,7 +160,6 @@ class InternalBarConfig:
         return cls(
             colors=colors,
             orders=_SHIFT_TYPE_ORDERS,
-            symbols=symbols,
             opacities=opacities,
             outline_color=resolved_config.outline_color,
             outline_width=resolved_config.outline_width,
@@ -184,29 +177,26 @@ class InternalBarConfig:
         return cls(
             colors={st: "steelblue" for st in score_types},
             orders=None,
-            symbols={st: st for st in score_types},
         )
 
     @classmethod
-    def from_total_shift_config(cls, config: TotalShiftConfig | dict | None) -> Self:
+    def from_totals_config(cls, config: TotalsConfig | dict | None) -> Self:
         """
-        Builds the grand-total bar config from a `TotalShiftConfig`, using its `total` color and
-        `total_symbol` for the single `"total"` bar.
+        Builds the grand-total bar config from a `TotalsConfig`, using its `grand_total_color` for
+        the single grand total bar
         """
-        resolved_config = cls._resolve_config(config, TotalShiftConfig)
-        colors, symbols = cls._get_colors_and_symbols(resolved_config)
+        resolved_config = cls._resolve_config(config, TotalsConfig)
 
         return cls(
-            colors=colors,
+            colors={GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total_color},
             orders=None,
-            symbols=symbols,
-            outline_color=resolved_config.outline_color,
-            outline_width=resolved_config.outline_width,
+            outline_color=resolved_config.grand_total_outline_color,
+            outline_width=resolved_config.grand_total_outline_width,
         )
 
     @staticmethod
     def _resolve_config(
-        config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig | dict | None,
+        config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalsConfig | dict | None,
         expected_config: type[_BarConfigT],
     ) -> _BarConfigT:
         """
@@ -232,24 +222,11 @@ class InternalBarConfig:
         return config
 
     @staticmethod
-    def _get_colors_and_symbols(
-        config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig,
-    ) -> tuple[dict[str, str], dict[str, str]]:
+    def _get_colors(config: BarConfig | ScoreSignBarConfig | ShiftBarConfig) -> dict[str, str]:
         """
-        Resolves a config dataclass into its color and symbol mappings (as dicts)
+        Resolves a config dataclass into its score type to color mapping
         """
-        data = asdict(config)
-
-        colors = {
-            k: v
-            for k, v in data.items()
-            if not k.endswith(SYMBOL_SUFFIX) and k not in NON_COLOR_FIELDS
-        }
-        symbols = {
-            k.removesuffix(SYMBOL_SUFFIX): v for k, v in data.items() if k.endswith(SYMBOL_SUFFIX)
-        }
-
-        return colors, symbols
+        return {k: v for k, v in asdict(config).items() if k not in NON_COLOR_FIELDS}
 
 
 def shift_bars(

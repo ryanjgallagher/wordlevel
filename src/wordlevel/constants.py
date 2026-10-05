@@ -23,6 +23,8 @@ NORMED_FREQ_CMP_COL = "__wl_normed_freq_cmp"
 LEXICON_SCORE_REF_COL = "__wl_lexicon_score_ref"
 LEXICON_SCORE_CMP_COL = "__wl_lexicon_score_cmp"
 
+GRAND_TOTAL_SCORE_TYPE = "total"
+
 COUNTERACTED_SUFFIX = "_counteracted"
 SHIFT_BASE_SCORE_TYPES = (
     "more_of_negative",

@@ -35,8 +35,10 @@ chart = cl.plot.bar(
     bar_config={
         "reference": "#009E73",
         "comparison": "#7B3294",
-        "reference_symbol": "Roosevelt",
-        "comparison_symbol": "Biden",
+    },
+    totals_config={
+        "reference_label": "Roosevelt",
+        "comparison_label": "Biden",
     },
 )
 # --8<-- [end:corpus_colors]
@@ -55,8 +57,10 @@ chart = cl.plot.bar(
     bar_config={
         "reinforce": "#D55E00",
         "offset": "#CC79A7",
-        "reinforce_symbol": "Raises",
-        "offset_symbol": "Lowers",
+    },
+    totals_config={
+        "reinforce_label": "Raises",
+        "offset_label": "Lowers",
     },
 )
 # --8<-- [end:sign_colors]
@@ -136,7 +140,7 @@ chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
     show_totals=True,
-    total_shift_config={"total": "#D55E00", "total_symbol": "JSD"},
+    totals_config={"grand_total_color": "#D55E00", "grand_total_label": "JSD"},
 )
 # --8<-- [end:totals]
 

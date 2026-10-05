@@ -5,7 +5,7 @@ from wordlevel.configs import (
     BorderConfig,
     LabelConfig,
     RankAxisConfig,
-    TotalShiftConfig,
+    TotalsConfig,
     ZeroLineConfig,
 )
 from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE
@@ -38,7 +38,7 @@ def shift(
     label_config: LabelConfig | dict | None = None,
     border_config: BorderConfig | dict | None = None,
     zero_line_config: ZeroLineConfig | dict | None = None,
-    total_shift_config: TotalShiftConfig | dict | None = None,
+    totals_config: TotalsConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,
 ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
@@ -86,7 +86,7 @@ def shift(
             Configuration for the axes and border
         zero_line_config:
             Configuration for the zero line at the score-axis origin
-        total_shift_config
+        totals_config
             Configuration for the "grand" total bar. Ignored if `show_totals` is False
         scale_factor:
             Multiplier applied to the score axis when fitting it to the bar labels. Increasing it
@@ -229,7 +229,7 @@ def shift(
                 draw_border_opposite_rank_axis=border_is_visible,
                 width=seam_width,
             ),
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             zero_line_config=zero_line_config,
             scale_factor=scale_factor,
             **size_param,
@@ -255,7 +255,7 @@ def shift(
                 draw_border_opposite_rank_axis=border_is_visible,
                 width=seam_width,
             ),
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             zero_line_config=zero_line_config,
             scale_factor=scale_factor,
             **size_param,

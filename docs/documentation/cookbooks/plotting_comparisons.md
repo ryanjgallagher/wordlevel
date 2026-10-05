@@ -179,7 +179,7 @@ Each bar is labeled with its corresponding token. How labels are displayed can b
 
 ### Totals
 
-When the total contributions are shown (`show_totals=True`), the color and label of the grand total can be configured with a [`TotalShiftConfig`](../api/configuration/plots/total_shift_config.md). To configure the colors and labels of the totals per attribution, [see above](#total-contributions) for using the `bar_config`.
+When the total contributions are shown (`show_totals=True`), a [`TotalsConfig`](../api/configuration/plots/totals_config.md) configures the color of the grand total bar and the label of every total bar, including the ones per attribution. To configure the colors of the totals per attribution, [see above](#total-contributions) for using the `bar_config`.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:totals"

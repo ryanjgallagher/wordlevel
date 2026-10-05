@@ -62,7 +62,7 @@ def _dark_chart(catalog: Any, comparison: str) -> alt.LayerChart | alt.VConcatCh
         },
         border_config={"color": DARK_LINE},
         zero_line_config={"color": DARK_LINE},
-        total_shift_config={"total": DARK_MUTED_TEXT},
+        totals_config={"total": DARK_MUTED_TEXT},
     )
     # The chart background is Altair's, not one of wordlevel's plotting options.
     return chart.properties(background=DARK_BACKGROUND)
