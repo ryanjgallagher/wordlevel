@@ -764,6 +764,10 @@ def test_shift_bar_configs_fade_counteracted_bars(
     assert opacity_mapping == expected_opacities
     assert fill_opacity["legend"] is None
 
+    # Without an ordinal scale, Vega-Lite treats opacity as continuous and pairs each score type
+    # with an evenly spaced opacity rather than the one above
+    assert fill_opacity["scale"]["type"] == "ordinal"
+
 
 def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, rank_col):
     """

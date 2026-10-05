@@ -366,9 +366,12 @@ def shift_bars(
 
     if bar_config.opacities is not None:
         score_type_opacities = [bar_config.opacities[score_type] for score_type in score_types]
+        # `type` must be set: opacity is a continuous channel, so Vega-Lite otherwise builds a
+        # `point` scale, which spreads the score types evenly between the first and last opacity
+        # instead of giving each the one it is paired with
         fill_opacity = alt.FillOpacity(
             f"{score_type_col}:N",
-            scale=alt.Scale(domain=score_types, range=score_type_opacities),
+            scale=alt.Scale(type="ordinal", domain=score_types, range=score_type_opacities),
             legend=None,
         )
     else:
