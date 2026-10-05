@@ -16,7 +16,7 @@ from wordlevel.configs import (
     ShiftBarConfig,
     TotalShiftConfig,
 )
-from wordlevel.constants import SHIFT_SCORE_TYPES
+from wordlevel.constants import COUNTERACTED_SUFFIX, SHIFT_BASE_SCORE_TYPES, SHIFT_SCORE_TYPES
 from wordlevel.plots.core.shift.bars import (
     _SHIFT_TYPE_ORDERS,
     InternalBarConfig,
@@ -662,6 +662,20 @@ def test_rank_axis_tick_configs(
         assert axis["values"] == expected_output
 
 
+def _expected_shift_colors(config: ShiftBarConfig) -> dict[str, str]:
+    """
+    The color expected for every score type. The config declares only the six base colors, so each
+    `*_counteracted` score type is expected to take its base score type's color
+    """
+    expected = {}
+    for score_type in SHIFT_BASE_SCORE_TYPES:
+        color = getattr(config, score_type)
+        expected[score_type] = color
+        expected[f"{score_type}{COUNTERACTED_SUFFIX}"] = color
+
+    return expected
+
+
 def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank_col):
     """
     Test that the default shift bar configuration applies the ShiftBarConfig defaults
@@ -677,9 +691,7 @@ def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
-    default_colors = {
-        score_type: getattr(ShiftBarConfig(), score_type) for score_type in SHIFT_SCORE_TYPES
-    }
+    default_colors = _expected_shift_colors(ShiftBarConfig())
 
     assert set(scale["domain"]) == set(default_colors.keys())
     assert set(scale["range"]) == set(default_colors.values())
@@ -697,7 +709,8 @@ def test_shift_bar_configs_custom_colors(
 ):
     """
     Test that a custom ShiftBarConfig overrides individual colors while keeping the rest at default,
-    whether passed as a ShiftBarConfig object or as a dict of the same fields
+    whether passed as a ShiftBarConfig object or as a dict of the same fields. Overriding a base
+    color also recolors that score type's `*_counteracted` bar
     """
     custom_overrides = {"lower_score": "#000000", "more_of_positive": "#999999"}
     config = custom_overrides if as_dict else ShiftBarConfig(**custom_overrides)
@@ -713,15 +726,38 @@ def test_shift_bar_configs_custom_colors(
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
-    default_colors = {
-        score_type: getattr(ShiftBarConfig(), score_type) for score_type in SHIFT_SCORE_TYPES
+    expected_colors = _expected_shift_colors(ShiftBarConfig(**custom_overrides))
+
+    assert dict(zip(scale["domain"], scale["range"])) == expected_colors
+
+
+def test_shift_bar_configs_fade_counteracted_bars(
+    make_mock_df, score_col, score_type_col, rank_col
+):
+    """
+    Test that the `*_counteracted` bars of a shift plot are faded to `counteracted_opacity` while
+    every base bar stays opaque, and that the fade carries no legend of its own
+    """
+    config = ShiftBarConfig(counteracted_opacity=0.2)
+
+    chart = shift_bars(
+        make_mock_df(),
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        bar_config=InternalBarConfig.from_shift_bar_config(config),
+    )
+
+    fill_opacity = chart.to_dict()["encoding"]["fillOpacity"]
+    opacity_mapping = dict(zip(fill_opacity["scale"]["domain"], fill_opacity["scale"]["range"]))
+
+    expected_opacities = {
+        score_type: 0.2 if score_type.endswith(COUNTERACTED_SUFFIX) else 1.0
+        for score_type in SHIFT_SCORE_TYPES
     }
-    color_mapping = dict(zip(scale["domain"], scale["range"]))
-    for score_type, default_color in default_colors.items():
-        if score_type in custom_overrides:
-            assert color_mapping[score_type] == custom_overrides[score_type]
-        else:
-            assert color_mapping[score_type] == default_color
+
+    assert opacity_mapping == expected_opacities
+    assert fill_opacity["legend"] is None
 
 
 def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, rank_col):
@@ -753,7 +789,7 @@ def test_bar_config_default_colors(
 ):
     """
     `InternalBarConfig.from_bar_config` colors the bars with the config's defaults and, since bar
-    plots don't stack, enforces no stacking order
+    plots don't stack and have no counteracted bars, enforces no stacking order and no fade
     """
     first, second = attribution_fields
     df = pl.DataFrame(
@@ -779,6 +815,7 @@ def test_bar_config_default_colors(
     color_mapping = dict(zip(scale["domain"], scale["range"]))
     assert color_mapping == {field: getattr(config_cls(), field) for field in attribution_fields}
     assert "order" not in chart_json["encoding"]
+    assert "fillOpacity" not in chart_json["encoding"]
 
 
 @pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])

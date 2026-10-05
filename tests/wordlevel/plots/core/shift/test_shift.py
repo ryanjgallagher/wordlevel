@@ -151,7 +151,7 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
     """
     custom_rank_title = "Custom Rank Title"
     custom_score_title = "Custom Score Title"
-    custom_bar_colors = {"more_of_positive_counteracted": "magenta"}
+    custom_bar_colors = {"more_of_positive": "magenta"}
     custom_label_color = "cyan"
 
     for config_style in ["config", "dict"]:

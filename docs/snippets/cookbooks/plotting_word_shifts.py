@@ -59,8 +59,6 @@ chart = cl.plot.shift(
     bar_config={
         "higher_score": "#D55E00",
         "lower_score": "#009E73",
-        "higher_score_counteracted": "#F2BFA0",
-        "lower_score_counteracted": "#A6DBC8",
     },
 )
 # --8<-- [end:multiple_colors]

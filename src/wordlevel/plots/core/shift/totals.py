@@ -221,7 +221,7 @@ def shift_total(
         score_types = df.lazy().select(col(score_type_col).unique()).collect().to_series().to_list()
         type_bar_config = InternalBarConfig.from_score_types(score_types)
     else:
-        type_bar_config = bar_config
+        type_bar_config = replace(bar_config, opacities=None)
 
     if grand_total:
         # The grand total inherits the bar outline unless the `TotalShiftConfig` sets its own

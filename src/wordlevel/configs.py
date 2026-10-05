@@ -15,9 +15,10 @@ DEFAULT_BAR_OUTLINE_WIDTH: float = 0.1
 
 BAR_OUTLINE_FIELDS = frozenset({"outline_color", "outline_width"})
 """
-Names of the bar config fields that style every bar's outline. Together with the `*_symbol` fields,
-these are the bar config fields that are not score types
+Names of the bar config fields that style every bar's outline
 """
+
+NON_COLOR_FIELDS = BAR_OUTLINE_FIELDS | frozenset({"counteracted_opacity"})
 
 
 @dataclass(kw_only=True)
@@ -115,24 +116,9 @@ class ShiftBarConfig:
             Color of bars where the token's score is lower in the comparison than the reference
         higher_score:
             Color of bars where the token's score is higher in the comparison than the reference
-        lower_score_counteracted:
-            Color of bars where the `lower_score` contribution is partially counteracted by the
-            other bar
-        higher_score_counteracted:
-            Color of bars where the `higher_score` contribution is partially counteracted by the
-            other bar
-        more_of_negative_counteracted:
-            Color of bars where the `more_of_negative` contribution is partially counteracted by
-            other bar
-        more_of_positive_counteracted:
-            Color of bars where the `more_of_positive` contribution is partially counteracted by
-            other bar
-        less_of_positive_counteracted:
-            Color of bars where the `less_of_positive` contribution is partially counteracted by
-            other bar
-        less_of_negative_counteracted:
-            Color of bars where the `less_of_negative` contribution is partially counteracted by
-            other bar
+        counteracted_opacity:
+            Opacity of the `*_counteracted` bars, as a fraction between 0 and 1. Each one is drawn
+            in its base bar's color at this opacity
         more_of_negative_symbol:
             Symbol labeling the `more_of_negative` contribution in the totals panels
         more_of_positive_symbol:
@@ -157,12 +143,7 @@ class ShiftBarConfig:
     less_of_negative: str = "#C4CAFC"
     lower_score: str = "#9E75B7"
     higher_score: str = "#FECC5D"
-    lower_score_counteracted: str = "#decee6"
-    higher_score_counteracted: str = "#ffedc7"
-    more_of_negative_counteracted: str = "#b6d1ee"
-    more_of_positive_counteracted: str = "#ffffd4"
-    less_of_positive_counteracted: str = "#fffff0"
-    less_of_negative_counteracted: str = "#ebedff"
+    counteracted_opacity: float = 0.345
     more_of_negative_symbol: str = "−↑"
     more_of_positive_symbol: str = "+↑"
     less_of_positive_symbol: str = "+↓"

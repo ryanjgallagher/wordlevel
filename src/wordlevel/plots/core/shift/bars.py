@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, fields
+from typing import TypeVar
 
 import altair as alt
 import polars as pl
@@ -6,10 +7,10 @@ from typing_extensions import Self
 
 from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE
 from wordlevel.configs import (
-    BAR_OUTLINE_FIELDS,
     DEFAULT_BAR_OUTLINE_COLOR,
     DEFAULT_BAR_OUTLINE_WIDTH,
     DEFAULT_SCORE_AXIS_TITLE,
+    NON_COLOR_FIELDS,
     PERCENT_SCORE_AXIS_TITLE,
     SYMBOL_SUFFIX,
     BarConfig,
@@ -19,9 +20,14 @@ from wordlevel.configs import (
     ShiftBarConfig,
     TotalShiftConfig,
 )
+from wordlevel.constants import COUNTERACTED_SUFFIX
 from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.plots.core.utils import to_altair_optional
 
+
+_BarConfigT = TypeVar(
+    "_BarConfigT", bound=BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig
+)
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
     "more_of_negative": 1,
@@ -94,6 +100,8 @@ class InternalBarConfig:
             applicable (e.g., for a bar plot whose bars are not stacked)
         symbols:
             Mapping from score type name to symbol to use in the "totals" chart
+        opacities:
+            Mapping from score type name to bar opacity. `None` when every bar is opaque
         outline_color:
             Color of the outline around each bar. If `None`, Altair's default is used
         outline_width:
@@ -103,6 +111,7 @@ class InternalBarConfig:
     colors: dict[str, str]
     orders: dict[str, int] | None
     symbols: dict[str, str]
+    opacities: dict[str, float] | None = None
     outline_color: str | None = DEFAULT_BAR_OUTLINE_COLOR
     outline_width: float | None = DEFAULT_BAR_OUTLINE_WIDTH
 
@@ -141,12 +150,24 @@ class InternalBarConfig:
         `from_bar_config` is that it enforces the order of the different bar types
         """
         resolved_config = cls._resolve_config(config, ShiftBarConfig)
-        colors, symbols = cls._get_colors_and_symbols(resolved_config)
+        base_colors, symbols = cls._get_colors_and_symbols(resolved_config)
+
+        # The config declares only the six base colors, but we need the counteracted ones too
+        colors: dict[str, str] = {}
+        opacities: dict[str, float] = {}
+        for score_type, color in base_colors.items():
+            counteracted = f"{score_type}{COUNTERACTED_SUFFIX}"
+
+            colors[score_type] = color
+            colors[counteracted] = color
+            opacities[score_type] = 1.0
+            opacities[counteracted] = resolved_config.counteracted_opacity
 
         return cls(
             colors=colors,
             orders=_SHIFT_TYPE_ORDERS,
             symbols=symbols,
+            opacities=opacities,
             outline_color=resolved_config.outline_color,
             outline_width=resolved_config.outline_width,
         )
@@ -186,13 +207,8 @@ class InternalBarConfig:
     @staticmethod
     def _resolve_config(
         config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig | dict | None,
-        expected_config: (
-            type[BarConfig]
-            | type[ScoreSignBarConfig]
-            | type[ShiftBarConfig]
-            | type[TotalShiftConfig]
-        ),
-    ) -> BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalShiftConfig:
+        expected_config: type[_BarConfigT],
+    ) -> _BarConfigT:
         """
         Resolves a user-supplied config (which may be None or a dict) and resolves it into the
         corresponding config data class
@@ -227,7 +243,7 @@ class InternalBarConfig:
         colors = {
             k: v
             for k, v in data.items()
-            if not k.endswith(SYMBOL_SUFFIX) and k not in BAR_OUTLINE_FIELDS
+            if not k.endswith(SYMBOL_SUFFIX) and k not in NON_COLOR_FIELDS
         }
         symbols = {
             k.removesuffix(SYMBOL_SUFFIX): v for k, v in data.items() if k.endswith(SYMBOL_SUFFIX)
@@ -371,6 +387,16 @@ def shift_bars(
     score_types = sorted(df[score_type_col].unique().to_list())
     score_type_colors = [bar_config.colors[score_type] for score_type in score_types]
 
+    if bar_config.opacities is not None:
+        score_type_opacities = [bar_config.opacities[score_type] for score_type in score_types]
+        fill_opacity = alt.FillOpacity(
+            f"{score_type_col}:N",
+            scale=alt.Scale(domain=score_types, range=score_type_opacities),
+            legend=None,
+        )
+    else:
+        fill_opacity = alt.Undefined
+
     # Configure the orders of stacked bars
     if bar_config.orders is not None:
         df = df.with_columns(
@@ -469,7 +495,13 @@ def shift_bars(
             stroke=to_altair_optional(bar_config.outline_color),
             strokeWidth=to_altair_optional(bar_config.outline_width),
         )
-        .encode(x=x_axis, y=y_axis, color=color, order=score_type_orders)
+        .encode(
+            x=x_axis,
+            y=y_axis,
+            color=color,
+            fillOpacity=fill_opacity,
+            order=score_type_orders,
+        )
         .properties(**chart_params)
     )
 

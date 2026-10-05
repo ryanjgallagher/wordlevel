@@ -272,6 +272,6 @@ def shift(
             chart,
             spacing=0,
             bounds="flush",
-        ).resolve_scale(color="independent")
+        ).resolve_scale(color="independent", fillOpacity="independent")
 
     return chart
