@@ -148,6 +148,23 @@ class TestShowTotals:
 
         assert chart.to_dict()["resolve"]["scale"]["color"] == "independent"
 
+    def test_fill_opacity_scales_are_independent(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+    ):
+        """The stacked panels resolve their fill opacity scales independently. Only the main panel
+        has faded bars, and a shared scale would union the panels' differing score types into one
+        domain while keeping only the first panel's range."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+        )
+
+        assert chart.to_dict()["resolve"]["scale"]["fillOpacity"] == "independent"
+
     def test_panel_order_is_types_then_grand_then_main(
         self, make_mock_df, score_col, rank_col, token_col, score_type_col
     ):
