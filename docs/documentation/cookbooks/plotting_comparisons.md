@@ -49,7 +49,7 @@ In the example below, "you," "ukraine," and "afghanistan" are attributed to Bide
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-If a comparison attributes by corpus, then its bars can be configured with a [`BarConfig`](../api/configuration/plots/bar_config.md). For example, we can change their colors and the labels of the total contributions. Note, we can pass a dictionary instead of a `BarConfig` instance, and we do not have to specify every field—only the ones that we want to change.
+If a comparison attributes by corpus, then its bar colors can be configured with a [`BarColorConfig`](../api/configuration/plots/bar_color_config.md), using its `reference` and `comparison` fields. For example, we can change those colors and, with a [`TotalsConfig`](../api/configuration/plots/totals_config.md), the labels of the total contributions. Note, we can pass a dictionary instead of a `BarColorConfig` instance, and we do not have to specify every field—only the ones that we want to change.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:corpus_colors"
@@ -75,7 +75,7 @@ For these measures, we attribute a token by whether it _reinforces_ or _offsets_
 --8<-- "snippets/cookbooks/plotting_comparisons.py:render"
 ```
 
-If a comparison attributes by reinforcements and offsets, then its bars can be configured with a [`ScoreSignBarConfig`](../api/configuration/plots/score_sign_bar_config.md). Like before, we can pass a dictionary instead of a `ScoreSignBarConfig` instance, and we do not have to specify every field—only the ones that we want to change.
+If a comparison attributes by reinforcements and offsets, then its bar colors can be configured with the same [`BarColorConfig`](../api/configuration/plots/bar_color_config.md), using its `reinforce` and `offset` fields instead.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:sign_colors"
@@ -179,7 +179,7 @@ Each bar is labeled with its corresponding token. How labels are displayed can b
 
 ### Totals
 
-When the total contributions are shown (`show_totals=True`), a [`TotalsConfig`](../api/configuration/plots/totals_config.md) configures the color of the grand total bar and the label of every total bar, including the ones per attribution. To configure the colors of the totals per attribution, [see above](#total-contributions) for using the `bar_config`.
+When the total contributions are shown (`show_totals=True`), a [`TotalsConfig`](../api/configuration/plots/totals_config.md) configures the label of every total bar, including the ones per attribution. The grand total bar's color is set with `grand_total` on the [`BarColorConfig`](../api/configuration/plots/bar_color_config.md), alongside the colors of the bars it totals.
 
 ```python exec="true" source="above" session="plotting_comparisons"
 --8<-- "snippets/cookbooks/plotting_comparisons.py:totals"
