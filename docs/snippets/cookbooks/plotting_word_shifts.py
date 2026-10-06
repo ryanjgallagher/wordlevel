@@ -36,7 +36,7 @@ chart = cl.plot.shift(
     "roosevelt_biden_labmt",
     max_rank=20,
     show_totals=True,
-    bar_config={
+    color_config={
         "more_of_positive": "#009E73",
         "less_of_positive": "#A6DBC8",
         "more_of_negative": "#7B3294",
@@ -56,11 +56,9 @@ chart = cl.plot.shift(
     "roosevelt_biden_socialsent",
     max_rank=20,
     show_totals=True,
-    bar_config={
+    color_config={
         "higher_score": "#D55E00",
         "lower_score": "#009E73",
-        "higher_score_counteracted": "#F2BFA0",
-        "lower_score_counteracted": "#A6DBC8",
     },
 )
 # --8<-- [end:multiple_colors]

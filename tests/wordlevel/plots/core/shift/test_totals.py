@@ -4,7 +4,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import ShiftBarConfig, TotalShiftConfig
+from wordlevel.configs import BarConfig, ShiftColorConfig, TotalsConfig
 from wordlevel.plots.core.shift.bars import InternalBarConfig
 from wordlevel.plots.core.shift.border import InternalBorderConfig
 from wordlevel.plots.core.shift.totals import (
@@ -39,8 +39,8 @@ def _rows_by_type(chart: alt.LayerChart) -> dict[str, dict]:
 
 @pytest.fixture
 def type_bar_config() -> InternalBarConfig:
-    """A per-score-type bar config with the six default shift colors and symbols."""
-    return InternalBarConfig.from_shift_bar_config(ShiftBarConfig())
+    """A per-score-type bar config with the six default shift colors."""
+    return InternalBarConfig.from_shift_colors(None, None)
 
 
 class TestStructure:
@@ -97,7 +97,7 @@ class TestGrandTotal:
         row = data.to_dicts()[0]
         assert row[score_col] == pytest.approx(sum(scores))
         assert row[_POSITION_COL] == 1
-        assert row[_LABEL_COL] == TotalShiftConfig().total_symbol
+        assert row[_LABEL_COL] == TotalsConfig().grand_total_label
 
 
 class TestScoreTypeTotals:
@@ -126,7 +126,7 @@ class TestScoreTypeTotals:
         rows = _rows_by_type(chart)
         assert set(rows) == {"more_of_positive"}
         assert rows["more_of_positive"][score_col] == pytest.approx(sum(scores))
-        assert rows["more_of_positive"][_LABEL_COL] == ShiftBarConfig().more_of_positive_symbol
+        assert rows["more_of_positive"][_LABEL_COL] == TotalsConfig().more_of_positive_label
         assert (
             rows["more_of_positive"][_POSITION_COL]
             == _SHIFT_TYPE_SUMMARY_POSITIONS["more_of_positive"]
@@ -275,12 +275,11 @@ class TestSharedScale:
 
 class TestConfig:
     @pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
-    def test_total_shift_config_sets_grand_total_color_and_symbol(
-        self, score_col, score_type_col, as_dict
-    ):
-        """`total_shift_config` (as object or dict) sets the grand-total bar's color and symbol."""
-        overrides = {"total": "#000000", "total_symbol": "T"}
-        total_shift_config = overrides if as_dict else TotalShiftConfig(**overrides)
+    def test_grand_total_color_and_label(self, score_col, score_type_col, as_dict):
+        """The grand-total bar takes its color from the color config and its label from
+        `totals_config` (as object or dict)."""
+        overrides = {"grand_total_label": "T"}
+        totals_config = overrides if as_dict else TotalsConfig(**overrides)
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
         chart = shift_total(
@@ -288,17 +287,35 @@ class TestConfig:
             score_col=score_col,
             score_type_col=score_type_col,
             grand_total=True,
-            total_shift_config=total_shift_config,
+            bar_config=InternalBarConfig.from_shift_colors({"grand_total": "#000000"}, None),
+            totals_config=totals_config,
             width=100,
         )
 
         assert "#000000" in _bars_encoding(chart)["color"]["scale"]["range"]
         assert _bars_data(chart)[_LABEL_COL][0] == "T"
 
-    def test_bar_config_sets_type_colors_and_symbols(self, score_col, score_type_col):
-        """`bar_config` sets the per-type bar colors (color scale range) and symbols (labels)."""
-        bar_config = InternalBarConfig.from_shift_bar_config(
-            ShiftBarConfig(more_of_positive="#000000", more_of_positive_symbol="Z")
+    def test_labels_for_absent_score_types_are_ignored(self, score_col, score_type_col):
+        """`TotalsConfig` carries a label for every contribution type of either plot, so the ones
+        that do not name a score type in the data are ignored rather than rejected."""
+        df = pl.DataFrame({score_type_col: ["reference"], score_col: [0.5]})
+
+        chart = shift_total(
+            df,
+            score_col=score_col,
+            score_type_col=score_type_col,
+            grand_total=False,
+            bar_config=InternalBarConfig.from_bar_colors(None, None, ("reference", "comparison")),
+            totals_config=TotalsConfig(reference_label="Roosevelt", lower_score_label="ignored"),
+            width=100,
+        )
+
+        assert _rows_by_type(chart)["reference"][_LABEL_COL] == "Roosevelt"
+
+    def test_configs_set_type_colors_and_labels(self, score_col, score_type_col):
+        """A per-type bar takes its color from `bar_config` and its label from `totals_config`."""
+        bar_config = InternalBarConfig.from_shift_colors(
+            ShiftColorConfig(more_of_positive="#000000"), None
         )
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
@@ -308,6 +325,7 @@ class TestConfig:
             score_type_col=score_type_col,
             grand_total=False,
             bar_config=bar_config,
+            totals_config=TotalsConfig(more_of_positive_label="Z"),
             width=100,
         )
 
@@ -316,10 +334,10 @@ class TestConfig:
 
     @pytest.mark.parametrize("grand_total", [True, False])
     def test_bar_config_sets_outline(self, score_col, score_type_col, grand_total):
-        """Without outlines set in `total_shift_config`, both the grand-total and per-type bars take
+        """Without outlines set in `totals_config`, both the grand-total and per-type bars take
         the `bar_config` outline."""
-        bar_config = InternalBarConfig.from_shift_bar_config(
-            ShiftBarConfig(outline_color="blue", outline_width=2)
+        bar_config = InternalBarConfig.from_shift_colors(
+            None, BarConfig(outline_color="blue", outline_width=2)
         )
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
@@ -336,16 +354,14 @@ class TestConfig:
         assert (mark["stroke"], mark["strokeWidth"]) == ("blue", 2)
 
     @pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
-    def test_total_shift_config_overrides_grand_total_outline(
-        self, score_col, score_type_col, as_dict
-    ):
-        """An outline field set in `total_shift_config` (as object or dict) overrides the
+    def test_totals_config_overrides_grand_total_outline(self, score_col, score_type_col, as_dict):
+        """An outline field set in `totals_config` (as object or dict) overrides the
         `bar_config` outline on the grand-total bar, and unset fields still inherit."""
-        bar_config = InternalBarConfig.from_shift_bar_config(
-            ShiftBarConfig(outline_color="blue", outline_width=2)
+        bar_config = InternalBarConfig.from_shift_colors(
+            None, BarConfig(outline_color="blue", outline_width=2)
         )
-        overrides = {"outline_color": "red"}
-        total_shift_config = overrides if as_dict else TotalShiftConfig(**overrides)
+        overrides = {"grand_total_outline_color": "red"}
+        totals_config = overrides if as_dict else TotalsConfig(**overrides)
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
         chart = shift_total(
@@ -354,7 +370,7 @@ class TestConfig:
             score_type_col=score_type_col,
             grand_total=True,
             bar_config=bar_config,
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             width=100,
         )
 

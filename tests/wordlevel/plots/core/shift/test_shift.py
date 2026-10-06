@@ -4,7 +4,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftBarConfig
+from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftColorConfig
 from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE
 from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
@@ -80,7 +80,7 @@ def test_shift_bar_width_controls_rank_dimension(
         score_type_col=score_type_col,
         max_rank=50,
         vertical=vertical,
-        rank_axis=RankAxisConfig(bar_width=bar_width),
+        rank_axis_config=RankAxisConfig(bar_width=bar_width),
     )
 
     spec = chart.to_dict()
@@ -151,14 +151,14 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
     """
     custom_rank_title = "Custom Rank Title"
     custom_score_title = "Custom Score Title"
-    custom_bar_colors = {"more_of_positive_counteracted": "magenta"}
+    custom_bar_colors = {"more_of_positive": "magenta"}
     custom_label_color = "cyan"
 
     for config_style in ["config", "dict"]:
         if config_style == "config":
             rank_config = RankAxisConfig(title=custom_rank_title, grid=False)
             score_config = InternalScoreAxisConfig(title=custom_score_title, grid=True)
-            shift_bar_config = ShiftBarConfig(**custom_bar_colors)
+            shift_bar_config = ShiftColorConfig(**custom_bar_colors)
             label_config = LabelConfig(color=custom_label_color)
         else:
             rank_config = {"title": custom_rank_title, "grid": False}
@@ -174,9 +174,9 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
             score_type_col=score_type_col,
             width=100,
             vertical=True,
-            rank_axis=rank_config,
-            score_axis=score_config,
-            bar_config=InternalBarConfig.from_shift_bar_config(shift_bar_config),
+            rank_axis_config=rank_config,
+            score_axis_config=score_config,
+            bar_config=InternalBarConfig.from_shift_colors(shift_bar_config, None),
             label_config=label_config,
         )
 

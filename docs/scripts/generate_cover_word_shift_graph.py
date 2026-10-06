@@ -10,8 +10,9 @@ lexicon download at build time.
 
 Two variants are written, one per color scheme, which the home page selects between with the
 `#only-light` / `#only-dark` suffix. The light variant is the chart exactly as the snippet builds
-it. The dark variant restates the same call with the theme's colors; see `_dark_chart` for why the
-bar palette cannot simply be reused.
+it. The dark variant restates the same call with the theme's text, axis, and background colors. The
+bar palette carries over as-is, since the faded `*_counteracted` bars are drawn as their base color
+at a lower opacity and so fade into whichever background they are on.
 
 Usage:
     uv run python -m docs.scripts.generate_cover_word_shift_graph
@@ -24,9 +25,6 @@ from pathlib import Path
 from typing import Any
 
 import altair as alt
-
-from wordlevel.configs import ShiftBarConfig
-from wordlevel.constants import COUNTERACTED_SUFFIX, SHIFT_SCORE_TYPES
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -43,44 +41,19 @@ DARK_TEXT = "#ffffff"
 DARK_MUTED_TEXT = "#b6b6b7"  # the header's 70% white, composited over the background
 DARK_LINE = "#505155"  # --md-default-fg-color--lighter
 
-# Each default `*_counteracted` color is its base color blended this far toward white: the faded
-# look is a fade into the page, not a color in its own right. Against a dark page the same fade has
-# to run toward the dark background instead, or the faded bars come out brighter than the bars they
-# are meant to recede behind.
-COUNTERACTED_FADE = 0.65
-
-
-def _blend(color: str, toward: str, fraction: float) -> str:
-    start = [int(color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)]
-    end = [int(toward.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)]
-    return "#" + "".join(
-        f"{round(start[i] + fraction * (end[i] - start[i])):02x}" for i in range(3)
-    )
-
-
-def _dark_bar_config() -> dict[str, str]:
-    """Re-fade every `*_counteracted` bar color against the dark background."""
-    defaults = ShiftBarConfig()
-    base_names = [name for name in SHIFT_SCORE_TYPES if not name.endswith(COUNTERACTED_SUFFIX)]
-    return {
-        f"{name}_counteracted": _blend(getattr(defaults, name), DARK_BACKGROUND, COUNTERACTED_FADE)
-        for name in base_names
-    }
-
 
 def _dark_chart(catalog: Any, comparison: str) -> alt.LayerChart | alt.VConcatChart:
     chart = catalog.plot.shift(
         comparison,
         show_totals=True,
-        bar_config=_dark_bar_config(),
         label_config={"color": DARK_TEXT},
-        score_axis={
+        score_axis_config={
             "title_color": DARK_MUTED_TEXT,
             "label_color": DARK_MUTED_TEXT,
             "tick_color": DARK_LINE,
             "axis_color": DARK_LINE,
         },
-        rank_axis={
+        rank_axis_config={
             "title_color": DARK_MUTED_TEXT,
             "label_color": DARK_MUTED_TEXT,
             "tick_color": DARK_LINE,
@@ -89,7 +62,7 @@ def _dark_chart(catalog: Any, comparison: str) -> alt.LayerChart | alt.VConcatCh
         },
         border_config={"color": DARK_LINE},
         zero_line_config={"color": DARK_LINE},
-        total_shift_config={"total": DARK_MUTED_TEXT},
+        color_config={"grand_total": DARK_MUTED_TEXT},
     )
     # The chart background is Altair's, not one of wordlevel's plotting options.
     return chart.properties(background=DARK_BACKGROUND)

@@ -17,7 +17,7 @@ def shift_labels(
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
-    config: LabelConfig | dict | None = None,
+    label_config: LabelConfig | dict | None = None,
 ) -> alt.Chart:
     """
     Assumes a dataframe which has one row per word per type of contribution. There should be columns
@@ -31,10 +31,10 @@ def shift_labels(
         df = df.filter(col(rank_col) <= max_rank)
 
     # Set default label configurations
-    if isinstance(config, dict):
-        config = LabelConfig(**config)
-    elif config is None:
-        config = LabelConfig()
+    if isinstance(label_config, dict):
+        label_config = LabelConfig(**label_config)
+    elif label_config is None:
+        label_config = LabelConfig()
 
     label_align_col = alignment_col if alignment_col is not None else score_col
     passthrough_cols = [] if label_align_col == score_col else [label_align_col]
@@ -56,36 +56,36 @@ def shift_labels(
 
     neg_bar_angle = (pos_bar_angle + 180) % 360
 
-    if config.rotation is None:
+    if label_config.rotation is None:
         rotation = pos_bar_angle
     else:
-        rotation = config.rotation
+        rotation = label_config.rotation
 
     # Configure text angles, including orienting them so they are readable
     pos_text_angle = to_readable_angle(rotation)
-    if config.mirror_rotation:
+    if label_config.mirror_rotation:
         neg_text_angle = to_readable_angle(-1 * rotation)
     else:
         neg_text_angle = pos_text_angle
 
     # Configure the label positions given the bar and text angles
     pos_position_params = get_position_params(
-        bar_angle=pos_bar_angle, text_angle=pos_text_angle, pad=config.pad
+        bar_angle=pos_bar_angle, text_angle=pos_text_angle, pad=label_config.pad
     )
     neg_position_params = get_position_params(
-        bar_angle=neg_bar_angle, text_angle=neg_text_angle, pad=config.pad
+        bar_angle=neg_bar_angle, text_angle=neg_text_angle, pad=label_config.pad
     )
 
     # Configure the axes based on orientation
     if vertical:
         y_axis = alt.Y(f"{rank_col}:O")
-        if config.on_bar_ends:
+        if label_config.on_bar_ends:
             x_axis = alt.X(score_col)
         else:
             x_axis = alt.datum(0)
     else:
         x_axis = alt.X(f"{rank_col}:O")
-        if config.on_bar_ends:
+        if label_config.on_bar_ends:
             y_axis = alt.Y(score_col)
         else:
             y_axis = alt.datum(0)
@@ -94,9 +94,9 @@ def shift_labels(
     labels_chart = (
         alt.Chart(df)
         .mark_text(
-            color=config.color,
-            fontSize=to_altair_optional(config.size),
-            fontWeight=config.weight,  # type: ignore[arg-type]
+            color=label_config.color,
+            fontSize=to_altair_optional(label_config.size),
+            fontWeight=label_config.weight,  # type: ignore[arg-type]
             align=to_conditional_expr(
                 label_align_col, "align", pos_position_params, neg_position_params
             ),

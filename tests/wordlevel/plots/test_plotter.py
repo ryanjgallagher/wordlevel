@@ -6,7 +6,7 @@ import pytest
 
 from wordlevel.catalog.catalog import Catalog
 from wordlevel.comparison.comparison import comp
-from wordlevel.configs import BarConfig, ScoreSignBarConfig, ShiftBarConfig, TotalShiftConfig
+from wordlevel.configs import BarColorConfig, ShiftColorConfig
 from wordlevel.constants import (
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
@@ -257,36 +257,36 @@ class TestBar:
         )  # reference, comparison
 
     @pytest.mark.parametrize(
-        "bar_config",
+        "color_config",
         [
-            BarConfig(reference="#ff0000"),
+            BarColorConfig(reference="#ff0000"),
             {"reference": "#ff0000"},
         ],
     )
-    def test_bar_config_accepts_object_or_dict(
-        self, catalog: Catalog, bar_config: BarConfig | dict
+    def test_color_config_accepts_object_or_dict(
+        self, catalog: Catalog, color_config: BarColorConfig | dict
     ) -> None:
-        """`bar_config` accepts either a `BarConfig` instance or a matching dict."""
+        """`color_config` accepts either a `BarColorConfig` instance or a matching dict."""
         plotter = Plotter(catalog.comparisons, "word")
-        chart = plotter.bar("freq_comp", bar_config=bar_config)
+        chart = plotter.bar("freq_comp", color_config=color_config)
 
         # The reference color override should propagate to the bars layer's color range
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
 
     @pytest.mark.parametrize(
-        "bar_config",
+        "color_config",
         [
-            ScoreSignBarConfig(reinforce="#00ff00"),
+            BarColorConfig(reinforce="#00ff00"),
             {"reinforce": "#00ff00"},
         ],
     )
-    def test_bar_config_accepts_alignment_object_or_dict(
-        self, catalog: Catalog, bar_config: ScoreSignBarConfig | dict
+    def test_color_config_accepts_score_sign_colors(
+        self, catalog: Catalog, color_config: BarColorConfig | dict
     ) -> None:
-        """For a score-sign measure, `bar_config` accepts an `ScoreSignBarConfig` or matching dict."""
+        """For a score-sign measure, the same `BarColorConfig` carries the reinforce/offset pair."""
         plotter = Plotter(catalog.comparisons, "word")
-        chart = plotter.bar("entropy_comp", bar_config=bar_config)
+        chart = plotter.bar("entropy_comp", color_config=color_config)
 
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#00ff00" in scale["range"]
@@ -300,44 +300,43 @@ class TestBar:
         assert set(scale["domain"]) == {"reinforce", "offset"}
 
     @pytest.mark.parametrize(
-        "comparison,bad_config,expected_error",
+        "comparison,bad_config",
         [
-            # Corpus-attributed measure given a sign-attribution config/keys
-            ("freq_comp", ScoreSignBarConfig(), TypeError),
-            ("freq_comp", {"reinforce": "#ffffff"}, ValueError),
-            # Sign-attributed measure given a corpus-attribution config/keys
-            ("entropy_comp", BarConfig(), TypeError),
-            ("entropy_comp", {"reference": "#ffffff"}, ValueError),
+            # Corpus-attributed measure given sign-attribution colors
+            ("freq_comp", BarColorConfig(reinforce="#ffffff")),
+            ("freq_comp", {"reinforce": "#ffffff"}),
+            # Sign-attributed measure given corpus-attribution colors
+            ("entropy_comp", BarColorConfig(reference="#ffffff")),
+            ("entropy_comp", {"reference": "#ffffff"}),
         ],
     )
-    def test_bar_config_mismatch_raises(
+    def test_color_config_mismatch_raises(
         self,
         catalog: Catalog,
         comparison: str,
-        bad_config: BarConfig | ScoreSignBarConfig | dict,
-        expected_error: type[Exception],
+        bad_config: BarColorConfig | dict,
     ) -> None:
         """
-        A config of the wrong class raises a TypeError, whereas a dict whose keys don't match the
-        comparison's attribution raises a ValueError
+        Coloring an attribution the comparison does not produce raises, naming the pair it accepts,
+        whether the color is set on a `BarColorConfig` or in a dict
         """
         plotter = Plotter(catalog.comparisons, "word")
-        with pytest.raises(expected_error):
-            plotter.bar(comparison, bar_config=bad_config)
+        with pytest.raises(ValueError, match="attributed as"):
+            plotter.bar(comparison, color_config=bad_config)
 
     @pytest.mark.parametrize(
-        "total_shift_config",
+        "color_config",
         [
-            TotalShiftConfig(total="#ff0000"),
-            {"total": "#ff0000"},
+            BarColorConfig(grand_total="#ff0000"),
+            {"grand_total": "#ff0000"},
         ],
     )
-    def test_total_shift_config_reaches_the_grand_total_bar(
-        self, catalog: Catalog, total_shift_config: TotalShiftConfig | dict
+    def test_color_config_reaches_the_grand_total_bar(
+        self, catalog: Catalog, color_config: BarColorConfig | dict
     ) -> None:
         """"""
         plotter = Plotter(catalog.comparisons, "word")
-        chart = plotter.bar("freq_comp", show_totals=True, total_shift_config=total_shift_config)
+        chart = plotter.bar("freq_comp", show_totals=True, color_config=color_config)
 
         scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]
         assert scale["range"] == ["#ff0000"]
@@ -398,27 +397,27 @@ class TestShift:
         assert totals_entries[0].df["word"].n_unique() == df_mock.height  # all 5 tokens, not top 2
 
     @pytest.mark.parametrize(
-        "bar_config",
+        "color_config",
         [
-            ShiftBarConfig(more_of_positive="#ff0000"),
+            ShiftColorConfig(more_of_positive="#ff0000"),
             {"more_of_positive": "#ff0000"},
         ],
     )
-    def test_bar_config_accepts_object_or_dict(
-        self, catalog: Catalog, bar_config: ShiftBarConfig | dict
+    def test_color_config_accepts_object_or_dict(
+        self, catalog: Catalog, color_config: ShiftColorConfig | dict
     ) -> None:
-        """`bar_config` accepts either a `ShiftBarConfig` instance or a matching dict."""
+        """`color_config` accepts either a `ShiftColorConfig` instance or a matching dict."""
         plotter = Plotter(catalog.comparisons, "word")
-        chart = plotter.shift("entropy_comp", bar_config=bar_config)
+        chart = plotter.shift("entropy_comp", color_config=color_config)
 
         scale = chart.layer[0].layer[0].to_dict()["encoding"]["color"]["scale"]
         assert "#ff0000" in scale["range"]
 
-    def test_total_shift_config_reaches_the_grand_total_bar(self, catalog: Catalog) -> None:
+    def test_color_config_reaches_the_grand_total_bar(self, catalog: Catalog) -> None:
         """"""
         plotter = Plotter(catalog.comparisons, "word")
         chart = plotter.shift(
-            "entropy_comp", show_totals=True, total_shift_config={"total": "#ff0000"}
+            "entropy_comp", show_totals=True, color_config={"grand_total": "#ff0000"}
         )
 
         scale = _grand_total_bars_layer(chart).to_dict()["encoding"]["color"]["scale"]

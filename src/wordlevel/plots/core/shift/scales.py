@@ -23,7 +23,7 @@ def shift_scales(
     vertical: bool = True,
     width: float | None = None,
     height: float | None = None,
-    config: LabelConfig | dict | None = None,
+    label_config: LabelConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
     """
@@ -33,15 +33,15 @@ def shift_scales(
 
     Assumes a dataframe which has one row per word per type of contribution
     """
-    if isinstance(config, dict):
-        config = LabelConfig(**config)
-    elif config is None:
-        config = LabelConfig()
+    if isinstance(label_config, dict):
+        label_config = LabelConfig(**label_config)
+    elif label_config is None:
+        label_config = LabelConfig()
 
-    if config.size is None:
+    if label_config.size is None:
         fontsize = DEFAULT_LABEL_SIZE
     else:
-        fontsize = config.size
+        fontsize = label_config.size
 
     if vertical:
         if width is None:
@@ -63,9 +63,9 @@ def shift_scales(
         token_col=token_col,
         size=size,
         fontsize=fontsize,
-        on_bar_ends=config.on_bar_ends,
-        pad=config.pad,
-        font_width_to_height_ratio=config.font_width_to_height_ratio,
+        on_bar_ends=label_config.on_bar_ends,
+        pad=label_config.pad,
+        font_width_to_height_ratio=label_config.font_width_to_height_ratio,
         scale_factor=scale_factor,
     )
 

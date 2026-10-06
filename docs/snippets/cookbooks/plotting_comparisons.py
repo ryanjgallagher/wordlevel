@@ -32,11 +32,13 @@ chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
     show_totals=True,
-    bar_config={
+    color_config={
         "reference": "#009E73",
         "comparison": "#7B3294",
-        "reference_symbol": "Roosevelt",
-        "comparison_symbol": "Biden",
+    },
+    totals_config={
+        "reference_label": "Roosevelt",
+        "comparison_label": "Biden",
     },
 )
 # --8<-- [end:corpus_colors]
@@ -52,11 +54,13 @@ chart = cl.plot.bar(
     "roosevelt_biden_entropy",
     max_rank=20,
     show_totals=True,
-    bar_config={
+    color_config={
         "reinforce": "#D55E00",
         "offset": "#CC79A7",
-        "reinforce_symbol": "Raises",
-        "offset_symbol": "Lowers",
+    },
+    totals_config={
+        "reinforce_label": "Raises",
+        "offset_label": "Lowers",
     },
 )
 # --8<-- [end:sign_colors]
@@ -76,7 +80,7 @@ chart = cl.plot.bar("roosevelt_biden_jsd", max_rank=20, width=500)
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=5,
-    rank_axis={"bar_width": 24},
+    rank_axis_config={"bar_width": 24},
 )
 # --8<-- [end:height]
 
@@ -87,7 +91,7 @@ chart = cl.plot.bar(
     max_rank=20,
     vertical=False,
     height=300,
-    rank_axis={"bar_width": 24},
+    rank_axis_config={"bar_width": 24},
 )
 # --8<-- [end:horizontal_size]
 
@@ -106,13 +110,13 @@ chart = cl.plot.bar(
 chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
-    rank_axis={
+    rank_axis_config={
         "title": "Position",
         "title_color": "#7B3294",
         "label_tick_step": 3,
         "label_fontsize": 12,
     },
-    score_axis={
+    score_axis_config={
         "title": "Percent contribution to the JSD",
         "title_fontsize": 14,
         "label_color": "#7B3294",
@@ -136,7 +140,8 @@ chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
     show_totals=True,
-    total_shift_config={"total": "#D55E00", "total_symbol": "JSD"},
+    color_config={"grand_total": "#D55E00"},
+    totals_config={"grand_total_label": "JSD"},
 )
 # --8<-- [end:totals]
 

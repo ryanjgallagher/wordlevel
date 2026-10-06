@@ -9,15 +9,16 @@ import polars as pl
 from polars import col
 
 from wordlevel.comparison.comparison import ComparisonResult
+from wordlevel.comparison.core.score.attribution import ATTRIBUTION_LABELS
 from wordlevel.configs import (
+    BarColorConfig,
     BarConfig,
     BorderConfig,
     LabelConfig,
     RankAxisConfig,
     ScoreAxisConfig,
-    ScoreSignBarConfig,
-    ShiftBarConfig,
-    TotalShiftConfig,
+    ShiftColorConfig,
+    TotalsConfig,
     ZeroLineConfig,
 )
 from wordlevel.constants import (
@@ -80,13 +81,14 @@ class Plotter:
         height: float | None = None,
         width: float | None = None,
         show_totals: bool = False,
-        rank_axis: RankAxisConfig | dict | None = None,
-        score_axis: ScoreAxisConfig | dict | None = None,
-        bar_config: BarConfig | ScoreSignBarConfig | dict | None = None,
+        rank_axis_config: RankAxisConfig | dict | None = None,
+        score_axis_config: ScoreAxisConfig | dict | None = None,
+        color_config: BarColorConfig | dict | None = None,
+        bar_config: BarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
         zero_line_config: ZeroLineConfig | dict | None = None,
-        total_shift_config: TotalShiftConfig | dict | None = None,
+        totals_config: TotalsConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
         split_nonnegative_by_corpus: bool = True,
@@ -138,16 +140,18 @@ class Plotter:
             show_totals:
                 Whether to show the overall total contributions of each score type and overall as an
                 additional chart appended to the main chart
-            rank_axis:
+            rank_axis_config:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
-            score_axis:
+            score_axis_config:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
                 the same fields
+            color_config:
+                Configuration for the bar colors. Accepts a `BarColorConfig` or a dict with the
+                same fields
             bar_config:
-                Configuration for the bars. Accepts a `BarConfig` for corpus-attributed measures or
-                a `ScoreSignBarConfig` for sign-attributed measures. Also accepts a dict keyed by
-                the same corresponding attribution labels
+                Configuration for the bars, other than their color. Accepts a `BarConfig` or a dict
+                with the same fields
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
@@ -157,10 +161,9 @@ class Plotter:
             zero_line_config:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
-            total_shift_config:
-                Configuration for the grand total bar in the totals panels. Accepts a
-                `TotalShiftConfig` or a dict with the same fields. Ignored if `show_totals` is
-                `False`
+            totals_config:
+                Configuration for the totals panels, which labels each total bar. Accepts a
+                `TotalsConfig` or a dict with the same fields. Ignored if `show_totals` is `False`
             scale_factor:
                 Multiplier applied to the score axis when fitting it to the bar labels. Increasing
                 it provides more space for the bar labels
@@ -178,8 +181,10 @@ class Plotter:
 
         Raises:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
+            ValueError: If `color_config` specifies the wrong color fields
         """
         comp = self._comparisons[comparison]
+        self._validate_attribution_colors(color_config, comp.attribution_labels)
 
         if label_config is None:
             label_config = LabelConfig()
@@ -206,17 +211,21 @@ class Plotter:
             height=height,
             width=width,
             show_totals=show_totals,
-            rank_axis=rank_axis,
-            score_axis=InternalScoreAxisConfig.from_config(
-                score_axis,
+            rank_axis_config=rank_axis_config,
+            score_axis_config=InternalScoreAxisConfig.from_config(
+                score_axis_config,
                 all_positive_labels=split_nonnegative_by_corpus and comp.is_nonnegative,
                 percent=comp.normalized,
             ),
-            bar_config=InternalBarConfig.from_bar_config(bar_config, comp.attributed_by),
+            bar_config=InternalBarConfig.from_bar_colors(
+                config=color_config,
+                bar_config=bar_config,
+                attribution_labels=comp.attribution_labels,
+            ),
             label_config=label_config,
             border_config=border_config,
             zero_line_config=zero_line_config,
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
         )
@@ -229,13 +238,14 @@ class Plotter:
         height: float | None = None,
         width: float | None = None,
         show_totals: bool = False,
-        rank_axis: RankAxisConfig | dict | None = None,
-        score_axis: ScoreAxisConfig | dict | None = None,
-        bar_config: ShiftBarConfig | dict | None = None,
+        rank_axis_config: RankAxisConfig | dict | None = None,
+        score_axis_config: ScoreAxisConfig | dict | None = None,
+        color_config: ShiftColorConfig | dict | None = None,
+        bar_config: BarConfig | dict | None = None,
         label_config: LabelConfig | dict | None = None,
         border_config: BorderConfig | dict | None = None,
         zero_line_config: ZeroLineConfig | dict | None = None,
-        total_shift_config: TotalShiftConfig | dict | None = None,
+        totals_config: TotalsConfig | dict | None = None,
         scale_factor: float = 1.0,
         show_legend: bool = False,
     ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
@@ -292,15 +302,18 @@ class Plotter:
             show_totals:
                 Whether to show the overall total contributions of each score type and overall as an
                 additional chart appended to the main chart
-            rank_axis:
+            rank_axis_config:
                 Configuration for the rank axis. Accepts a `RankAxisConfig` or a dict with the same
                 fields
-            score_axis:
+            score_axis_config:
                 Configuration for the score axis. Accepts a `ScoreAxisConfig` or a dict with
                 the same fields
+            color_config:
+                Configuration for the bar colors. Accepts a `ShiftColorConfig` or a dict with the
+                same fields
             bar_config:
-                Configuration for the bars. Accepts a `ShiftBarConfig` or a dict with the same
-                fields
+                Configuration for the bars, other than their color. Accepts a `BarConfig` or a dict
+                with the same fields
             label_config:
                 Configuration for the bar labels. Accepts a `LabelConfig` or a dict with the same
                 fields
@@ -310,10 +323,9 @@ class Plotter:
             zero_line_config:
                 Configuration for the zero line at the score-axis origin. Accepts a `ZeroLineConfig`
                 or a dict with the same fields
-            total_shift_config:
-                Configuration for the grand total bar in the totals panels. Accepts a
-                `TotalShiftConfig` or a dict with the same fields. Ignored if `show_totals` is
-                `False`
+            totals_config:
+                Configuration for the totals panels, which labels each total bar. Accepts a
+                `TotalsConfig` or a dict with the same fields. Ignored if `show_totals` is `False`
             scale_factor:
                 Multiplier applied to the score axis when fitting it to the bar labels. Increasing
                 it provides more space for the bar labels
@@ -358,17 +370,19 @@ class Plotter:
             height=height,
             width=width,
             show_totals=show_totals,
-            rank_axis=rank_axis,
-            score_axis=InternalScoreAxisConfig.from_config(
-                score_axis,
+            rank_axis_config=rank_axis_config,
+            score_axis_config=InternalScoreAxisConfig.from_config(
+                score_axis_config,
                 all_positive_labels=False,
                 percent=comp.normalized,
             ),
-            bar_config=InternalBarConfig.from_shift_bar_config(bar_config),
+            bar_config=InternalBarConfig.from_shift_colors(
+                config=color_config, bar_config=bar_config
+            ),
             label_config=label_config,
             border_config=border_config,
             zero_line_config=zero_line_config,
-            total_shift_config=total_shift_config,
+            totals_config=totals_config,
             scale_factor=scale_factor,
             show_legend=show_legend,
         )
@@ -502,3 +516,36 @@ class Plotter:
                 return cached_data.df.filter(col(RANK_COL) <= max_rank)
 
         return None
+
+    @staticmethod
+    def _validate_attribution_colors(
+        color_config: BarColorConfig | dict | None, attribution_labels: tuple[str, str]
+    ) -> None:
+        """
+        Checks a user's bar colors against the pair of contributions a comparison produces. A
+        `BarColorConfig` carries a color for every attribution, but each comparison produces only
+        one pair of them
+
+        Raises:
+            ValueError: If a color is set for an attribution the comparison does not produce
+        """
+        if color_config is None:
+            return
+
+        attribution_fields = {label for labels in ATTRIBUTION_LABELS.values() for label in labels}
+
+        if isinstance(color_config, dict):
+            colored = {field for field in color_config if field in attribution_fields}
+        else:
+            colored = {
+                field
+                for field in attribution_fields
+                if getattr(color_config, field, None) is not None
+            }
+
+        inapplicable = sorted(colored - set(attribution_labels))
+        if inapplicable:
+            raise ValueError(
+                f"Cannot color {inapplicable} for this comparison. Its contributions are "
+                f"attributed as {sorted(attribution_labels)}, so those are the colors it accepts."
+            )

@@ -20,10 +20,7 @@ ATTRIBUTION_LABELS: dict[ATTRIBUTION_TYPE, tuple[str, str]] = {
     "score_sign": (REINFORCE_ATTRIBUTION, OFFSET_ATTRIBUTION),
 }
 """
-Single source of truth for the pair of attribution labels each attribution type produces. The tuple
-order matches the field order of the corresponding bar-config class (`BarConfig(reference,
-comparison)` for corpus attribution, `ScoreSignBarConfig(reinforce, offset)` for score-sign
-attribution).
+Single source of truth for the pair of attribution labels each attribution type produces
 """
 
 

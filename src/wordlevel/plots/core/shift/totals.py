@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import asdict, replace
 from typing import cast
 
 import altair as alt
@@ -6,12 +6,17 @@ import polars as pl
 from polars import col
 
 from wordlevel.configs import (
+    LABEL_SUFFIX,
     LabelConfig,
     RankAxisConfig,
-    TotalShiftConfig,
+    TotalsConfig,
     ZeroLineConfig,
 )
-from wordlevel.constants import COUNTERACTED_SUFFIX, DEFAULT_SCORE_AXIS_PIXEL_SIZE
+from wordlevel.constants import (
+    COUNTERACTED_SUFFIX,
+    DEFAULT_SCORE_AXIS_PIXEL_SIZE,
+    GRAND_TOTAL_SCORE_TYPE,
+)
 from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
@@ -45,6 +50,20 @@ _SHIFT_TYPE_SUMMARY_POSITIONS: dict[str, int] = {
 _SHIFT_SUMMARY_DROP_IF_EMPTY: frozenset[str] = frozenset({"higher_score", "lower_score"})
 
 
+def _get_score_type_labels(config: TotalsConfig) -> dict[str, str]:
+    """
+    Resolves a `TotalsConfig` into its score type to label mapping. The config carries a label for
+    every contribution type of either plot, so the labels that do not name a score type present in
+    the data simply never match. The grand total is labeled separately, since it is a sum across
+    contribution types rather than one of them
+    """
+    return {
+        name.removesuffix(LABEL_SUFFIX): label
+        for name, label in asdict(config).items()
+        if name.endswith(LABEL_SUFFIX) and name != "grand_total_label"
+    }
+
+
 def _get_total(
     df: pl.DataFrame | pl.LazyFrame, score_col: str, label: str
 ) -> pl.DataFrame | pl.LazyFrame:
@@ -54,7 +73,7 @@ def _get_total(
     annotation plotted next to the bar
     """
     return df.select(
-        pl.lit("total").alias(_SCORE_TYPE_COL),
+        pl.lit(GRAND_TOTAL_SCORE_TYPE).alias(_SCORE_TYPE_COL),
         pl.lit(1).alias(_POSITION_COL),
         pl.lit(label).alias(_LABEL_COL),
         col(score_col).sum(),
@@ -75,8 +94,8 @@ def _get_score_type_totals(
     """
     # score_type -> label
     label_expr = pl.when(False).then(pl.lit(""))
-    for score_type, symbol in labels.items():
-        label_expr = label_expr.when(col(score_type_col) == score_type).then(pl.lit(symbol))
+    for score_type, label in labels.items():
+        label_expr = label_expr.when(col(score_type_col) == score_type).then(pl.lit(label))
 
     # score_type -> position
     pos_expr = pl.when(False).then(pl.lit(0))
@@ -138,12 +157,12 @@ def shift_total(
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis: RankAxisConfig | dict | None = None,
-    score_axis: InternalScoreAxisConfig | dict | None = None,
+    rank_axis_config: RankAxisConfig | dict | None = None,
+    score_axis_config: InternalScoreAxisConfig | dict | None = None,
     bar_config: InternalBarConfig | None = None,
     label_config: LabelConfig | dict | None = None,
     border_config: InternalBorderConfig | None = None,
-    total_shift_config: TotalShiftConfig | dict | None = None,
+    totals_config: TotalsConfig | dict | None = None,
     zero_line_config: ZeroLineConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
@@ -173,20 +192,19 @@ def shift_total(
         width:
             The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
             `RankAxisConfig.bar_width` to control the width
-        rank_axis:
+        rank_axis_config:
             Configuration for the rank axis
-        score_axis:
+        score_axis_config:
             Configuration for the score axis
         bar_config:
-            Configuration for the bars, controls the colors and symbols used to plot per shift type
-            totals
+            Configuration for the bars, controls the colors used to plot per score type totals
         label_config:
             Configuration for the bar labels
         border_config:
             Configuration for the axes and border
-        total_shift_config:
-            Configuration for the grand total bar, controls the color and symbol used to plot the
-            grand total
+        totals_config:
+            Configuration for the totals panels, controls the label plotted next to each bar and
+            the color of the grand total bar
         zero_line_config:
             Configuration for the zero line at the score-axis origin
         scale_factor:
@@ -197,20 +215,20 @@ def shift_total(
         An Altair chart of word shift total(s)
     """
     # Initialize necessary configs
-    if isinstance(rank_axis, dict):
-        rank_axis = RankAxisConfig(**rank_axis)
-    elif rank_axis is None:
-        rank_axis = RankAxisConfig()
+    if isinstance(rank_axis_config, dict):
+        rank_axis_config = RankAxisConfig(**rank_axis_config)
+    elif rank_axis_config is None:
+        rank_axis_config = RankAxisConfig()
 
-    if isinstance(score_axis, dict):
-        score_axis = InternalScoreAxisConfig(**score_axis)
-    elif score_axis is None:
-        score_axis = InternalScoreAxisConfig()
+    if isinstance(score_axis_config, dict):
+        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
+    elif score_axis_config is None:
+        score_axis_config = InternalScoreAxisConfig()
 
-    if isinstance(total_shift_config, dict):
-        total_shift_config = TotalShiftConfig(**total_shift_config)
-    elif total_shift_config is None:
-        total_shift_config = TotalShiftConfig()
+    if isinstance(totals_config, dict):
+        totals_config = TotalsConfig(**totals_config)
+    elif totals_config is None:
+        totals_config = TotalsConfig()
 
     # The score type and grand total configs need to be resolved separately since they're both used
     if isinstance(bar_config, dict):
@@ -221,20 +239,22 @@ def shift_total(
         score_types = df.lazy().select(col(score_type_col).unique()).collect().to_series().to_list()
         type_bar_config = InternalBarConfig.from_score_types(score_types)
     else:
-        type_bar_config = bar_config
+        type_bar_config = replace(bar_config, opacities=None)
 
     if grand_total:
-        # The grand total inherits the bar outline unless the `TotalShiftConfig` sets its own
+        # The grand total inherits the bar outline unless the `TotalsConfig` sets its own
         bar_config = replace(
-            InternalBarConfig.from_total_shift_config(total_shift_config),
+            type_bar_config,
+            colors={GRAND_TOTAL_SCORE_TYPE: type_bar_config.colors[GRAND_TOTAL_SCORE_TYPE]},
+            orders=None,
             outline_color=(
-                total_shift_config.outline_color
-                if total_shift_config.outline_color is not None
+                totals_config.grand_total_outline_color
+                if totals_config.grand_total_outline_color is not None
                 else type_bar_config.outline_color
             ),
             outline_width=(
-                total_shift_config.outline_width
-                if total_shift_config.outline_width is not None
+                totals_config.grand_total_outline_width
+                if totals_config.grand_total_outline_width is not None
                 else type_bar_config.outline_width
             ),
         )
@@ -263,13 +283,13 @@ def shift_total(
             _get_total(
                 df=df,
                 score_col=score_col,
-                label=total_shift_config.total_symbol,
+                label=totals_config.grand_total_label,
             ).lazy(),
             _get_score_type_totals(
                 df=df,
                 score_col=score_col,
                 score_type_col=score_type_col,
-                labels=type_bar_config.symbols,
+                labels=_get_score_type_labels(totals_config),
             ).lazy(),
         ]
     )
@@ -294,10 +314,10 @@ def shift_total(
         score_type_col=_SCORE_TYPE_COL,
         filter_max_rank=False,
         vertical=vertical,
-        rank_axis=rank_axis,
-        score_axis=score_axis,
-        bars=bar_config,
-        border=border_config,
+        rank_axis_config=rank_axis_config,
+        score_axis_config=score_axis_config,
+        bar_config=bar_config,
+        border_config=border_config,
         show_legend=False,
         **size_param,
     )
@@ -308,7 +328,7 @@ def shift_total(
         token_col=_LABEL_COL,
         filter_max_rank=False,
         vertical=vertical,
-        config=label_config,
+        label_config=label_config,
         alignment_col=None if grand_total else _ALIGNMENT_COL,
     )
     scales = shift_scales(
@@ -318,11 +338,13 @@ def shift_total(
         token_col=_LABEL_COL,
         filter_max_rank=False,
         vertical=vertical,
-        config=label_config,
+        label_config=label_config,
         scale_factor=scale_factor,
         **size_param,
     )
-    zero_rule = zero_line(config=zero_line_config, border=border_config, vertical=vertical)
+    zero_rule = zero_line(
+        zero_line_config=zero_line_config, border_config=border_config, vertical=vertical
+    )
 
     # Modify the returned bar axes to hide information (labels, ticks, etc.)
     if vertical:
@@ -332,9 +354,11 @@ def shift_total(
 
     modified_score_axis = score_channel.axis(
         domain=border_config.draw_score_axis,
-        domainWidth=score_axis.width,
+        domainWidth=score_axis_config.width,
         domainColor=to_altair_optional(
-            score_axis.axis_color if score_axis.axis_color is not None else border_config.color
+            score_axis_config.axis_color
+            if score_axis_config.axis_color is not None
+            else border_config.color
         ),
         title=None,
         labels=False,
@@ -345,15 +369,17 @@ def shift_total(
 
     modified_rank_axis = rank_channel.axis(
         domain=border_config.draw_rank_axis,
-        domainWidth=rank_axis.width,
+        domainWidth=rank_axis_config.width,
         domainColor=to_altair_optional(
-            rank_axis.axis_color if rank_axis.axis_color is not None else border_config.color
+            rank_axis_config.axis_color
+            if rank_axis_config.axis_color is not None
+            else border_config.color
         ),
         title=None
-        if rank_axis.title is None
+        if rank_axis_config.title is None
         else "l",  # Hidden, but needed to align axes with main chart
         titleColor="transparent",
-        titleFontSize=to_altair_optional(rank_axis.title_fontsize),
+        titleFontSize=to_altair_optional(rank_axis_config.title_fontsize),
         ticks=False,
         labelExpr="format(datum.value, '02d')",  # Hidden, but needed to align axes with main chart
         labelColor="transparent",
@@ -368,11 +394,11 @@ def shift_total(
 
     chart = shift_borders(
         [modified_bars, labels, scales, zero_rule],
-        border=border_config,
+        border_config=border_config,
         rank_col=_POSITION_COL,
         score_col=score_col,
-        rank_axis=rank_axis,
-        score_axis=score_axis,
+        rank_axis_config=rank_axis_config,
+        score_axis_config=score_axis_config,
         vertical=vertical,
     )
 

@@ -5,7 +5,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import BorderConfig, TotalShiftConfig, ZeroLineConfig
+from wordlevel.configs import BorderConfig, TotalsConfig, ZeroLineConfig
 from wordlevel.plots.core.shift.shift import shift
 from wordlevel.plots.core.shift.totals import _LABEL_COL, _SCORE_TYPE_COL
 
@@ -59,10 +59,10 @@ def _score_side_lines(panel: dict, score_col: str, vertical: bool) -> dict[str, 
     lines: dict[str, list[float]] = {}
 
     # Native score-axis domain (drawn on `orient`, which may be flipped to the opposite side)
-    score_axis = panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
-    if score_axis.get("domain"):
-        side = score_axis.get("orient", default_orient)
-        lines.setdefault(side, []).append(score_axis["domainWidth"])
+    score_axis_config = panel["layer"][0]["layer"][0]["encoding"][score_channel].get("axis", {})
+    if score_axis_config.get("domain"):
+        side = score_axis_config.get("orient", default_orient)
+        lines.setdefault(side, []).append(score_axis_config["domainWidth"])
 
     # Opposite-score border edges (the frame layers encoding the score field)
     for layer in panel["layer"][1:]:
@@ -148,6 +148,23 @@ class TestShowTotals:
 
         assert chart.to_dict()["resolve"]["scale"]["color"] == "independent"
 
+    def test_fill_opacity_scales_are_independent(
+        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+    ):
+        """The stacked panels resolve their fill opacity scales independently. Only the main panel
+        has faded bars, and a shared scale would union the panels' differing score types into one
+        domain while keeping only the first panel's range."""
+        chart = _shift(
+            make_mock_df(n=50),
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            show_totals=True,
+        )
+
+        assert chart.to_dict()["resolve"]["scale"]["fillOpacity"] == "independent"
+
     def test_panel_order_is_types_then_grand_then_main(
         self, make_mock_df, score_col, rank_col, token_col, score_type_col
     ):
@@ -181,7 +198,7 @@ class TestShowTotals:
     def test_forwards_total_shift_config(
         self, make_mock_df, score_col, rank_col, token_col, score_type_col
     ):
-        """`shift` forwards `total_shift_config` into the grand-total panel."""
+        """`shift` forwards `totals_config` into the grand-total panel."""
         chart = _shift(
             make_mock_df(n=50),
             score_col=score_col,
@@ -189,7 +206,7 @@ class TestShowTotals:
             token_col=token_col,
             score_type_col=score_type_col,
             show_totals=True,
-            total_shift_config=TotalShiftConfig(total_symbol="Ω"),
+            totals_config=TotalsConfig(grand_total_label="Ω"),
         )
 
         grand_bars = _panel_bars_data(cast(alt.VConcatChart, chart).vconcat[1])
@@ -349,7 +366,7 @@ class TestFrameConsistency:
             show_totals=True,
             vertical=vertical,
             border_config=BorderConfig(width=0),
-            score_axis={"width": 3},
+            score_axis_config={"width": 3},
         )
 
         edges = set().union(*(_border_edges(panel) for panel in _panels(chart)))
