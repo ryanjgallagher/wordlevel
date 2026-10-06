@@ -244,7 +244,9 @@ def shift_total(
     if grand_total:
         # The grand total inherits the bar outline unless the `TotalsConfig` sets its own
         bar_config = replace(
-            InternalBarConfig.from_totals_config(totals_config),
+            type_bar_config,
+            colors={GRAND_TOTAL_SCORE_TYPE: type_bar_config.colors[GRAND_TOTAL_SCORE_TYPE]},
+            orders=None,
             outline_color=(
                 totals_config.grand_total_outline_color
                 if totals_config.grand_total_outline_color is not None

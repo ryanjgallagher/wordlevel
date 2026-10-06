@@ -4,7 +4,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftBarConfig
+from wordlevel.configs import LabelConfig, RankAxisConfig, ShiftColorConfig
 from wordlevel.constants import DEFAULT_SCORE_AXIS_PIXEL_SIZE
 from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
@@ -158,7 +158,7 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
         if config_style == "config":
             rank_config = RankAxisConfig(title=custom_rank_title, grid=False)
             score_config = InternalScoreAxisConfig(title=custom_score_title, grid=True)
-            shift_bar_config = ShiftBarConfig(**custom_bar_colors)
+            shift_bar_config = ShiftColorConfig(**custom_bar_colors)
             label_config = LabelConfig(color=custom_label_color)
         else:
             rank_config = {"title": custom_rank_title, "grid": False}
@@ -176,7 +176,7 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
             vertical=True,
             rank_axis_config=rank_config,
             score_axis_config=score_config,
-            bar_config=InternalBarConfig.from_shift_bar_config(shift_bar_config),
+            bar_config=InternalBarConfig.from_shift_colors(shift_bar_config, None),
             label_config=label_config,
         )
 

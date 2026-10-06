@@ -58,7 +58,7 @@ When both corpora are scored with the same lexicon, tokens contribute in the fou
 
 The overall difference (the "Total") indicates that Biden's speeches have a higher sentiment than Roosevelt's speeches. This is because Biden's speeches use relatively positive words more $\left(+ \uparrow \right)$, such as "you" and "america," and relatively negative words less $\left(- \downarrow \right)$, such as "war". The sentiment difference is partly offset by Biden's speeches using some relatively positive words less $\left(+ \downarrow \right)$, such as "great" and "peace," and some relatively negative words more $\left(- \uparrow \right)$, such as "violence." These words offset how much more positive Biden's speeches would have been otherwise.
 
-The bar colors can be configured with a [`ShiftBarConfig`](../api/configuration/plots/shift_bar_config.md).
+The bar colors can be configured with a [`ShiftColorConfig`](../api/configuration/plots/shift_color_config.md).
 
 ```python exec="true" source="above" session="plotting_word_shifts"
 --8<-- "snippets/cookbooks/plotting_word_shifts.py:single_colors"
@@ -90,7 +90,7 @@ The total is negative, so Biden's speeches have a lower sentiment than Roosevelt
 
 The different kinds of contributions can partially cancel each other out. When this happens, we show it by fading the canceled out portions. For example, "violence" is a relatively negative word that was used more in Biden's speeches. However, that contribution is partly offset by the score change, because "violence" also has a relatively higher sentiment score in the 2000s lexicon than the 1940s lexicon.
 
-The higher and lower score contribution colors can also be configured with a [`ShiftBarConfig`](../api/configuration/plots/shift_bar_config.md).
+The higher and lower score contribution colors can also be configured with a [`ShiftColorConfig`](../api/configuration/plots/shift_color_config.md).
 
 ```python exec="true" source="above" session="plotting_word_shifts"
 --8<-- "snippets/cookbooks/plotting_word_shifts.py:multiple_colors"

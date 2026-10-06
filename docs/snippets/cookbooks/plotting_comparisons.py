@@ -32,7 +32,7 @@ chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
     show_totals=True,
-    bar_config={
+    color_config={
         "reference": "#009E73",
         "comparison": "#7B3294",
     },
@@ -54,7 +54,7 @@ chart = cl.plot.bar(
     "roosevelt_biden_entropy",
     max_rank=20,
     show_totals=True,
-    bar_config={
+    color_config={
         "reinforce": "#D55E00",
         "offset": "#CC79A7",
     },
@@ -140,7 +140,8 @@ chart = cl.plot.bar(
     "roosevelt_biden_jsd",
     max_rank=20,
     show_totals=True,
-    totals_config={"grand_total_color": "#D55E00", "grand_total_label": "JSD"},
+    color_config={"grand_total": "#D55E00"},
+    totals_config={"grand_total_label": "JSD"},
 )
 # --8<-- [end:totals]
 

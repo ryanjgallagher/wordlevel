@@ -5,28 +5,24 @@ import altair as alt
 import polars as pl
 from typing_extensions import Self
 
-from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE
 from wordlevel.configs import (
-    DEFAULT_BAR_OUTLINE_COLOR,
-    DEFAULT_BAR_OUTLINE_WIDTH,
+    DEFAULT_ATTRIBUTION_COLORS,
+    DEFAULT_GRAND_TOTAL_COLOR,
     DEFAULT_SCORE_AXIS_TITLE,
-    NON_COLOR_FIELDS,
+    NON_SCORE_TYPE_FIELDS,
     PERCENT_SCORE_AXIS_TITLE,
+    BarColorConfig,
     BarConfig,
     RankAxisConfig,
     ScoreAxisConfig,
-    ScoreSignBarConfig,
-    ShiftBarConfig,
-    TotalsConfig,
+    ShiftColorConfig,
 )
 from wordlevel.constants import COUNTERACTED_SUFFIX, GRAND_TOTAL_SCORE_TYPE
 from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.plots.core.utils import to_altair_optional
 
 
-_BarConfigT = TypeVar(
-    "_BarConfigT", bound=BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalsConfig
-)
+_BarConfigT = TypeVar("_BarConfigT", bound=BarConfig | BarColorConfig | ShiftColorConfig)
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
     "more_of_negative": 1,
@@ -87,9 +83,13 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
 
 
 @dataclass
-class InternalBarConfig:
+class InternalBarConfig(BarConfig):
     """
-    Internal configuration of bar colors, stacking orders, opacities, and outlines.
+    Internal configuration of bar colors, stacking orders, and opacities. Inherits every bar's
+    outline from `BarConfig`.
+
+    Each `colors` mapping also carries the grand total bar, so a totals panel can be drawn from
+    the same config as the bars it totals.
 
     Attributes:
         colors:
@@ -99,57 +99,56 @@ class InternalBarConfig:
             applicable (e.g., for a bar plot whose bars are not stacked)
         opacities:
             Mapping from score type name to bar opacity. `None` when every bar is opaque
-        outline_color:
-            Color of the outline around each bar. If `None`, Altair's default is used
-        outline_width:
-            Width of the outline around each bar, in pixels. If `None`, Altair's default is used
     """
 
     colors: dict[str, str]
     orders: dict[str, int] | None
     opacities: dict[str, float] | None = None
-    outline_color: str | None = DEFAULT_BAR_OUTLINE_COLOR
-    outline_width: float | None = DEFAULT_BAR_OUTLINE_WIDTH
 
     @classmethod
-    def from_bar_config(
+    def from_bar_colors(
         cls,
-        config: BarConfig | ScoreSignBarConfig | dict | None,
-        attributed_by: ATTRIBUTION_TYPE,
+        config: BarColorConfig | dict | None,
+        bar_config: BarConfig | dict | None,
+        attribution_labels: tuple[str, str],
     ) -> Self:
         """
-        Creates an InternalBarConfig from a BarConfig or ScoreSignBarConfig.
-
-        The expected config class depends on how the comparison is attributed
+        Builds the config for a bar plot, coloring the pair of bars that the comparison's
+        attribution produces. A color left unset takes its default
         """
-        expected_config: type[BarConfig | ScoreSignBarConfig]
-        if attributed_by == "score_sign":
-            expected_config = ScoreSignBarConfig
-        else:
-            expected_config = BarConfig
+        resolved_config = cls._resolve_config(config, BarColorConfig)
+        resolved_bar_config = cls._resolve_config(bar_config, BarConfig)
 
-        resolved_config = cls._resolve_config(config, expected_config)
+        colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
+        for label in attribution_labels:
+            color = getattr(resolved_config, label)
+            colors[label] = DEFAULT_ATTRIBUTION_COLORS[label] if color is None else color
 
         return cls(
-            colors=cls._get_colors(resolved_config),
+            colors=colors,
             orders=None,
-            outline_color=resolved_config.outline_color,
-            outline_width=resolved_config.outline_width,
+            outline_color=resolved_bar_config.outline_color,
+            outline_width=resolved_bar_config.outline_width,
         )
 
     @classmethod
-    def from_shift_bar_config(cls, config: ShiftBarConfig | dict | None) -> Self:
+    def from_shift_colors(
+        cls,
+        config: ShiftColorConfig | dict | None,
+        bar_config: BarConfig | dict | None,
+    ) -> Self:
         """
-        Creates an InternalBarConfig from a ShiftBarConfig. The key difference from
-        `from_bar_config` is that it enforces the order of the different bar types
+        Builds the config for a word shift plot. Unlike `from_bar_colors` it enforces the order of
+        the different bar types, and fades each `*_counteracted` bar behind the bar it counteracts
         """
-        resolved_config = cls._resolve_config(config, ShiftBarConfig)
-        base_colors = cls._get_colors(resolved_config)
+        resolved_config = cls._resolve_config(config, ShiftColorConfig)
+        resolved_bar_config = cls._resolve_config(bar_config, BarConfig)
+
+        colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
+        opacities: dict[str, float] = {}
 
         # The config declares only the six base colors, but we need the counteracted ones too
-        colors: dict[str, str] = {}
-        opacities: dict[str, float] = {}
-        for score_type, color in base_colors.items():
+        for score_type, color in cls._get_colors(resolved_config).items():
             counteracted = f"{score_type}{COUNTERACTED_SUFFIX}"
 
             colors[score_type] = color
@@ -161,8 +160,8 @@ class InternalBarConfig:
             colors=colors,
             orders=_SHIFT_TYPE_ORDERS,
             opacities=opacities,
-            outline_color=resolved_config.outline_color,
-            outline_width=resolved_config.outline_width,
+            outline_color=resolved_bar_config.outline_color,
+            outline_width=resolved_bar_config.outline_width,
         )
 
     @classmethod
@@ -170,33 +169,19 @@ class InternalBarConfig:
         """
         No config supplied — derive a uniform-color colors dict from whatever score types are
         present in the data. Callers that want plot-type-specific defaults are expected to
-        construct an InternalBarConfig via from_bar_config / from_shift_bar_config.
+        construct an InternalBarConfig via from_bar_colors / from_shift_colors.
         """
         # TODO: infer if the score types correspond to reference/comparison, reinforce/offset, or
         #       the shift score types, and route to those constructors instead
         return cls(
-            colors={st: "steelblue" for st in score_types},
+            colors={GRAND_TOTAL_SCORE_TYPE: DEFAULT_GRAND_TOTAL_COLOR}
+            | {st: "steelblue" for st in score_types},
             orders=None,
-        )
-
-    @classmethod
-    def from_totals_config(cls, config: TotalsConfig | dict | None) -> Self:
-        """
-        Builds the grand-total bar config from a `TotalsConfig`, using its `grand_total_color` for
-        the single grand total bar
-        """
-        resolved_config = cls._resolve_config(config, TotalsConfig)
-
-        return cls(
-            colors={GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total_color},
-            orders=None,
-            outline_color=resolved_config.grand_total_outline_color,
-            outline_width=resolved_config.grand_total_outline_width,
         )
 
     @staticmethod
     def _resolve_config(
-        config: BarConfig | ScoreSignBarConfig | ShiftBarConfig | TotalsConfig | dict | None,
+        config: BarConfig | BarColorConfig | ShiftColorConfig | dict | None,
         expected_config: type[_BarConfigT],
     ) -> _BarConfigT:
         """
@@ -222,11 +207,11 @@ class InternalBarConfig:
         return config
 
     @staticmethod
-    def _get_colors(config: BarConfig | ScoreSignBarConfig | ShiftBarConfig) -> dict[str, str]:
+    def _get_colors(config: ShiftColorConfig) -> dict[str, str]:
         """
-        Resolves a config dataclass into its score type to color mapping
+        Resolves a color config dataclass into its score type to color mapping
         """
-        return {k: v for k, v in asdict(config).items() if k not in NON_COLOR_FIELDS}
+        return {k: v for k, v in asdict(config).items() if k not in NON_SCORE_TYPE_FIELDS}
 
 
 def shift_bars(

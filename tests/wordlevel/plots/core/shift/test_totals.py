@@ -4,7 +4,7 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import ShiftBarConfig, TotalsConfig
+from wordlevel.configs import BarConfig, ShiftColorConfig, TotalsConfig
 from wordlevel.plots.core.shift.bars import InternalBarConfig
 from wordlevel.plots.core.shift.border import InternalBorderConfig
 from wordlevel.plots.core.shift.totals import (
@@ -40,7 +40,7 @@ def _rows_by_type(chart: alt.LayerChart) -> dict[str, dict]:
 @pytest.fixture
 def type_bar_config() -> InternalBarConfig:
     """A per-score-type bar config with the six default shift colors."""
-    return InternalBarConfig.from_shift_bar_config(ShiftBarConfig())
+    return InternalBarConfig.from_shift_colors(None, None)
 
 
 class TestStructure:
@@ -275,11 +275,10 @@ class TestSharedScale:
 
 class TestConfig:
     @pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
-    def test_totals_config_sets_grand_total_color_and_label(
-        self, score_col, score_type_col, as_dict
-    ):
-        """`totals_config` (as object or dict) sets the grand-total bar's color and label."""
-        overrides = {"grand_total_color": "#000000", "grand_total_label": "T"}
+    def test_grand_total_color_and_label(self, score_col, score_type_col, as_dict):
+        """The grand-total bar takes its color from the color config and its label from
+        `totals_config` (as object or dict)."""
+        overrides = {"grand_total_label": "T"}
         totals_config = overrides if as_dict else TotalsConfig(**overrides)
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
@@ -288,6 +287,7 @@ class TestConfig:
             score_col=score_col,
             score_type_col=score_type_col,
             grand_total=True,
+            bar_config=InternalBarConfig.from_shift_colors({"grand_total": "#000000"}, None),
             totals_config=totals_config,
             width=100,
         )
@@ -305,7 +305,7 @@ class TestConfig:
             score_col=score_col,
             score_type_col=score_type_col,
             grand_total=False,
-            bar_config=InternalBarConfig.from_bar_config(None, attributed_by="frequency"),
+            bar_config=InternalBarConfig.from_bar_colors(None, None, ("reference", "comparison")),
             totals_config=TotalsConfig(reference_label="Roosevelt", lower_score_label="ignored"),
             width=100,
         )
@@ -314,8 +314,8 @@ class TestConfig:
 
     def test_configs_set_type_colors_and_labels(self, score_col, score_type_col):
         """A per-type bar takes its color from `bar_config` and its label from `totals_config`."""
-        bar_config = InternalBarConfig.from_shift_bar_config(
-            ShiftBarConfig(more_of_positive="#000000")
+        bar_config = InternalBarConfig.from_shift_colors(
+            ShiftColorConfig(more_of_positive="#000000"), None
         )
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
@@ -336,8 +336,8 @@ class TestConfig:
     def test_bar_config_sets_outline(self, score_col, score_type_col, grand_total):
         """Without outlines set in `totals_config`, both the grand-total and per-type bars take
         the `bar_config` outline."""
-        bar_config = InternalBarConfig.from_shift_bar_config(
-            ShiftBarConfig(outline_color="blue", outline_width=2)
+        bar_config = InternalBarConfig.from_shift_colors(
+            None, BarConfig(outline_color="blue", outline_width=2)
         )
         df = pl.DataFrame({score_type_col: ["more_of_positive"], score_col: [0.5]})
 
@@ -357,8 +357,8 @@ class TestConfig:
     def test_totals_config_overrides_grand_total_outline(self, score_col, score_type_col, as_dict):
         """An outline field set in `totals_config` (as object or dict) overrides the
         `bar_config` outline on the grand-total bar, and unset fields still inherit."""
-        bar_config = InternalBarConfig.from_shift_bar_config(
-            ShiftBarConfig(outline_color="blue", outline_width=2)
+        bar_config = InternalBarConfig.from_shift_colors(
+            None, BarConfig(outline_color="blue", outline_width=2)
         )
         overrides = {"grand_total_outline_color": "red"}
         totals_config = overrides if as_dict else TotalsConfig(**overrides)
