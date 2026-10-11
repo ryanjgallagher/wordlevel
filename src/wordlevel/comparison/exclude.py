@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
 
 import polars as pl
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from wordlevel.comparison.comparison import Comparison
 
 
-EXCLUSION_RANGE_KIND = Literal["lexicon_score", "frequency", "proportion"]
+ExclusionRangeKind: TypeAlias = Literal["lexicon_score", "frequency", "proportion"]
 
 
 class ComparisonExcluder:
@@ -350,7 +350,7 @@ class ComparisonExcluder:
 
     def _exclude_by_range(
         self,
-        kind: EXCLUSION_RANGE_KIND,
+        kind: ExclusionRangeKind,
         value_col_ref: str,
         value_col_cmp: str,
         less_than: float | None,
