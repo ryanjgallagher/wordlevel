@@ -63,6 +63,27 @@ We can also use the normalized frequency, or proportion, to exclude tokens.
 !!! warning
     A token missing from one corpus has a frequency and proportion of zero there, so specifying `corpus="either"` and the `less_than` parameter will remove every token that the two corpora do not share, in addition to tokens below the bound.
 
+## Excluding by rank
+
+The exact frequency of a token may vary in corpora of different sizes. At times, then, we may want to exclude tokens by their rank. That is, instead of saying "Keep all tokens that were used at least 20 times," we may want to say "Keep the 1,000 most frequently used tokens" or "Remove the 10 most frequently used tokens." 
+
+The `by_rank` method takes exactly one of three bounds: `within_rank`, `beyond_rank`, or `between`. Rank 1 indicates the most frequently used token in a corpus. In the example below, we use the `within_rank` parameter to exclude the ten most frequently used tokens in each corpus.
+
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:within_rank"
+```
+
+Instead of excluding the most common tokens, we can keep them by excluding all other tokens with the `beyond_rank` parameter. In the example below, we exclude any tokens that are not used more frequently than rank 1,000 in both corpora. Note, this means that if a token is ranked at 998 in one corpus and 1,002 in the other, then it is kept because it is within rank 1,000 in at least one of them.
+
+```python exec="true" source="above" session="excluding_tokens"
+--8<-- "snippets/cookbooks/excluding_tokens.py:beyond_rank"
+```
+
+Within a corpus, tokens may tie for how frequently they are used. This is particularly likely to happen in the tail of a frequency distribution, where many tokens may have been used exactly one time, for example. Tied tokens form a "block" where all tokens in that block receive the same rank, and the `tie_method` parameter determines what rank is given to them: `min` gives the block the first of the ranks it spans, `max` the last, and `average` the mean of them. See the [documentation](../api/types/rank_ties.md) for more details.
+
+!!! note
+    In the example above demonstrating how to use `within_rank`, we chain two exclusions to remove the top ten tokens for each corpus individually. This is equivalent to doing a single exclusion and setting `corpus="either"`. 
+
 ## Excluding by lexicon score
 
 When a comparison is scored by a [lexicon](scoring_with_lexicons.md), tokens can be excluded by the score that the lexicon assigns them.
