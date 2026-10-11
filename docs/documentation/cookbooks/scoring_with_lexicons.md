@@ -64,7 +64,7 @@ To do this, we can pass our lexicon directly to the comparison's `score.lexicon`
 
 ## Scoring with a custom lexicon
 
-You can also use a custom lexicon to make comparisons. The `score.lexicon` method accepts a dictionary or dataframe that maps tokens to scores.
+You can also use a custom lexicon to make comparisons. The `score.lexicon` method accepts a dictionary that maps tokens to scores, or a dataframe with a column of tokens and a column of scores. As with [constructing a `Catalog`](constructing_catalogs.md#from-a-narwhals-supported-dataframe), the dataframe can come from any [Narwhals](https://narwhals-dev.github.io/narwhals/)-supported backend, including pandas, DuckDB, or PySpark.
 
 ```python exec="true" source="above" session="scoring_with_lexicons"
 --8<-- "snippets/cookbooks/scoring_with_lexicons.py:custom_lexicon"
