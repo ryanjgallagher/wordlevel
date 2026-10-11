@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import TypeGuard
-
 import narwhals as nw
 import polars as pl
 from narwhals.typing import IntoFrame
+from typing_extensions import TypeIs
 
 
-def is_dataframe(data: object) -> TypeGuard[IntoFrame]:
+def is_dataframe(data: object) -> TypeIs[IntoFrame]:
     """
     Checks whether an object is a dataframe that can be converted to a Polars dataframe.
 

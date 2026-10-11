@@ -1,4 +1,6 @@
+import duckdb
 import polars as pl
+import pyarrow as pa
 import pytest
 from polars import col
 from polars.testing import assert_frame_equal, assert_frame_not_equal
@@ -677,3 +679,125 @@ class TestLexiconScorer:
         ]
 
         assert totals[0] == pytest.approx(totals[1])
+
+
+class TestLexiconDataframeBackends:
+    """
+    A lexicon can be supplied as a dataframe from any backend Narwhals supports, matching what the
+    equivalent Polars lexicon produces.
+    """
+
+    @pytest.fixture
+    def df_lexicon(self) -> pl.DataFrame:
+        return pl.DataFrame({"token": ["the", "cat", "dog"], "sentiment": [1.0, 5.0, -3.0]})
+
+    @pytest.fixture
+    def df_scores(self, df_mock, df_lexicon) -> pl.DataFrame:
+        """The scores the lexicon produces when it is supplied as a Polars dataframe."""
+        return (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon=df_lexicon,
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+    def test_pandas_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon=df_lexicon.to_pandas(),
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert_frame_equal(df_result, df_scores)
+
+    def test_pyarrow_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon=df_lexicon.to_arrow(),
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert_frame_equal(df_result, df_scores)
+
+    def test_duckdb_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
+        # DuckDB resolves the table name against the local scope of the calling frame
+        df_native = df_lexicon  # ruff: ignore[F841]
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon=duckdb.sql("SELECT * FROM df_native"),
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert_frame_equal(df_result, df_scores)
+
+    def test_arrow_c_stream_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
+        """A producer of an Arrow C stream that Narwhals has no dedicated backend for."""
+        table = df_lexicon.to_arrow()
+        reader = pa.RecordBatchReader.from_batches(table.schema, table.to_batches())
+
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon=reader,
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert_frame_equal(df_result, df_scores)
+
+    def test_reference_and_comparison_lexicons(self, df_mock, df_lexicon, df_scores) -> None:
+        """
+        Each lexicon parameter is converted on its own, so supplying the same scores to both
+        corpora through two different backends reproduces the single-lexicon result.
+        """
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon_reference=df_lexicon.to_pandas(),
+                lexicon_comparison=df_lexicon.to_arrow(),
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert_frame_equal(df_result, df_scores)
+
+    def test_polars_lazyframe_lexicon_is_not_collected(
+        self, df_mock, df_lexicon, monkeypatch
+    ) -> None:
+        """A Polars lexicon is passed through as given, so a LazyFrame is never materialized."""
+        monkeypatch.setattr(
+            pl.LazyFrame,
+            "collect",
+            lambda *args, **kwargs: pytest.fail("LazyFrame was collected"),
+        )
+
+        df_result = (
+            Comparison("ref", "cmp")
+            .score.lexicon(
+                lexicon=df_lexicon.lazy(),
+                lexicon_token_col="token",
+                lexicon_score_col="sentiment",
+            )
+            ._state.resolve()(df_mock.lazy(), "word")
+        )
+
+        assert isinstance(df_result, pl.LazyFrame)
