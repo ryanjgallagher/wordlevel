@@ -126,6 +126,7 @@ API: tuple[Section, ...] = (
             page("wordlevel.comparison.core.exclude.ExcludeCorpus"),
             page("wordlevel.catalog.constructors.ListOfFreqs"),
             page("wordlevel.comparison.core.normalization.NormalizeBy"),
+            page("wordlevel.comparison.core.exclude.RankTies"),
             page("wordlevel.comparison.core.score.lexicon.ScoredInOneLexicon"),
         ),
     ),

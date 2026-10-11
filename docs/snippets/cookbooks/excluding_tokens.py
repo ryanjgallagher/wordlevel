@@ -73,6 +73,27 @@ cl = cl.with_comparisons(
 # --8<-- [end:by_proportion]
 
 
+# --8<-- [start:within_rank]
+cl = cl.with_comparisons(
+    wl.comp("Franklin D. Roosevelt", "Joe Biden")
+        .exclude.by_rank(within_rank=10, corpus="reference")
+        .exclude.by_rank(within_rank=10, corpus="comparison")
+        .score.rank_divergence(alpha=1/3)
+        .alias("without_top_ranked_tokens"),
+)
+# --8<-- [end:within_rank]
+
+
+# --8<-- [start:beyond_rank]
+cl = cl.with_comparisons(
+    wl.comp("Franklin D. Roosevelt", "Joe Biden")
+        .exclude.by_rank(beyond_rank=1000, corpus="both")
+        .score.rank_divergence(alpha=1/3)
+        .alias("without_low_ranked_tokens"),
+)
+# --8<-- [end:beyond_rank]
+
+
 # --8<-- [start:by_lexicon_score]
 cl = cl.with_comparisons(
     wl.comp("Franklin D. Roosevelt", "Joe Biden")

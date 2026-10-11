@@ -3,6 +3,7 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from wordlevel.comparison.comparison import comp
+from wordlevel.comparison.core.exclude import freq_rank_col
 from wordlevel.comparison.state import ComparisonState
 from wordlevel.constants import (
     FREQ_CMP_COL,
@@ -78,6 +79,52 @@ class TestResolve:
         assert NORMED_FREQ_REF_COL in columns and NORMED_FREQ_CMP_COL in columns
 
         assert df_result.columns == ["word", "ref", "cmp", "ref__wl_normed", "cmp__wl_normed"]
+
+    def test_ranks_the_vocabulary_before_any_plan_of_the_users_narrows_it(self) -> None:
+        """
+        A rank exclusion needs frequency ranks to filter on, and they are taken over the vocabulary
+        as the catalog gave it, so they are added before the user's plans run. Only the tie methods
+        the record names are computed, deduplicated and in a fixed order however they were called.
+        """
+        seen: list[tuple[str, list[str]]] = []
+
+        def record(name: str):
+            def plan(
+                df: pl.DataFrame | pl.LazyFrame, token_col: str
+            ) -> pl.DataFrame | pl.LazyFrame:
+                seen.append((name, df.lazy().collect_schema().names()))
+                return df
+
+            return plan
+
+        state = ComparisonState(
+            reference="ref",
+            comparison="cmp",
+            exclusions={
+                "rank": [
+                    {"tie_method": "min"},
+                    {"tie_method": "average"},
+                    {"tie_method": "min"},
+                ]
+            },
+            lexicon_join_plan=record("lexicon_join"),
+            exclusion_plan=record("exclusion"),
+            score_plan=record("score"),
+        )
+        state.resolve()(pl.DataFrame({"word": ["a"], "ref": [1], "cmp": [2]}), "word")
+
+        expected = [
+            "word",
+            FREQ_REF_COL,
+            FREQ_CMP_COL,
+            freq_rank_col(FREQ_REF_COL, "average"),
+            freq_rank_col(FREQ_CMP_COL, "average"),
+            freq_rank_col(FREQ_REF_COL, "min"),
+            freq_rank_col(FREQ_CMP_COL, "min"),
+        ]
+
+        assert seen[0] == ("lexicon_join", expected)
+        assert seen[1] == ("exclusion", expected)
 
     def test_drops_tokens_that_neither_corpus_uses(self) -> None:
         """

@@ -7,7 +7,7 @@ from polars.testing import assert_frame_equal
 
 from wordlevel.catalog.catalog import Catalog
 from wordlevel.comparison.comparison import Comparison, comp
-from wordlevel.comparison.core.exclude import ExcludeCorpus
+from wordlevel.comparison.core.exclude import ExcludeCorpus, RankTies
 from wordlevel.comparison.score import Scorer
 
 
@@ -286,6 +286,122 @@ class TestExcludeByProportion:
         assert df_result["word"].to_list() == ["cat", "dog"]
 
 
+class TestExcludeByRank:
+    def test_within_rank_excludes_the_most_frequently_used_end(self, df_mock: pl.DataFrame) -> None:
+        """The bound is one-sided, so the rarer tokens past it are not touched."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_rank(within_rank=2)
+            .score.frequency()
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == ["cat", "dog", "ran"]
+
+    def test_beyond_rank_excludes_the_least_frequently_used_end(
+        self, df_mock: pl.DataFrame
+    ) -> None:
+        """The bound is one-sided, so the more frequent tokens before it are not touched."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_rank(beyond_rank=4)
+            .score.frequency()
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == ["the", "cat", "dog"]
+
+    def test_ranks_are_taken_over_the_corpus_as_given(self, df_mock: pl.DataFrame) -> None:
+        """
+        Tokens are ranked before anything narrows the vocabulary, so a token excluded by name does
+        not change the ranks the range is tested against. Were they taken over what survives,
+        dropping `the` would lift `ran` to rank 3 in both corpora and keep it.
+        """
+        excluded_first = comp("ref", "cmp").exclude.tokens(["the"]).exclude.by_rank(beyond_rank=4)
+        excluded_last = comp("ref", "cmp").exclude.by_rank(beyond_rank=4).exclude.tokens(["the"])
+
+        df_excluded_first = excluded_first.score.proportion()._state.resolve()(df_mock, "word")
+        df_excluded_last = excluded_last.score.proportion()._state.resolve()(df_mock, "word")
+
+        assert df_excluded_first["word"].to_list() == ["cat", "dog"]
+        assert_frame_equal(df_excluded_first, df_excluded_last)
+
+    @pytest.mark.parametrize(
+        "corpus, expected",
+        [
+            ("reference", ["dog", "ran"]),
+            ("comparison", ["cat", "ran"]),
+            ("both", ["cat", "dog", "ran"]),
+            ("either", ["ran"]),
+        ],
+    )
+    def test_corpus_chooses_which_rank_is_tested(
+        self, df_mock: pl.DataFrame, corpus: ExcludeCorpus, expected: list[str]
+    ) -> None:
+        """
+        The two corpora rank a token differently, so which of them the range is tested against
+        decides what is excluded. `cat` is second only in the reference corpus and `dog` only in
+        the comparison, while `the` is first in both.
+        """
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_rank(within_rank=2, corpus=corpus)
+            .score.frequency()
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == expected
+
+    @pytest.mark.parametrize(
+        "inclusive, expected", [(True, ["dog", "ran"]), (False, ["cat", "dog", "ran"])]
+    )
+    def test_bounds_are_part_of_the_range_only_when_inclusive(
+        self, df_mock: pl.DataFrame, inclusive: bool, expected: list[str]
+    ) -> None:
+        """`cat` is the second most frequently used token of the reference corpus, so it sits
+        exactly on the bound."""
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_rank(within_rank=2, corpus="reference", inclusive=inclusive)
+            .score.frequency()
+            ._state.resolve()(df_mock, "word")
+        )
+
+        assert df_result["word"].to_list() == expected
+
+    @pytest.mark.parametrize(
+        "tie_method, expected",
+        [
+            ("average", ["e"]),
+            ("min", ["a", "b", "e"]),
+            ("max", ["c", "d", "e"]),
+            ("dense", ["a", "b"]),
+        ],
+    )
+    def test_a_tie_block_is_excluded_whole_at_its_shared_rank(
+        self, tie_method: RankTies, expected: list[str]
+    ) -> None:
+        """
+        A tie block is excluded whole or not at all, and the four tie methods place the blocks
+        differently against the bounds. `a` and `b` are used three times and `c` and `d` twice, so
+        they form two tie blocks, ranked (1.5, 3.5) under `average`, (1, 3) under `min`, (2, 4)
+        under `max`, and (1, 2) under `dense`. Each method therefore leaves a different vocabulary,
+        and only a fractional bound can split a block off from an `average` rank.
+        """
+        df_tied = pl.DataFrame(
+            {"word": ["a", "b", "c", "d", "e"], "ref": [3, 3, 2, 2, 1], "cmp": [3, 3, 2, 2, 1]}
+        )
+
+        df_result = (
+            comp("ref", "cmp")
+            .exclude.by_rank(between=(1.5, 3.5), tie_method=tie_method)
+            .score.frequency()
+            ._state.resolve()(df_tied, "word")
+        )
+
+        assert df_result["word"].to_list() == expected
+
+
 class TestExcludeByRangeValidation:
     @pytest.mark.parametrize("method", BY_RANGE_METHODS)
     def test_no_range_raises(self, method: str) -> None:
@@ -334,6 +450,45 @@ class TestExcludeByRangeValidation:
         """A bound above 1 is a count, which would quietly exclude all or none of the vocabulary."""
         with pytest.raises(ValueError, match=r"\[0, 1\]"):
             comp("ref", "cmp").exclude.by_proportion(**bounds)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize(
+        "bounds",
+        [{"within_rank": 0}, {"beyond_rank": 0.5}, {"between": (0, 10)}],
+        ids=["within_rank", "beyond_rank", "between"],
+    )
+    def test_ranks_below_one_raise(self, bounds: dict[str, float | tuple[float, float]]) -> None:
+        """Rank 1 is the most frequently used token of a corpus, so nothing ranks below it."""
+        with pytest.raises(ValueError, match="Ranks must be at least 1"):
+            comp("ref", "cmp").exclude.by_rank(**bounds)  # type: ignore[arg-type]
+
+    def test_unrecognized_tie_method_raises(self) -> None:
+        """
+        `ordinal` and `random` are polars rank methods that this one narrows away, because they
+        split a tie block by row order rather than keeping it together.
+        """
+        with pytest.raises(ValueError, match="`tie_method` must be one of"):
+            comp("ref", "cmp").exclude.by_rank(within_rank=10, tie_method="ordinal")  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize(
+        "bounds, expected",
+        [
+            ({}, r"`within_rank`, `beyond_rank`, or `between`"),
+            (
+                {"within_rank": 10, "beyond_rank": 100},
+                r"`within_rank`, `beyond_rank`, and `between`",
+            ),
+        ],
+        ids=["no_range", "more_than_one_range"],
+    )
+    def test_rank_range_errors_name_the_rank_parameters(
+        self, bounds: dict[str, float], expected: str
+    ) -> None:
+        """
+        The shared validation names the bounds, so it has to name the ones belonging to the method
+        the user called rather than the `less_than` and `greater_than` it maps them onto.
+        """
+        with pytest.raises(ValueError, match=expected):
+            comp("ref", "cmp").exclude.by_rank(**bounds)
 
 
 class TestExcludeByLexiconScore:
@@ -519,6 +674,17 @@ class TestExclusionsRecord:
                 {"less_than": 2.0, "inclusive": True, "corpus": "both"},
                 {"between": (4.0, 5.0), "inclusive": False, "corpus": "either"},
             ]
+        }
+
+    def test_rank_ranges_record_the_tie_handling(self) -> None:
+        """
+        The tie method decides which ranks the range is tested against, so the comparison reads it
+        back out of the record to know which ranks it has to compute.
+        """
+        excluded = comp("ref", "cmp").exclude.by_rank(within_rank=100, tie_method="min")
+
+        assert excluded._state.exclusions == {
+            "rank": [{"less_than": 100, "inclusive": True, "corpus": "both", "tie_method": "min"}]
         }
 
     def test_unshared_tokens_are_recorded_as_having_been_excluded(self) -> None:

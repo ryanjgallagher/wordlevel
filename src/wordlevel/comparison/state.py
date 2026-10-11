@@ -5,6 +5,7 @@ from typing import Any, Protocol, get_args
 
 import polars as pl
 
+from wordlevel.comparison.core.exclude import rank_freqs
 from wordlevel.comparison.core.normalization import NormalizeBy
 from wordlevel.comparison.core.score.attribution import ATTRIBUTION_TYPE
 from wordlevel.comparison.core.state import (
@@ -163,12 +164,20 @@ class ComparisonState:
         ) -> pl.DataFrame | pl.LazyFrame:
             return restore_corpus_names(df, self.reference, self.comparison)
 
+        def rank_plan(
+            df: pl.DataFrame | pl.LazyFrame, token_col: str
+        ) -> pl.DataFrame | pl.LazyFrame:
+            tie_methods = sorted({condition["tie_method"] for condition in self.exclusions["rank"]})
+            return rank_freqs(df, ties=tie_methods)
+
         plans = [
             plan
             for plan in (
                 select_corpora_plan,
                 # Excluding by proportion needs normalized frequencies before narrowing the vocab
                 renormalize_plan if "proportion" in self.exclusions else None,
+                # Excluding by rank needs frequency ranks before narrowing the vocabulary
+                rank_plan if "rank" in self.exclusions else None,
                 self.lexicon_join_plan,
                 self.exclusion_plan,
                 renormalize_plan,
