@@ -2,14 +2,15 @@ import logging
 from pathlib import Path
 from types import SimpleNamespace
 
-import httpx
 import polars as pl
 import pytest
 from huggingface_hub._local_folder import write_download_metadata
 from huggingface_hub.errors import (
     HfHubHTTPError,
+    HTTPError,  # type: ignore[reportPrivateImportUsage]
     LocalEntryNotFoundError,
     OfflineModeIsEnabled,
+    Response,  # type: ignore[reportPrivateImportUsage]
     RevisionNotFoundError,
     XetDownloadError,
 )
@@ -32,8 +33,18 @@ from wordlevel.lexicons.core.load import (
 
 CENTER = 5.0
 COMMIT = "a" * 40
-# Attached to the stubbed error responses, which `httpx` requires; it is never sent
-HF_REQUEST = httpx.Request("GET", "https://huggingface.co")
+
+
+def fake_response(status_code: int) -> Response:
+    """
+    Stands in for the HTTP response that `HfHubHTTPError` carries, holding only the status code
+    that `load_lexicon` reads and the fields that the error's constructor reads.
+
+    Args:
+        status_code:
+            The HTTP status code that HuggingFace is to be reported as having returned
+    """
+    return SimpleNamespace(status_code=status_code, headers={}, request=None)  # type: ignore[return-value]
 
 
 @pytest.fixture
@@ -241,10 +252,8 @@ def download_error(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPat
     [
         LocalEntryNotFoundError("Could not connect to the hub"),
         OfflineModeIsEnabled("Offline mode is enabled"),
-        HfHubHTTPError("429 Too Many Requests", response=httpx.Response(429, request=HF_REQUEST)),
-        RevisionNotFoundError(
-            "404 Revision Not Found", response=httpx.Response(404, request=HF_REQUEST)
-        ),
+        HfHubHTTPError("429 Too Many Requests", response=fake_response(429)),
+        RevisionNotFoundError("404 Revision Not Found", response=fake_response(404)),
         XetDownloadError("The transfer failed"),
     ],
     indirect=True,
@@ -284,9 +293,9 @@ def test_offline_mode_reported_instead_of_network_failure(
     [
         LocalEntryNotFoundError("Could not connect to the hub"),
         OfflineModeIsEnabled("Offline mode is enabled"),
-        HfHubHTTPError("429 Too Many Requests", response=httpx.Response(429, request=HF_REQUEST)),
-        HfHubHTTPError("503 Service Unavailable", response=httpx.Response(503, request=HF_REQUEST)),
-        httpx.ConnectError("Connection refused"),
+        HfHubHTTPError("429 Too Many Requests", response=fake_response(429)),
+        HfHubHTTPError("503 Service Unavailable", response=fake_response(503)),
+        HTTPError("Connection refused"),
         XetDownloadError("The transfer failed"),
     ],
     indirect=True,
@@ -303,10 +312,8 @@ def test_unreachable_hub_raised_as_connection_error(download_error: Exception) -
 @pytest.mark.parametrize(
     "download_error",
     [
-        HfHubHTTPError("401 Unauthorized", response=httpx.Response(401, request=HF_REQUEST)),
-        RevisionNotFoundError(
-            "404 Revision Not Found", response=httpx.Response(404, request=HF_REQUEST)
-        ),
+        HfHubHTTPError("401 Unauthorized", response=fake_response(401)),
+        RevisionNotFoundError("404 Revision Not Found", response=fake_response(404)),
     ],
     indirect=True,
 )
@@ -421,7 +428,7 @@ def test_resolve_revision_unreachable_hub_raised_as_connection_error(
     """
 
     def fake_get_hf_file_metadata(url: str, token: str | None) -> HfFileMetadata:
-        raise httpx.ConnectError("Connection refused")
+        raise HTTPError("Connection refused")
 
     monkeypatch.setattr(
         "wordlevel.lexicons.core.load.get_hf_file_metadata", fake_get_hf_file_metadata
@@ -492,7 +499,7 @@ def test_update_lexicons_unreachable_hub_raised_as_connection_error(
 
     class UnreachableHfApi:
         def repo_info(self, repo_id: str, **kwargs: object) -> SimpleNamespace:
-            raise httpx.ConnectError("Connection refused")
+            raise HTTPError("Connection refused")
 
     monkeypatch.setattr("wordlevel.lexicons.core.load.HfApi", UnreachableHfApi)
 
