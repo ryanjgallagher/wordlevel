@@ -2181,7 +2181,7 @@ requires-dist = [
     { name = "narwhals", specifier = ">=2.4.0" },
     { name = "platformdirs", specifier = ">=2.0.0" },
     { name = "polars", specifier = ">=1.30.0" },
-    { name = "typing-extensions", specifier = ">=4.0.0" },
+    { name = "typing-extensions", specifier = ">=4.10.0" },
 ]
 provides-extras = ["save"]
 

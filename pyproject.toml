@@ -44,7 +44,7 @@ dependencies = [
   "narwhals>=2.4.0",
   "platformdirs>=2.0.0",
   "polars>=1.30.0",
-  "typing-extensions>=4.0.0",
+  "typing-extensions>=4.10.0",
 ]
 
 [project.optional-dependencies]
