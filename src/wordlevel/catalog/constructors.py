@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias, TypeGuard
+from typing import TYPE_CHECKING, TypeAlias
 
-import narwhals as nw
 import polars as pl
 from narwhals.typing import IntoFrame
 from polars import col
 
 from wordlevel.constants import NORMALIZATION_SUFFIX, TOKEN
 from wordlevel.datasets.dataset import Dataset
+from wordlevel.frames import to_polars
 from wordlevel.utils import normalize_freqs
 
 
@@ -73,26 +73,6 @@ Example:
     }
     ```
 """
-
-
-def is_dataframe(data: object) -> TypeGuard[IntoFrame]:
-    """
-    Checks whether an object is a dataframe that can be converted to a Polars dataframe.
-
-    Recognizes any dataframe from a backend supported by Narwhals, as well as any object that
-    produces an Arrow C stream.
-
-    Args:
-        data: Any object
-
-    Returns:
-        Whether the object is a convertible dataframe
-    """
-    if isinstance(nw.from_native(data, pass_through=True), (nw.DataFrame, nw.LazyFrame)):
-        return True
-
-    # Producers of an Arrow C stream that Narwhals has no dedicated backend for
-    return hasattr(data, "__arrow_c_stream__")
 
 
 def from_catalog(catalog: Catalog) -> CatalogData:
@@ -221,22 +201,8 @@ def from_dataframe(
         KeyError: If any column in `freq_cols` is not a column in `df`.
         ValueError: If fewer than two columns are provided in `freq_cols`.
     """
-    df_pl: pl.DataFrame | pl.LazyFrame
-    df_nw = nw.from_native(df, pass_through=True)
-
-    if isinstance(df, (pl.DataFrame, pl.LazyFrame)):
-        df_pl = df
-    elif isinstance(df_nw, (nw.DataFrame, nw.LazyFrame)):
-        # Narwhals has no lazy-to-lazy bridge into Polars, so lazy backends are materialized
-        df_pl = df_nw.lazy().collect(backend="polars").to_polars()
-    elif hasattr(df, "__arrow_c_stream__"):
-        # Producers of an Arrow C stream that Narwhals also supports
-        df_pl = nw.from_arrow(df, backend=pl).to_polars()
-    else:
-        raise TypeError(f"Input type not supported: {type(df)}")
-
     return from_polars(
-        df=df_pl,
+        df=to_polars(df),
         token_col=token_col,
         freq_cols=freq_cols,
         normalize=normalize,
