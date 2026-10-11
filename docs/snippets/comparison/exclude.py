@@ -36,6 +36,13 @@ cl = cl.with_comparisons(
 # --8<-- [end:by_proportion]
 
 
+# --8<-- [start:by_rank]
+cl = cl.with_comparisons(
+    wl.comp("before", "after").exclude.by_rank(within_rank=2).score.proportion()
+)
+# --8<-- [end:by_rank]
+
+
 # --8<-- [start:by_lexicon_score]
 cl = cl.with_comparisons(
     wl.comp("before", "after")

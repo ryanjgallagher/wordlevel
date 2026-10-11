@@ -1,7 +1,7 @@
-from wordlevel.api.catalog.catalog import Catalog
-from wordlevel.api.comparison.comparison import comp
-from wordlevel.api.lexicons.lexicon import LexiconLoader, lex
+from wordlevel.catalog.catalog import Catalog
+from wordlevel.comparison.comparison import comp
 from wordlevel.datasets.dataset import Dataset
+from wordlevel.lexicons.lexicon import LexiconLoader, lex
 
 
 try:

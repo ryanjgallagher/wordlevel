@@ -1,7 +1,6 @@
 """Configuration classes for wordlevel"""
 
-from dataclasses import dataclass, fields
-from types import SimpleNamespace
+from dataclasses import dataclass
 
 
 DEFAULT_LABEL_SIZE: float = 11
@@ -9,85 +8,78 @@ DEFAULT_LABEL_SIZE: float = 11
 DEFAULT_SCORE_AXIS_TITLE = "Contribution"
 PERCENT_SCORE_AXIS_TITLE = "Percent contribution"
 
-SYMBOL_SUFFIX = "_symbol"
+LABEL_SUFFIX = "_label"
 
 DEFAULT_BAR_OUTLINE_COLOR = "#888"
 DEFAULT_BAR_OUTLINE_WIDTH: float = 0.1
 
-BAR_OUTLINE_FIELDS = frozenset({"outline_color", "outline_width"})
-"""
-Names of the bar config fields that style every bar's outline. Together with the `*_symbol` fields,
-these are the bar config fields that are not score types
-"""
+DEFAULT_GRAND_TOTAL_COLOR = "#888"
+DEFAULT_ATTRIBUTION_COLORS = {
+    "reference": "#F09E2E",
+    "comparison": "#016FBA",
+    "reinforce": "#016FBA",
+    "offset": "#E6E6E6",
+}
+
+NON_SCORE_TYPE_FIELDS = frozenset({"grand_total", "counteracted_opacity"})
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BarConfig:
     """
-    Configuration for the bar colors of token contributions attributed by frequency or rank.
+    Configuration for the bars of a bar or word shift plot.
 
-    The contributions (and bars) are attributed by whether a token is more common in the reference
-    or the comparison.
+    For the color of each bar, see
+    [`BarColorConfig`][wordlevel.configs.BarColorConfig] and
+    [`ShiftColorConfig`][wordlevel.configs.ShiftColorConfig].
+
+    Attributes:
+        outline_color:
+            Color of the outline around each bar
+        outline_width:
+            Width of the outline around each bar, in pixels. `0` draws no outline
+    """
+
+    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
+    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
+
+
+@dataclass(kw_only=True)
+class BarColorConfig:
+    """
+    Configuration for the bar colors of a bar plot.
+
+    Contributions are split into two groups, and which pair of colors applies depends on how the
+    comparison attributes them. Measures attributed by frequency or rank use `reference` and
+    `comparison`, for whether a token is more common in the reference or the comparison corpus.
+    Measures attributed by score sign use `reinforce` and `offset`, for whether a token's score
+    makes the overall difference larger or smaller. Setting a color for the pair that does not
+    apply to the plotted comparison raises an error naming the pair that does.
 
     Attributes:
         reference:
-            Color of bars attributed to the reference corpus
+            Color of bars attributed to the reference corpus. If `None`, `"#F09E2E"` is used
         comparison:
-            Color of bars attributed to the comparison corpus
-        reference_symbol:
-            Symbol labeling the reference contribution in the totals panels
-        comparison_symbol:
-            Symbol labeling the comparison contribution in the totals panels
-        outline_color:
-            Color of the outline around each bar
-        outline_width:
-            Width of the outline around each bar, in pixels. `0` draws no outline
-    """
-
-    reference: str = "#F09E2E"
-    comparison: str = "#016FBA"
-    reference_symbol: str = "Reference"
-    comparison_symbol: str = "Comparison"
-    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
-    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
-
-
-@dataclass
-class ScoreSignBarConfig:
-    """
-    Configuration for the bar colors of token contributions attributed by score sign.
-
-    The contributions (and bars) are attributed by whether a token's score is positive or negative,
-    and whether that score reinforces or offsets the overall corpus-level difference between the
-    reference and comparison.
-
-    Attributes:
+            Color of bars attributed to the comparison corpus. If `None`, `"#016FBA"` is used
         reinforce:
             Color of bars where the token reinforces the overall difference, making its magnitude
-            larger
+            larger. If `None`, `"#016FBA"` is used
         offset:
             Color of bars where the token offsets the overall difference, making its magnitude
-            smaller
-        reinforce_symbol:
-            Symbol labeling the reinforcing contribution in the totals panels
-        offset_symbol:
-            Symbol labeling the offsetting contribution in the totals panels
-        outline_color:
-            Color of the outline around each bar
-        outline_width:
-            Width of the outline around each bar, in pixels. `0` draws no outline
+            smaller. If `None`, `"#E6E6E6"` is used
+        grand_total:
+            Color of the grand total bar in the totals panels
     """
 
-    reinforce: str = "#016FBA"
-    offset: str = "#E6E6E6"
-    reinforce_symbol: str = "Reinforces"
-    offset_symbol: str = "Offsets"
-    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
-    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
+    reference: str | None = None
+    comparison: str | None = None
+    reinforce: str | None = None
+    offset: str | None = None
+    grand_total: str = DEFAULT_GRAND_TOTAL_COLOR
 
 
-@dataclass
-class ShiftBarConfig:
+@dataclass(kw_only=True)
+class ShiftColorConfig:
     """
     Configuration for the bar colors of a word shift plot.
 
@@ -96,8 +88,9 @@ class ShiftBarConfig:
     reference corpus. The suffixes `*_positive` and `*_negative` indicate whether a token is
     relatively positive or negative compared to the specified reference score. The bars
     `higher_score` and `lower_score` indicate whether the token's score is higher or lower in the
-    comparison corpus. Each of these six primary bars also have a `*_counteracted` variant for when
-    the two base bars are opposite signs and partially cancel out
+    comparison corpus. Each of these six bars also has a `*_counteracted` variant, for when the two
+    base bars are opposite signs and partially cancel out. A counteracted bar is drawn in its base
+    bar's color, faded by `counteracted_opacity`, so it is not colored separately.
 
     Attributes:
         more_of_negative:
@@ -116,40 +109,11 @@ class ShiftBarConfig:
             Color of bars where the token's score is lower in the comparison than the reference
         higher_score:
             Color of bars where the token's score is higher in the comparison than the reference
-        lower_score_counteracted:
-            Color of bars where the `lower_score` contribution is partially counteracted by the
-            other bar
-        higher_score_counteracted:
-            Color of bars where the `higher_score` contribution is partially counteracted by the
-            other bar
-        more_of_negative_counteracted:
-            Color of bars where the `more_of_negative` contribution is partially counteracted by
-            other bar
-        more_of_positive_counteracted:
-            Color of bars where the `more_of_positive` contribution is partially counteracted by
-            other bar
-        less_of_positive_counteracted:
-            Color of bars where the `less_of_positive` contribution is partially counteracted by
-            other bar
-        less_of_negative_counteracted:
-            Color of bars where the `less_of_negative` contribution is partially counteracted by
-            other bar
-        more_of_negative_symbol:
-            Symbol labeling the `more_of_negative` contribution in the totals panels
-        more_of_positive_symbol:
-            Symbol labeling the `more_of_positive` contribution in the totals panels
-        less_of_positive_symbol:
-            Symbol labeling the `less_of_positive` contribution in the totals panels
-        less_of_negative_symbol:
-            Symbol labeling the `less_of_negative` contribution in the totals panels
-        lower_score_symbol:
-            Symbol labeling the `lower_score` contribution in the totals panels
-        higher_score_symbol:
-            Symbol labeling the `higher_score` contribution in the totals panels
-        outline_color:
-            Color of the outline around each bar
-        outline_width:
-            Width of the outline around each bar, in pixels. `0` draws no outline
+        counteracted_opacity:
+            Opacity of the `*_counteracted` bars, as a fraction between 0 and 1. Each one is drawn
+            in its base bar's color at this opacity
+        grand_total:
+            Color of the grand total bar in the totals panels
     """
 
     more_of_negative: str = "#2F7CCE"
@@ -158,37 +122,11 @@ class ShiftBarConfig:
     less_of_negative: str = "#C4CAFC"
     lower_score: str = "#9E75B7"
     higher_score: str = "#FECC5D"
-    lower_score_counteracted: str = "#decee6"
-    higher_score_counteracted: str = "#ffedc7"
-    more_of_negative_counteracted: str = "#b6d1ee"
-    more_of_positive_counteracted: str = "#ffffd4"
-    less_of_positive_counteracted: str = "#fffff0"
-    less_of_negative_counteracted: str = "#ebedff"
-    more_of_negative_symbol: str = "−↑"
-    more_of_positive_symbol: str = "+↑"
-    less_of_positive_symbol: str = "+↓"
-    less_of_negative_symbol: str = "−↓"
-    lower_score_symbol: str = "▽"
-    higher_score_symbol: str = "△"
-    outline_color: str = DEFAULT_BAR_OUTLINE_COLOR
-    outline_width: float = DEFAULT_BAR_OUTLINE_WIDTH
+    counteracted_opacity: float = 0.345
+    grand_total: str = DEFAULT_GRAND_TOTAL_COLOR
 
 
-SHIFT_BAR_NAMES = SimpleNamespace(
-    **{
-        f.name: f.name
-        for f in fields(ShiftBarConfig)
-        if not f.name.endswith(SYMBOL_SUFFIX) and f.name not in BAR_OUTLINE_FIELDS
-    }
-)
-"""
-Namespace of `ShiftBarConfig` field names as strings. Use this as the source of truth for shift type 
-name strings in code that lives outside `ShiftBarConfig` (e.g., score plan aliases,
-dataframe column names).
-"""
-
-
-@dataclass
+@dataclass(kw_only=True)
 class ScoreAxisConfig:
     """
     Configuration for the score axis of a bar or word shift plot.
@@ -233,7 +171,7 @@ class ScoreAxisConfig:
     width: float = 1
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RankAxisConfig:
     """
     Configuration for the rank axis of a bar or word shift plot.
@@ -304,7 +242,7 @@ class RankAxisConfig:
     width: float = 1
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LabelConfig:
     """
     Configuration for the token labels of a bar or word shift plot.
@@ -338,7 +276,7 @@ class LabelConfig:
             A symbol appended to the end of a token's label indicating that it "borrowed" a score
             across corpora. If `None`, no symbol is appended. For detail on borrowing, see
             `scored_in_one_lexicon` in
-            [lexicon scoring][wordlevel.api.comparison.score.Scorer.lexicon]
+            [lexicon scoring][wordlevel.comparison.score.Scorer.lexicon]
     """
 
     pad: float = 5
@@ -352,7 +290,7 @@ class LabelConfig:
     borrow_symbol: str | None = "*"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BorderConfig:
     """
     Configuration for the border of the entire chart, regardless of axis.
@@ -372,7 +310,7 @@ class BorderConfig:
     width: float = 0
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ZeroLineConfig:
     """
     Configuration for the zero line drawn at the score-axis origin.
@@ -392,28 +330,60 @@ class ZeroLineConfig:
     width: float = 1.0
 
 
-@dataclass
-class TotalShiftConfig:
+@dataclass(kw_only=True)
+class TotalsConfig:
     """
-    Configuration for the totals panels above a word shift plot.
+    Configuration for the totals panels of a bar or word shift plot.
 
     The totals panels show one cumulative-contribution bar per contribution type, plus a grand
-    total bar summing them all. Per-type colors and symbols come from the bar config.
+    total bar summing them all. Each bar is labeled with the text of its contribution type, so only
+    the labels matching the plotted comparison apply: `reference_label` and `comparison_label` for
+    contributions attributed by frequency or rank, `reinforce_label` and `offset_label` for those
+    attributed by score sign, and the six remaining labels for a word shift plot. The labels that do
+    not apply are ignored. Every bar's color, the grand total's included, comes from the color
+    config.
 
     Attributes:
-        total:
-            Color of the grand total bar
-        total_symbol:
-            Symbol labeling the grand total bar in the totals panels
-        outline_color:
-            Color of the outline around the grand total bar. If `None`, the bar config's
-            `outline_color` is used
-        outline_width:
-            Width of the outline around the grand total bar, in pixels. If `None`, the bar config's
-            `outline_width` is used
+        grand_total_label:
+            Label for the grand total bar
+        reference_label:
+            Label for the contribution attributed to the reference corpus
+        comparison_label:
+            Label for the contribution attributed to the comparison corpus
+        reinforce_label:
+            Label for the contribution that reinforces the overall difference
+        offset_label:
+            Label for the contribution that offsets the overall difference
+        more_of_negative_label:
+            Label for the `more_of_negative` contribution
+        more_of_positive_label:
+            Label for the `more_of_positive` contribution
+        less_of_positive_label:
+            Label for the `less_of_positive` contribution
+        less_of_negative_label:
+            Label for the `less_of_negative` contribution
+        lower_score_label:
+            Label for the `lower_score` contribution
+        higher_score_label:
+            Label for the `higher_score` contribution
+        grand_total_outline_color:
+            Color of the outline around the grand total bar. If `None`, `BarConfig.outline_color`
+            is used
+        grand_total_outline_width:
+            Width of the outline around the grand total bar, in pixels. If `None`,
+            `BarConfig.outline_width` is used
     """
 
-    total: str = "#888"
-    total_symbol: str = "Total"
-    outline_color: str | None = None
-    outline_width: float | None = None
+    grand_total_label: str = "Total"
+    reference_label: str = "Reference"
+    comparison_label: str = "Comparison"
+    reinforce_label: str = "Reinforces"
+    offset_label: str = "Offsets"
+    more_of_negative_label: str = "−↑"
+    more_of_positive_label: str = "+↑"
+    less_of_positive_label: str = "+↓"
+    less_of_negative_label: str = "−↓"
+    lower_score_label: str = "▽"
+    higher_score_label: str = "△"
+    grand_total_outline_color: str | None = None
+    grand_total_outline_width: float | None = None

@@ -8,7 +8,7 @@ on:
       # Only trigger this workflow if files inside the lexicons/ folder change, or if the types
       # that the lexicons generate are edited directly
       - 'lexicons/**'
-      - 'src/wordlevel/api/lexicons/types/**'
+      - 'src/wordlevel/lexicons/types/**'
 
 permissions:
   contents: read
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           enable-cache: true
 
@@ -75,7 +75,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           enable-cache: true
 
@@ -85,7 +85,7 @@ jobs:
       - name: Generate the types of every lexicon
         run: |
           uv run --no-sync python -m lexicons.generate_types --strict lexicons/processor.py
-          uv run --no-sync ruff format --check src/wordlevel/api/lexicons/types
+          uv run --no-sync ruff format --check src/wordlevel/lexicons/types
 
       - name: Check that the generated types are committed
         run: |

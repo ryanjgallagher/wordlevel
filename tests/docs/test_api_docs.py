@@ -106,7 +106,7 @@ def test_companion_module_must_prefix_its_attributes_with_the_member_name() -> N
             children=(
                 sections_per(
                     structure.LEXICONS,
-                    module="wordlevel.core.comparison.normalization",
+                    module="wordlevel.comparison.core.normalization",
                     strip_prefix=True,
                 ),
             ),
@@ -244,4 +244,4 @@ def test_summary_is_empty_for_an_undocumented_object() -> None:
     Checks that a generated type alias with no docstring yields no description, rather than
     falling back to something synthesised
     """
-    assert summary("wordlevel.api.lexicons.types.labmt.labMTLanguage") == ""
+    assert summary("wordlevel.lexicons.types.labmt.labMTLanguage") == ""
