@@ -7,8 +7,10 @@ import polars as pl
 
 from wordlevel.comparison.core.exclude import (
     ExcludeCorpus,
+    RankTies,
     exclude_by_range,
     exclude_tokens,
+    freq_rank_col,
 )
 from wordlevel.constants import (
     FREQ_CMP_COL,
@@ -270,6 +272,110 @@ class ComparisonExcluder:
             between=between,
             inclusive=inclusive,
             corpus=corpus,
+        )
+
+    def by_rank(
+        self,
+        within_rank: float | None = None,
+        beyond_rank: float | None = None,
+        between: tuple[float, float] | None = None,
+        inclusive: bool = True,
+        corpus: ExcludeCorpus = "both",
+        tie_method: RankTies = "average",
+    ) -> Comparison:
+        """
+        Removes tokens whose frequency rank falls in the given range from the reference and
+        comparison corpora.
+
+        The range is tested against each token's frequency rank within its corpus, where rank 1 is
+        the most common token, so that its bounds are vocabulary sizes rather than frequencies.
+        Tokens are excluded from both corpora, before they are scored, so the frequencies the
+        scoring measure works with are normalized over the remaining vocabulary.
+
+        Example:
+            ```python
+            --8<-- "snippets/comparison/exclude.py:setup"
+
+            --8<-- "snippets/comparison/exclude.py:by_rank"
+            ```
+
+        Exactly one of `within_rank`, `beyond_rank`, and `between` gives the range to exclude. To
+        exclude by multiple disjoint criteria, call the method multiple times with different
+        parameters. Ranks are taken over each corpus as the catalog gave it, before anything the
+        comparison excludes, so the bounds mean the same thing no matter what else the comparison
+        excludes or how it is scored.
+
+        Warning:
+            Excluding tokens changes the normalized frequencies of every token that remains.
+
+            Tokens of equal frequency share a rank, and a tie block is excluded whole when that
+            shared rank falls in the range. A bound is therefore neither a floor nor a ceiling on
+            the size of the surviving vocabulary, especially in the tail, where the tokens a corpus
+            uses once form a single large block.
+
+            A token missing from one of the corpora has a frequency of zero there, placing it in
+            that corpus's bottom tie block, so `corpus="either"` paired with `beyond_rank` removes
+            every token that the two corpora do not share.
+
+        Args:
+            within_rank:
+                Exclude the tokens ranked within this bound. For example, `within_rank=100`
+                excludes the 100 most frequently used tokens of a corpus
+            beyond_rank:
+                Exclude the tokens ranked beyond this bound. For example, `beyond_rank=1000`
+                excludes the tokens of a corpus that are not within its 1000 most frequently used
+            between:
+                Exclude tokens whose rank is between the lower and upper bound
+            inclusive:
+                Whether the bounds themselves are part of the range being excluded
+            corpus:
+                Which corpus's rank the range is evaluated against. `"reference"` and
+                `"comparison"` evaluate against a single corpus; `"both"` excludes a token only
+                when the range holds in both corpora; `"either"` excludes a token when the range
+                holds in either one
+            tie_method:
+                How tokens of equal frequency are ranked
+
+        Returns:
+            A new `Comparison` whose vocabulary excludes tokens with ranks in the given range
+
+        Raises:
+            ValueError:
+                If none of `within_rank`, `beyond_rank`, and `between` is given, or if more than
+                one of them is.
+            ValueError: If the lower bound of `between` is greater than its upper bound.
+            ValueError: If `corpus` is not a recognized corpus to test the range against.
+            ValueError:
+                If a bound is less than one, since rank 1 is the most common token of a corpus.
+            ValueError:
+                If `tie_method` is not a recognized way of ranking tokens of equal frequency.
+        """
+        given_bounds = [
+            bound
+            for bound in (within_rank, beyond_rank, *(between if between is not None else ()))
+            if bound is not None
+        ]
+        for bound in given_bounds:
+            if bound < 1:
+                raise ValueError(
+                    f"Ranks must be at least 1, got {bound}. Rank 1 is the most common token of a "
+                    "corpus, so nothing ranks below it."
+                )
+        if tie_method not in get_args(RankTies):
+            raise ValueError(
+                f"`tie_method` must be one of {get_args(RankTies)}, got {tie_method!r}"
+            )
+
+        return self._exclude_by_range(
+            kind="rank",
+            value_col_ref=freq_rank_col(FREQ_REF_COL, tie_method),
+            value_col_cmp=freq_rank_col(FREQ_CMP_COL, tie_method),
+            less_than=within_rank,
+            greater_than=beyond_rank,
+            between=between,
+            inclusive=inclusive,
+            corpus=corpus,
+            exclusion_params={"tie_method": tie_method},
         )
 
     def by_lexicon_score(
