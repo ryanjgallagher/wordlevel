@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Collection, Mapping
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_args
 
 import polars as pl
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from wordlevel.comparison.comparison import Comparison
 
 
-ExclusionRangeKind: TypeAlias = Literal["lexicon_score", "frequency", "proportion"]
+ExclusionRangeKind: TypeAlias = Literal["lexicon_score", "frequency", "proportion", "rank"]
 
 
 class ComparisonExcluder:
@@ -358,15 +358,27 @@ class ComparisonExcluder:
         between: tuple[float, float] | None,
         inclusive: bool,
         corpus: ExcludeCorpus,
+        exclusion_params: Mapping[str, Any] | None = None,
     ) -> Comparison:
         """
         Adds a plan excluding tokens whose values in the given columns fall in the given range.
 
         `kind` names what the range was tested against, and is the key the range is recorded under
-        in the comparison's exclusions.
+        in the comparison's exclusions. `exclusion_params` records any other parameters that were
+        invoked for the exclusion method
         """
+        one_sided_bound_names: tuple[str, str]
+        if kind == "rank":
+            one_sided_bound_names = ("within_rank", "beyond_rank")
+        else:
+            one_sided_bound_names = ("less_than", "greater_than")
+
         self._validate_range(
-            less_than=less_than, greater_than=greater_than, between=between, corpus=corpus
+            less_than=less_than,
+            greater_than=greater_than,
+            between=between,
+            corpus=corpus,
+            one_sided_bound_names=one_sided_bound_names,
         )
         state = self._comparison._state
 
@@ -392,7 +404,12 @@ class ComparisonExcluder:
             )
             if bound is not None
         }
-        condition: dict[str, Any] = {**given_bounds, "inclusive": inclusive, "corpus": corpus}
+        condition: dict[str, Any] = {
+            **given_bounds,
+            "inclusive": inclusive,
+            "corpus": corpus,
+            **(exclusion_params or {}),
+        }
         conditions = [*state.exclusions.get(kind, []), condition]
 
         return self._comparison._update_state(
@@ -406,33 +423,38 @@ class ComparisonExcluder:
         greater_than: float | None,
         between: tuple[float, float] | None,
         corpus: ExcludeCorpus,
+        one_sided_bound_names: tuple[str, str],
     ) -> None:
         """
         Checks that exactly one bound describes a well formed range, tested against a recognized
         corpus.
 
+        `one_sided_bound_names` contains the names of the one-sided bounds to validate. For
+        example, in `by_frequency` they are `less_than` and `greater_than`, and in `by_rank` they
+        are `within_rank` and `beyond_rank`. These are passed so that error messages are clear.
+
         Raises:
             ValueError:
-                If none of `less_than`, `greater_than`, and `between` is given, or if more than one
-                of them is.
+                If none of the bound parameters are given, or if more than one of them is.
             ValueError: If the lower bound of `between` is greater than its upper bound.
             ValueError: If `corpus` is not a recognized corpus to test the range against.
         """
+        lower, upper = one_sided_bound_names
         given_bounds = [
             name
             for name, bound in (
-                ("less_than", less_than),
-                ("greater_than", greater_than),
+                (lower, less_than),
+                (upper, greater_than),
                 ("between", between),
             )
             if bound is not None
         ]
 
         if len(given_bounds) == 0:
-            raise ValueError("Must specify one of `less_than`, `greater_than`, or `between`")
+            raise ValueError(f"Must specify one of `{lower}`, `{upper}`, or `between`")
         if len(given_bounds) > 1:
             raise ValueError(
-                "`less_than`, `greater_than`, and `between` are mutually exclusive, got "
+                f"`{lower}`, `{upper}`, and `between` are mutually exclusive, got "
                 f"{given_bounds}. Exclude more than one range by calling the method more than once."
             )
         if (between is not None) and (between[0] > between[1]):
