@@ -5,6 +5,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import polars as pl
+from narwhals.typing import IntoFrame
 from polars import col
 
 from wordlevel.comparison.core.measures.entropy import (
@@ -45,6 +46,7 @@ from wordlevel.constants import (
     SCORE_COL,
     SHIFT_SCORE_TYPE_NAMES,
 )
+from wordlevel.frames import is_dataframe, to_polars
 from wordlevel.lexicons.core.load import Lexicon
 
 
@@ -307,17 +309,9 @@ class Scorer:
 
     def lexicon(
         self,
-        lexicon: Lexicon | Mapping[str, float] | pl.DataFrame | pl.LazyFrame | None = None,
-        lexicon_reference: Lexicon
-        | Mapping[str, float]
-        | pl.DataFrame
-        | pl.LazyFrame
-        | None = None,
-        lexicon_comparison: Lexicon
-        | Mapping[str, float]
-        | pl.DataFrame
-        | pl.LazyFrame
-        | None = None,
+        lexicon: Lexicon | Mapping[str, float] | IntoFrame | None = None,
+        lexicon_reference: Lexicon | Mapping[str, float] | IntoFrame | None = None,
+        lexicon_comparison: Lexicon | Mapping[str, float] | IntoFrame | None = None,
         lexicon_token_col: str | None = None,
         lexicon_score_col: str | None = None,
         reference_score: float | Literal["mean", "center"] | pl.Expr = 0,
@@ -352,6 +346,11 @@ class Scorer:
         contributions, see more on
         [word shift graphs](https://wordlevel.dev/documentation/concepts/word_shift_graphs/).
 
+        Warning:
+            A lexicon dataframe is converted to Polars when this method is called. Polars
+            dataframes are used as given, so a LazyFrame stays lazy. Dataframes from other lazy
+            backends, like DuckDB and PySpark, are materialized in memory.
+
         Reference:
             For more details, see the following paper:
             > Gallagher, R. J., Frank, M. R., Mitchell, L., Schwartz, A. J., Reagan, A. J.,
@@ -363,12 +362,15 @@ class Scorer:
         Args:
             lexicon:
                 Lexicon associating tokens with scores. Accepts a mapping `{token: score}` or a
-                Polars dataframe with columns indicating the tokens and scores. Also accepts a
+                dataframe with columns indicating the tokens and scores, from any backend
+                supported by Narwhals. Also accepts a
                 [pre-defined lexicon](../../lexicons/off-the-shelf/index.md)
             lexicon_reference:
-                Lexicon associating tokens with scores for the reference corpus
+                Lexicon associating tokens with scores for the reference corpus. Accepts the same
+                forms as `lexicon`
             lexicon_comparison:
-                Lexicon associating tokens with scores for the comparison corpus
+                Lexicon associating tokens with scores for the comparison corpus. Accepts the same
+                forms as `lexicon`
             lexicon_token_col:
                 Name of the token column when a dataframe is supplied for the lexicon
             lexicon_score_col:
@@ -410,6 +412,13 @@ class Scorer:
                 f"`scored_in_one_lexicon` must be one of {get_args(ScoredInOneLexicon)}, a float, "
                 f"or a Polars expression, got {scored_in_one_lexicon!r}"
             )
+
+        if is_dataframe(lexicon):
+            lexicon = to_polars(lexicon)
+        if is_dataframe(lexicon_reference):
+            lexicon_reference = to_polars(lexicon_reference)
+        if is_dataframe(lexicon_comparison):
+            lexicon_comparison = to_polars(lexicon_comparison)
 
         score_alias_ref = LEXICON_SCORE_REF_COL
         score_alias_cmp = LEXICON_SCORE_CMP_COL

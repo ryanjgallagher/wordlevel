@@ -17,10 +17,10 @@ from wordlevel.catalog.constructors import (
     from_list_of_freqs,
     from_polars,
     from_wl_dataset,
-    is_dataframe,
 )
 from wordlevel.comparison.comparison import Comparison, ComparisonResult
 from wordlevel.datasets.dataset import Dataset
+from wordlevel.frames import is_dataframe
 from wordlevel.plots.plotter import Plotter
 
 
