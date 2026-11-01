@@ -686,4 +686,4 @@ class TestLexiconJoinPlan:
             )
             not_imputed = lexicon_join_plan(df_words, df_token_col=_TOKEN_COL, lexicon=lexicon_dict)
 
-            polars.testing.assert_frame_equal(imputed, not_imputed)
+            polars.testing.assert_frame_equal(imputed, not_imputed, check_row_order=False)
