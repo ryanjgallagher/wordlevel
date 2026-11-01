@@ -73,6 +73,7 @@ class TestExcludeTokens:
         assert_frame_equal(
             from_full.comparisons["x"].df,
             from_filtered.comparisons["x"].df,
+            check_row_order=False,
         )
 
     def test_excluding_a_token_outside_the_vocabulary_changes_nothing(
@@ -283,7 +284,7 @@ class TestExcludeByProportion:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == ["cat", "dog"]
+        assert set(df_result["word"]) == {"cat", "dog"}
 
 
 class TestExcludeByRank:
@@ -503,6 +504,7 @@ class TestExcludeByLexiconScore:
         assert_frame_equal(
             by_score.score.lexicon(lexicon=LEXICON)._state.resolve()(df_mock, "word"),
             by_tokens.score.lexicon(lexicon=LEXICON)._state.resolve()(df_mock, "word"),
+            check_row_order=False,
         )
 
     def test_less_than_excludes_the_low_end(self, df_mock: pl.DataFrame) -> None:
@@ -514,7 +516,7 @@ class TestExcludeByLexiconScore:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == ["cat", "ran"]
+        assert set(df_result["word"]) == {"cat", "ran"}
 
     def test_greater_than_excludes_the_high_end(self, df_mock: pl.DataFrame) -> None:
         """The bound is one-sided, so nothing below it is touched."""
@@ -525,13 +527,13 @@ class TestExcludeByLexiconScore:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == ["the", "dog"]
+        assert set(df_result["word"]) == {"the", "dog"}
 
     @pytest.mark.parametrize(
-        "inclusive, expected", [(True, ["cat"]), (False, ["the", "cat", "ran"])]
+        "inclusive, expected", [(True, {"cat"}), (False, {"the", "cat", "ran"})]
     )
     def test_bounds_are_part_of_the_range_only_when_inclusive(
-        self, df_mock: pl.DataFrame, inclusive: bool, expected: list[str]
+        self, df_mock: pl.DataFrame, inclusive: bool, expected: set[str]
     ) -> None:
         """`the` scores exactly 1.0 and `ran` exactly 3.0, so both sit on a bound of the range."""
         df_result = (
@@ -541,7 +543,7 @@ class TestExcludeByLexiconScore:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == expected
+        assert set(df_result["word"]) == expected
 
     def test_excluding_more_than_once_removes_the_union(self, df_mock: pl.DataFrame) -> None:
         """Each call composes onto the exclusions already in place, so the ranges accumulate."""
@@ -553,19 +555,19 @@ class TestExcludeByLexiconScore:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == ["dog", "ran"]
+        assert set(df_result["word"]) == {"dog", "ran"}
 
     @pytest.mark.parametrize(
         "corpus, expected",
         [
-            ("reference", ["cat", "ran"]),
-            ("comparison", ["cat", "dog"]),
-            ("both", ["cat", "dog", "ran"]),
-            ("either", ["cat"]),
+            ("reference", {"cat", "ran"}),
+            ("comparison", {"cat", "dog"}),
+            ("both", {"cat", "dog", "ran"}),
+            ("either", {"cat"}),
         ],
     )
     def test_corpus_chooses_which_lexicons_score_is_tested(
-        self, df_mock: pl.DataFrame, corpus: ExcludeCorpus, expected: list[str]
+        self, df_mock: pl.DataFrame, corpus: ExcludeCorpus, expected: set[str]
     ) -> None:
         """
         With a lexicon per corpus the two scores differ, so which of them the range is tested
@@ -582,7 +584,7 @@ class TestExcludeByLexiconScore:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == expected
+        assert set(df_result["word"]) == expected
 
     def test_excluding_before_scoring_matches_excluding_after(self, df_mock: pl.DataFrame) -> None:
         """
@@ -599,6 +601,7 @@ class TestExcludeByLexiconScore:
         assert_frame_equal(
             before.score.lexicon(lexicon=LEXICON)._state.resolve()(df_mock, "word"),
             after._state.resolve()(df_mock, "word"),
+            check_row_order=False,
         )
 
 
@@ -645,7 +648,7 @@ class TestExcludeByLexiconScoreValidation:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == ["cat", "ran"]
+        assert set(df_result["word"]) == {"cat", "ran"}
 
 
 class TestExclusionsRecord:

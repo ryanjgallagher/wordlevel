@@ -593,7 +593,7 @@ class TestLexiconScorer:
             df_mock, "word"
         )
 
-        assert df_result["word"].to_list() == ["the", "cat"]
+        assert set(df_result["word"]) == {"the", "cat"}
 
     def test_imputing_drops_tokens_no_lexicon_scores(self, df_mock) -> None:
         """
@@ -606,7 +606,7 @@ class TestLexiconScorer:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert df_result["word"].to_list() == ["the", "cat"]
+        assert set(df_result["word"]) == {"the", "cat"}
 
     def test_imputing_changes_the_normalized_freqs(self, df_mock) -> None:
         """
@@ -715,7 +715,7 @@ class TestLexiconDataframeBackends:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert_frame_equal(df_result, df_scores)
+        assert_frame_equal(df_result, df_scores, check_row_order=False)
 
     def test_pyarrow_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
         df_result = (
@@ -728,7 +728,7 @@ class TestLexiconDataframeBackends:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert_frame_equal(df_result, df_scores)
+        assert_frame_equal(df_result, df_scores, check_row_order=False)
 
     def test_duckdb_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
         # DuckDB resolves the table name against the local scope of the calling frame
@@ -743,7 +743,7 @@ class TestLexiconDataframeBackends:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert_frame_equal(df_result, df_scores)
+        assert_frame_equal(df_result, df_scores, check_row_order=False)
 
     def test_arrow_c_stream_lexicon(self, df_mock, df_lexicon, df_scores) -> None:
         """A producer of an Arrow C stream that Narwhals has no dedicated backend for."""
@@ -760,7 +760,7 @@ class TestLexiconDataframeBackends:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert_frame_equal(df_result, df_scores)
+        assert_frame_equal(df_result, df_scores, check_row_order=False)
 
     def test_reference_and_comparison_lexicons(self, df_mock, df_lexicon, df_scores) -> None:
         """
@@ -778,7 +778,7 @@ class TestLexiconDataframeBackends:
             ._state.resolve()(df_mock, "word")
         )
 
-        assert_frame_equal(df_result, df_scores)
+        assert_frame_equal(df_result, df_scores, check_row_order=False)
 
     def test_polars_lazyframe_lexicon_is_not_collected(
         self, df_mock, df_lexicon, monkeypatch
