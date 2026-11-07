@@ -209,6 +209,20 @@ class TestConstructors:
         null_counts = catalog._df.select(pl.col(*freq_cols).is_null().any()).collect().row(0)
         assert not any(null_counts)
 
+    def test_from_polars_widens_integer_freqs(self, token_col):
+        """Integer frequencies are widened to Int64 so differences of unsigned counts cannot wrap
+        around; float frequencies are left as is."""
+        df = pl.DataFrame(
+            {token_col: ["a"], "counts": [1], "proportions": [1.0]},
+            schema={token_col: pl.String, "counts": pl.UInt16, "proportions": pl.Float64},
+        )
+
+        catalog = Catalog.from_polars(df, token_col=token_col, corpora=["counts", "proportions"])
+
+        schema = catalog._df.collect_schema()
+        assert schema["counts"] == pl.Int64
+        assert schema["proportions"] == pl.Float64
+
     @pytest.mark.parametrize("constructor", [Catalog, Catalog.from_dataframe])
     def test_from_dataframe_pandas(self, df_mock, token_col, freq_cols, constructor):
         """Test initialization from a pandas dataframe."""

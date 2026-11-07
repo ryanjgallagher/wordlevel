@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
+import polars.selectors as cs
 from narwhals.typing import IntoFrame
 from polars import col
 
@@ -145,8 +146,12 @@ def from_polars(
         raise ValueError("At least two frequency columns must be provided via `freq_cols`")
 
     # Do necessary transformations
-    lf = df.clone().lazy()
-    lf = lf.select(token_col, *[col(freq_col).fill_null(0) for freq_col in deduped_freq_cols])
+    lf = (
+        df.clone()
+        .lazy()
+        .select(token_col, *[col(freq_col).fill_null(0) for freq_col in deduped_freq_cols])
+        .with_columns((cs.by_name(deduped_freq_cols) & cs.integer()).cast(pl.Int64))
+    )
 
     if normalize:
         lf = _normalize_frequency_columns(
