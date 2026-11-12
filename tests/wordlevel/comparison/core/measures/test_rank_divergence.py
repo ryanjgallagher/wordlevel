@@ -157,11 +157,11 @@ def test_rank_divergence_summands(
             [2, 1, 0, 0, 0],
             [0, 0, 3, 2, 1],
             [
-                2 * (3 / 4) ** (1 / 2),
-                2 * (1 / 4) ** (1 / 2),
                 2 * (7 / 9) ** (1 / 2),
                 2 * (5 / 18) ** (1 / 2),
-                2 * (1 / 9) ** (1 / 2),
+                2 * (3 / 4) ** (1 / 2),
+                2 * (1 / 4) ** (1 / 2),
+                2 * (1 / 12) ** (1 / 2),
             ],
             1,
         ),
@@ -170,11 +170,11 @@ def test_rank_divergence_summands(
             [2, 1, 0, 0, 0],
             [0, 0, 3, 2, 1],
             [
-                (3 / 2) * (15 / 16) ** (1 / 3),
-                (3 / 2) * (3 / 16) ** (1 / 3),
                 (3 / 2) * (77 / 81) ** (1 / 3),
                 (3 / 2) * (65 / 324) ** (1 / 3),
-                (3 / 2) * (5 / 81) ** (1 / 3),
+                (3 / 2) * (15 / 16) ** (1 / 3),
+                (3 / 2) * (3 / 16) ** (1 / 3),
+                (3 / 2) * (7 / 144) ** (1 / 3),
             ],
             2,
         ),
@@ -183,11 +183,11 @@ def test_rank_divergence_summands(
             [2, 1, 0, 0],
             [0, 3, 2, 1],
             [
-                4 * abs(1 - (1 / 4) ** (1 / 3)) ** (3 / 4),
-                4 * abs((1 / 2) ** (1 / 3) - (1 / 4) ** (1 / 3)) ** (3 / 4)
-                + 4 * abs(1 - (2 / 9) ** (1 / 3)) ** (3 / 4),
-                4 * abs((1 / 2) ** (1 / 3) - (2 / 9) ** (1 / 3)) ** (3 / 4),
-                4 * abs((1 / 3) ** (1 / 3) - (2 / 9) ** (1 / 3)) ** (3 / 4),
+                4 * abs(1 - (2 / 9) ** (1 / 3)) ** (3 / 4),
+                4 * abs((1 / 2) ** (1 / 3) - (2 / 9) ** (1 / 3)) ** (3 / 4)
+                + 4 * abs(1 - (1 / 4) ** (1 / 3)) ** (3 / 4),
+                4 * abs((1 / 2) ** (1 / 3) - (1 / 4) ** (1 / 3)) ** (3 / 4),
+                4 * abs((1 / 3) ** (1 / 3) - (1 / 4) ** (1 / 3)) ** (3 / 4),
             ],
             1 / 3,
         ),
@@ -196,12 +196,12 @@ def test_rank_divergence_summands(
             [5, 3, 2, 1, 0, 0],
             [5, 0, 4, 3, 2, 1],
             [
-                log(7) + log(15 / 2),
-                abs(log(2) - log(7)),
-                abs(log(3) - log(7)) + abs(log(2) - log(15 / 2)),
-                abs(log(4) - log(7)) + abs(log(3) - log(15 / 2)),
-                abs(log(4) - log(15 / 2)),
-                abs(log(5) - log(15 / 2)),
+                log(15 / 2) + log(7),
+                abs(log(2) - log(15 / 2)),
+                abs(log(3) - log(15 / 2)) + abs(log(2) - log(7)),
+                abs(log(4) - log(15 / 2)) + abs(log(3) - log(7)),
+                abs(log(4) - log(7)),
+                abs(log(5) - log(7)),
             ],
             0,
         ),
@@ -235,6 +235,11 @@ def test_rank_divergence_norm_summands(
         ([3, 2, 1], [3, 2, 1], 0, 1),
         # Disjoint, equally sized systems, expect maximum divergence
         ([2, 1, 0, 0], [0, 0, 2, 1], 1, 1),
+        # Disjoint, unequally sized systems, expect maximum divergence
+        ([2, 1, 0, 0, 0], [0, 0, 3, 2, 1], 1, 1),
+        ([2, 1, 0, 0, 0], [0, 0, 3, 2, 1], 1, 0),
+        # Disjoint, unequally sized systems where a rank ties with the absent rank, expect maximum divergence
+        ([1, 0, 0, 0], [0, 3, 2, 1], 1, float("inf")),
     ],
 )
 def test_rank_divergence(
