@@ -59,8 +59,8 @@ def rank_divergence_norm_summands(
     n_types1 = freqs1.filter(freqs1 > 0).len()
     n_types2 = freqs2.filter(freqs2 > 0).len()
 
-    comp1 = rank_divergence_norm_summand_component(freqs1, n_types1, n_types2, alpha)
-    comp2 = rank_divergence_norm_summand_component(freqs2, n_types2, n_types1, alpha)
+    comp1 = rank_divergence_norm_summand_component(freqs1, n_types2, n_types1, alpha)
+    comp2 = rank_divergence_norm_summand_component(freqs2, n_types1, n_types2, alpha)
 
     return comp1 + comp2
 
@@ -73,16 +73,21 @@ def rank_divergence_norm_summand_component(
 ) -> pl.Expr:
     """ """
     ranks = rank(freqs, alpha=alpha)
+    tied_last_rank = n_types1 + 0.5 * n_types2 + 0.5
 
     if alpha == 0:
-        summand = (ranks.log() - (n_types1 + 0.5 * n_types2 + 0.5).log()).abs()
+        summand = (ranks.log() - tied_last_rank.log()).abs()
     elif isinf(alpha):
-        summand = 1 / ranks
+        summand = (
+            pl.when(ranks == tied_last_rank)
+            .then(0)
+            .otherwise(pl.max_horizontal(1 / ranks, 1 / tied_last_rank))
+        )
     else:
         # fmt: off
         summand = (
-            ((alpha + 1.0) / alpha) 
-            * (1 / ranks - 1 / (n_types1 + 0.5 * n_types2 + 0.5) ** alpha)
+            ((alpha + 1.0) / alpha)
+            * (1 / ranks - 1 / tied_last_rank ** alpha)
             .abs()
             .pow(1.0 / (alpha + 1))
         )
