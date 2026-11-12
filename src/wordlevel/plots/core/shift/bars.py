@@ -1,9 +1,8 @@
 from dataclasses import asdict, dataclass, fields
-from typing import TypeVar
+from typing import Self, TypeVar
 
 import altair as alt
 import polars as pl
-from typing_extensions import Self
 
 from wordlevel.configs import (
     DEFAULT_ATTRIBUTION_COLORS,

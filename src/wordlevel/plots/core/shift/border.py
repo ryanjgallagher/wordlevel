@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import cast
+from typing import Self, cast
 
 import altair as alt
 import polars as pl
-from typing_extensions import Self
 
 from wordlevel.configs import BorderConfig, RankAxisConfig, ScoreAxisConfig
 from wordlevel.plots.core.utils import to_altair_optional

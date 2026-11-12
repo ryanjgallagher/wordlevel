@@ -16,7 +16,7 @@ a chart that shows not only _which_ words distinguish the texts, but also _how_ 
 
 ## Install
 
-WordLevel runs on Python 3.10 and above, and installs with any Python package manager. See the
+WordLevel runs on Python 3.11 and above, and installs with any Python package manager. See the
 [install guide](documentation/install.md) for details.
 
 ```bash

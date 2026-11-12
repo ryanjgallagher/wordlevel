@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from functools import cached_property
-from typing import Any
+from typing import Any, Self
 
 import polars as pl
-from typing_extensions import Self
 
 from wordlevel.comparison.core.normalization import NormalizeBy
 from wordlevel.comparison.core.score.attribution import ATTRIBUTION_LABELS, ATTRIBUTION_TYPE

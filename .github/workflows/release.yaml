@@ -33,7 +33,7 @@ jobs:
       - name: Install Python and enable uv caching
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
         with:
-          python-version: "3.14"
+          python-version: "3.15"
           enable-cache: true
 
       - name: Build sdist and wheel

@@ -1,6 +1,6 @@
 # Install
 
-`wordlevel` runs on Python 3.10 and above. It can be installed with any Python package manager,
+`wordlevel` runs on Python 3.11 and above. It can be installed with any Python package manager,
 including [pip] and [uv]. If you want to use uv, make sure to [install it first][uv install].
 
   [pip]: https://pip.pypa.io/
