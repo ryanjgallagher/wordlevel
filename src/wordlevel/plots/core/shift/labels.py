@@ -20,12 +20,15 @@ def shift_labels(
     label_config: LabelConfig | dict | None = None,
 ) -> alt.Chart:
     """
-    Assumes a dataframe which has one row per word per type of contribution. There should be columns
-    for the contribution, contribution type, and rank.
+    Makes the text layer of a word shift plot, labeling each token at the end of its bar, or at
+    zero if `label_config.on_bar_ends` is `False`.
 
-    `alignment_col` is the column whose sign decides which side of the bar end each label is anchored
-    on. It defaults to `score_col`, so a label sits on the side its bar points. This is useful if a
-    label needs to be pointed a certain way when the score is zero
+    Assumes a dataframe which has one row per token per type of contribution. There should be
+    columns for the contribution, contribution type, and rank.
+
+    `alignment_col` is the column whose sign decides which side of the bar end each label is
+    anchored on. It defaults to `score_col`, so a label sits on the side its bar points. This is
+    useful if a label needs to be pointed a certain way when the score is zero
     """
     if filter_max_rank:
         df = df.filter(col(rank_col) <= max_rank)
@@ -129,9 +132,13 @@ def get_label_positions(
     passthrough_cols: list[str] | None = None,
 ) -> pl.DataFrame:
     """
-    Get positions for labels, assuming long dataframe.
+    Collapses a long dataframe, with one row per token per type of contribution, into one row per
+    token holding the position of its label.
 
-    For any `passthrough_cols`, the first value per token is taken
+    A token's bar stacks its positive contributions on one side of zero and its negative
+    contributions on the other. Its `score_col` becomes the sum of whichever side is larger in
+    magnitude, so that the label sits at the end of the longer side. For any `passthrough_cols`,
+    the first value per token is taken.
     """
     if passthrough_cols is None:
         passthrough_cols = []
@@ -180,10 +187,13 @@ def get_position_params(bar_angle: float, text_angle: float, pad: float) -> dict
     at the tip.
 
     Args:
-        bar_angle: The angle (in degrees) the bar is growing towards.
-            (0 = Right, 90 = Down, 180 = Left, 270 = Up).
-        rotation: The angle (in degrees) of the text.
-        pad: The scalar padding amount (in pixels).
+        bar_angle:
+            The angle (in degrees) the bar is growing towards (0 = Right, 90 = Down, 180 = Left,
+            270 = Up)
+        text_angle:
+            The angle (in degrees) of the text
+        pad:
+            The scalar padding amount (in pixels)
 
     Returns:
         A dictionary with static values:

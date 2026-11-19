@@ -79,6 +79,9 @@ def shift_plot_df(
     scale: float = 1.0,
 ) -> pl.DataFrame:
     """
+    Builds the plot-ready dataframe for a word shift plot, unpivoting the six bar columns and their
+    counteracted columns into one row per token per bar type.
+
     Every contribution is multiplied by `scale` (e.g. `100` to display normalized scores as
     percentages).
 
