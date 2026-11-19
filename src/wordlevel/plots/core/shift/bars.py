@@ -6,7 +6,6 @@ import polars as pl
 
 from wordlevel.configs import (
     DEFAULT_ATTRIBUTION_COLORS,
-    DEFAULT_GRAND_TOTAL_COLOR,
     DEFAULT_SCORE_AXIS_TITLE,
     NON_SCORE_TYPE_FIELDS,
     PERCENT_SCORE_AXIS_TITLE,
@@ -150,21 +149,6 @@ class InternalBarConfig(BarConfig):
             outline_width=bar_config.outline_width,
         )
 
-    @classmethod
-    def from_score_types(cls, score_types: list[str]) -> Self:
-        """
-        No config supplied — derive a uniform-color colors dict from whatever score types are
-        present in the data. Callers that want plot-type-specific defaults are expected to
-        construct an InternalBarConfig via from_bar_colors / from_shift_colors.
-        """
-        # TODO: infer if the score types correspond to reference/comparison, reinforce/offset, or
-        #       the shift score types, and route to those constructors instead
-        return cls(
-            colors={GRAND_TOTAL_SCORE_TYPE: DEFAULT_GRAND_TOTAL_COLOR}
-            | {st: "steelblue" for st in score_types},
-            orders=None,
-        )
-
     @staticmethod
     def _get_colors(config: ShiftColorConfig) -> dict[str, str]:
         """
@@ -178,15 +162,15 @@ def shift_bars(
     score_col: str,
     rank_col: str,
     score_type_col: str,
+    rank_axis_config: RankAxisConfig,
+    score_axis_config: InternalScoreAxisConfig,
+    bar_config: InternalBarConfig,
+    border_config: InternalBorderConfig,
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis_config: RankAxisConfig | dict | None = None,
-    score_axis_config: InternalScoreAxisConfig | dict | None = None,
-    bar_config: InternalBarConfig | None = None,
-    border_config: InternalBorderConfig | None = None,
     show_legend: bool = False,
     score_axis_opposite: bool = False,
 ) -> alt.Chart:
@@ -205,6 +189,14 @@ def shift_bars(
             its contributing scores
         score_type_col:
             Column in the dataframe indicating the type of "score" associated with each bar
+        rank_axis_config:
+            Configuration for the rank axis
+        score_axis_config:
+            Configuration for the score axis
+        bar_config:
+            Configuration for the bars
+        border_config:
+            Configuration for the axes and border
         max_rank:
             The maximum number of top-contributing tokens to display
         filter_max_rank:
@@ -219,14 +211,6 @@ def shift_bars(
         width:
             The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
             `RankAxisConfig.bar_width` to control the width
-        rank_axis_config:
-            Configuration for the rank axis
-        score_axis_config:
-            Configuration for the score axis
-        bar_config:
-            Configuration for the bars
-        border_config:
-            Configuration for the axes and border
         show_legend:
             Whether to show the chart legend
         score_axis_opposite:
@@ -239,24 +223,6 @@ def shift_bars(
     # Filter the dataframe to the top N rows
     if filter_max_rank:
         df = df.filter(pl.col(rank_col) <= max_rank)
-
-    # Configure defaults for rank and score axes and the bars
-    if isinstance(rank_axis_config, dict):
-        rank_axis_config = RankAxisConfig(**rank_axis_config)
-    elif rank_axis_config is None:
-        rank_axis_config = RankAxisConfig()
-
-    if isinstance(score_axis_config, dict):
-        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
-    elif score_axis_config is None:
-        score_axis_config = InternalScoreAxisConfig()
-
-    if bar_config is None:
-        score_types = df[score_type_col].unique().to_list()
-        bar_config = InternalBarConfig.from_score_types(score_types)
-
-    if border_config is None:
-        border_config = InternalBorderConfig()
 
     # Configure the legend
     if show_legend:

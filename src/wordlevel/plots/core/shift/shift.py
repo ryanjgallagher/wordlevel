@@ -20,16 +20,16 @@ def shift(
     rank_col: str,
     score_type_col: str,
     token_col: str,
+    rank_axis_config: RankAxisConfig,
+    score_axis_config: InternalScoreAxisConfig,
+    bar_config: InternalBarConfig,
+    label_config: LabelConfig,
+    border_config: InternalBorderConfig,
+    zero_line_config: ZeroLineConfig,
     max_rank: int = 50,
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis_config: RankAxisConfig | dict | None = None,
-    score_axis_config: InternalScoreAxisConfig | dict | None = None,
-    bar_config: InternalBarConfig | None = None,
-    label_config: LabelConfig | dict | None = None,
-    border_config: InternalBorderConfig | None = None,
-    zero_line_config: ZeroLineConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,
     score_axis_opposite: bool = False,
@@ -51,18 +51,6 @@ def shift(
             Column in the dataframe indicating the type of "score" associated with each bar
         token_col:
             Column in the dataframe indicating the name of the token to which the scores correspond
-        max_rank:
-            The maximum number of top-contributing tokens to display
-        vertical:
-            Whether to orient the chart vertically, where tokens are listed top-to-bottom and
-            bars extend horizontally. If `False`, tokens are listed left-to-right and bars
-            extend vertically
-        height:
-            The height of the chart, in pixels. Ignored if `vertical`, see
-            `RankAxisConfig.bar_width` to control the height
-        width:
-            The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
-            `RankAxisConfig.bar_width` to control the width
         rank_axis_config:
             Configuration for the rank axis
         score_axis_config:
@@ -75,6 +63,18 @@ def shift(
             Configuration for the axes and border, including which of the panel's edges are drawn
         zero_line_config:
             Configuration for the zero line at the score-axis origin
+        max_rank:
+            The maximum number of top-contributing tokens to display
+        vertical:
+            Whether to orient the chart vertically, where tokens are listed top-to-bottom and
+            bars extend horizontally. If `False`, tokens are listed left-to-right and bars
+            extend vertically
+        height:
+            The height of the chart, in pixels. Ignored if `vertical`, see
+            `RankAxisConfig.bar_width` to control the height
+        width:
+            The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
+            `RankAxisConfig.bar_width` to control the width
         scale_factor:
             Multiplier applied to the score axis when fitting it to the bar labels. Increasing it
             provides more space for the bar labels
@@ -105,20 +105,6 @@ def shift(
             size_param["height"] = DEFAULT_SCORE_AXIS_PIXEL_SIZE
         else:
             size_param["height"] = height
-
-    # Resolve the axis configs once so they can be shared with the border framing
-    if isinstance(rank_axis_config, dict):
-        rank_axis_config = RankAxisConfig(**rank_axis_config)
-    elif rank_axis_config is None:
-        rank_axis_config = RankAxisConfig()
-
-    if isinstance(score_axis_config, dict):
-        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
-    elif score_axis_config is None:
-        score_axis_config = InternalScoreAxisConfig()
-
-    if border_config is None:
-        border_config = InternalBorderConfig()
 
     bars = shift_bars(
         df_filt,
