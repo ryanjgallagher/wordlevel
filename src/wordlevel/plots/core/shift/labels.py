@@ -229,7 +229,11 @@ def to_conditional_expr(
     positive_params: dict[str, str | float],
     negative_params: dict[str, str | float],
 ) -> alt.ExprRef:
-    """ """
+    """
+    Builds a Vega expression that chooses a mark property per data point by the sign of its value
+    in `score_col`. A non-negative value takes the property `key` from `positive_params`, and a
+    negative value takes it from `negative_params`.
+    """
     pos_val = positive_params[key]
     neg_val = negative_params[key]
 
