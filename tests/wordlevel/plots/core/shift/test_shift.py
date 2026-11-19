@@ -10,6 +10,7 @@ from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
+from wordlevel.plots.core.shift.border import InternalBorderConfig
 from wordlevel.plots.core.shift.shift import shift
 
 
@@ -198,3 +199,48 @@ def test_config_propagation(make_mock_df, score_col, rank_col, token_col, score_
         label_layer = base_layers[1]
 
         assert label_layer["mark"]["color"] == custom_label_color
+
+
+def test_shift_border_config_propagation(
+    make_mock_df, score_col, rank_col, token_col, score_type_col
+):
+    """
+    The border config reaches both the bars (native score-axis domain) and the border framing
+    (opposite edges)
+    """
+    chart = shift(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        score_type_col=score_type_col,
+        width=100,
+        vertical=True,
+        border_config=InternalBorderConfig(
+            width=1,
+            draw_score_axis=False,
+            draw_border_opposite_rank_axis=True,
+        ),
+    )
+
+    bars_encoding = chart.to_dict()["layer"][0]["layer"][0]["encoding"]
+    assert bars_encoding["x"]["axis"]["domain"] is False
+    # chart.layer[0] is the base group; chart.layer[1:] are the border edges
+    assert len(chart.layer[1:]) == 1
+
+
+def test_shift_score_axis_opposite(make_mock_df, score_col, rank_col, token_col, score_type_col):
+    """`score_axis_opposite` moves a horizontal chart's score axis to the right"""
+    chart = shift(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        score_type_col=score_type_col,
+        height=100,
+        vertical=False,
+        score_axis_opposite=True,
+    )
+
+    bars_encoding = chart.to_dict()["layer"][0]["layer"][0]["encoding"]
+    assert bars_encoding["y"]["axis"]["orient"] == "right"
