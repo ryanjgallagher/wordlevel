@@ -155,7 +155,12 @@ def test_returns_chart(make_mock_df, score_col, rank_col, token_col):
     Sanity check that the function returns an Altair chart
     """
     chart = shift_scales(
-        make_mock_df(), score_col=score_col, rank_col=rank_col, token_col=token_col, width=10
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        label_config=LabelConfig(),
+        width=10,
     )
 
     assert isinstance(chart, alt.LayerChart)
@@ -172,6 +177,7 @@ def test_error_if_size_not_specified(
             score_col=score_col,
             rank_col=rank_col,
             token_col=token_col,
+            label_config=LabelConfig(),
             vertical=vertical,
             # Dynamic key: the type checker can't tell wrong_size_col is width/height
             **{wrong_size_col: 10},  # type: ignore[arg-type]
@@ -189,6 +195,7 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, token_col, vertica
         score_col=score_col,
         rank_col=rank_col,
         token_col=token_col,
+        label_config=LabelConfig(),
         vertical=vertical,
         width=100,
         height=100,
@@ -222,7 +229,7 @@ def test_max_rank_filter(score_col, rank_col, token_col):
             max_rank=2,
             filter_max_rank=filter_max_rank,
             width=600,
-            label_config={"size": 11},
+            label_config=LabelConfig(size=11),
         )
         return _chart_positive_limit(chart)
 
@@ -256,7 +263,14 @@ def test_layers_are_invisible(make_mock_df, score_col, rank_col, token_col):
     """
     Tests that the scale layers are invisible (opacity 0) and have tooltips disabled.
     """
-    chart = shift_scales(make_mock_df(), score_col, rank_col, token_col, width=10)
+    chart = shift_scales(
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        label_config=LabelConfig(),
+        width=10,
+    )
 
     layers = chart.to_dict()["layer"]
 

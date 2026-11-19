@@ -11,7 +11,9 @@ def test_zero_line_orientation(vertical, channel):
     The zero line is a rule at datum 0 on the score axis (x when vertical, y when horizontal). The
     rank-axis channel is left unencoded so the rule spans the full extent of that axis.
     """
-    spec = zero_line(ZeroLineConfig(width=1), vertical=vertical).to_dict()
+    spec = zero_line(
+        zero_line_config=ZeroLineConfig(width=1), border_config=BorderConfig(), vertical=vertical
+    ).to_dict()
 
     assert spec["mark"]["type"] == "rule"
     assert spec["encoding"][channel]["datum"] == 0
@@ -26,14 +28,18 @@ def test_zero_line_carries_score_translate_offset(vertical, offset_key):
     The score axis (and its zero tick) is nudged a half pixel for crisp registration with the frame.
     The zero line is a mark, not an axis, so it must carry the same offset to land on the zero tick.
     """
-    mark = zero_line(ZeroLineConfig(width=1), vertical=vertical).to_dict()["mark"]
+    mark = zero_line(
+        zero_line_config=ZeroLineConfig(width=1), border_config=BorderConfig(), vertical=vertical
+    ).to_dict()["mark"]
 
     assert mark[offset_key] == _TRANSLATE_PX
 
 
 def test_zero_line_width_and_color():
     """The width and an explicit color pass through to the rule mark."""
-    mark = zero_line(ZeroLineConfig(color="red", width=3)).to_dict()["mark"]
+    mark = zero_line(
+        zero_line_config=ZeroLineConfig(color="red", width=3), border_config=BorderConfig()
+    ).to_dict()["mark"]
 
     assert mark["strokeWidth"] == 3
     assert mark["color"] == "red"
@@ -50,21 +56,20 @@ def test_zero_line_color_falls_back_to_border():
     assert override.to_dict()["mark"]["color"] == "red"
 
 
-def test_zero_line_dict_form_and_default():
+def test_zero_line_default():
     """
-    Dict configs are accepted; the default falls back to the border color (Altair's axis grey) at
-    width 1.0
+    The default falls back to the border color (Altair's axis grey) at width 1.0
     """
-    mark = zero_line({"color": "blue", "width": 2}).to_dict()["mark"]
-    assert mark["color"] == "blue"
-    assert mark["strokeWidth"] == 2
-
-    default = zero_line().to_dict()["mark"]
+    default = zero_line(zero_line_config=ZeroLineConfig(), border_config=BorderConfig()).to_dict()[
+        "mark"
+    ]
     assert default["strokeWidth"] == 1.0
     assert default["color"] == "#888"
 
 
-def test_shift_appends_zero_line(make_mock_df, score_col, rank_col, token_col, score_type_col):
+def test_shift_appends_zero_line(
+    make_mock_df, make_shift_configs, score_col, rank_col, token_col, score_type_col
+):
     """
     shift appends the zero line as the final layer, invisible (width 0) by default, and honors a
     provided ZeroLineConfig.
@@ -76,6 +81,7 @@ def test_shift_appends_zero_line(make_mock_df, score_col, rank_col, token_col, s
         token_col=token_col,
         score_type_col=score_type_col,
         width=100,
+        **make_shift_configs(),
     )
     # The zero line is the last of the base layers grouped in layer[0] (the border edges follow)
     default_last = default_chart.layer[0].layer[-1].to_dict()
@@ -90,7 +96,7 @@ def test_shift_appends_zero_line(make_mock_df, score_col, rank_col, token_col, s
         token_col=token_col,
         score_type_col=score_type_col,
         width=100,
-        zero_line_config=ZeroLineConfig(color="red", width=2),
+        **make_shift_configs(zero_line_config=ZeroLineConfig(color="red", width=2)),
     )
     configured_last = configured_chart.layer[0].layer[-1].to_dict()
     assert configured_last["mark"]["color"] == "red"

@@ -1,4 +1,5 @@
 import itertools
+from collections.abc import Callable
 from typing import cast
 
 import altair as alt
@@ -6,25 +7,32 @@ import polars as pl
 import pytest
 
 from wordlevel.configs import BorderConfig, TotalsConfig, ZeroLineConfig
+from wordlevel.plots.core.shift.bars import InternalScoreAxisConfig
 from wordlevel.plots.core.shift.compose import compose_shift
 from wordlevel.plots.core.shift.totals import _LABEL_COL, _SCORE_TYPE_COL
 
 
-def _compose_shift(
-    df, score_col, rank_col, token_col, score_type_col, **kwargs
-) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
-    """Call `compose_shift` with the standard column mapping and test-sized dimensions."""
-    kwargs.setdefault("max_rank", 10)
-    kwargs.setdefault("width", 100)
-    kwargs.setdefault("height", 100)
-    return compose_shift(
-        df,
-        score_col=score_col,
-        rank_col=rank_col,
-        token_col=token_col,
-        score_type_col=score_type_col,
-        **kwargs,
-    )
+@pytest.fixture
+def make_compose_chart(make_compose_configs) -> Callable:
+    """
+    Factory that calls `compose_shift` with the standard column mapping, test-sized dimensions, and
+    default configs. Any of them can be overridden by keyword
+    """
+
+    def _chart_factory(
+        df, score_col, rank_col, token_col, score_type_col, **kwargs
+    ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
+        kwargs = {"max_rank": 10, "width": 100, "height": 100} | make_compose_configs() | kwargs
+        return compose_shift(
+            df,
+            score_col=score_col,
+            rank_col=rank_col,
+            token_col=token_col,
+            score_type_col=score_type_col,
+            **kwargs,
+        )
+
+    return _chart_factory
 
 
 def _panels(chart: alt.TopLevelMixin) -> list[dict]:
@@ -94,6 +102,7 @@ class TestShowTotals:
     def test_returns_three_panel_concat(
         self,
         make_mock_df,
+        make_compose_chart,
         score_col,
         rank_col,
         token_col,
@@ -104,7 +113,7 @@ class TestShowTotals:
     ):
         """`show_totals` stacks three panels (per-type totals, grand total, main chart) with a
         concat matching the orientation."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -118,10 +127,10 @@ class TestShowTotals:
         assert len(getattr(chart, concat_attr)) == 3
 
     def test_no_totals_returns_single_layer_chart(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, make_compose_chart, score_col, rank_col, token_col, score_type_col
     ):
         """Without `show_totals`, `shift` returns a single layer chart rather than a concat."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -133,11 +142,11 @@ class TestShowTotals:
         assert isinstance(chart, alt.LayerChart)
 
     def test_color_scales_are_independent(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, make_compose_chart, score_col, rank_col, token_col, score_type_col
     ):
         """The stacked panels resolve their color scales independently so their legends do not
         merge into one shared scale."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -149,12 +158,12 @@ class TestShowTotals:
         assert chart.to_dict()["resolve"]["scale"]["color"] == "independent"
 
     def test_fill_opacity_scales_are_independent(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, make_compose_chart, score_col, rank_col, token_col, score_type_col
     ):
         """The stacked panels resolve their fill opacity scales independently. Only the main panel
         has faded bars, and a shared scale would union the panels' differing score types into one
         domain while keeping only the first panel's range."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -166,11 +175,11 @@ class TestShowTotals:
         assert chart.to_dict()["resolve"]["scale"]["fillOpacity"] == "independent"
 
     def test_panel_order_is_types_then_grand_then_main(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, make_compose_chart, score_col, rank_col, token_col, score_type_col
     ):
         """The panels are ordered [per-type totals, grand total, main]: the last panel is the full
         word-shift chart, the middle panel is the single grand-total bar."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -196,10 +205,10 @@ class TestShowTotals:
         assert main_bars[rank_col].max() == 10
 
     def test_forwards_total_shift_config(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col
+        self, make_mock_df, make_compose_chart, score_col, rank_col, token_col, score_type_col
     ):
         """`shift` forwards `totals_config` into the grand-total panel."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -216,6 +225,7 @@ class TestShowTotals:
     def test_totals_move_score_axis_opposite_only_when_horizontal(
         self,
         make_mock_df,
+        make_compose_chart,
         score_col,
         rank_col,
         token_col,
@@ -225,7 +235,7 @@ class TestShowTotals:
     ):
         """With totals, the main chart's score axis is moved to the far (right) side only when
         horizontal, so it clears the totals panels placed to its left."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -244,11 +254,18 @@ class TestShowTotals:
 class TestFrameConsistency:
     @pytest.mark.parametrize("vertical", [True, False])
     def test_borders_same_color_and_width_across_panels(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        make_compose_chart,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
     ):
         """Every border edge on every panel shares one color and width, so the stacked frame reads
         as a single continuous border rather than mismatched per-panel edges."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -264,11 +281,18 @@ class TestFrameConsistency:
 
     @pytest.mark.parametrize("vertical", [True, False])
     def test_zero_line_same_color_and_width_across_panels(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        make_compose_chart,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
     ):
         """The zero line is drawn identically (color and width) on the main chart and both totals
         panels."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -289,6 +313,7 @@ class TestFrameConsistency:
     def test_every_score_direction_boundary_drawn_once(
         self,
         make_mock_df,
+        make_compose_chart,
         score_col,
         rank_col,
         token_col,
@@ -300,7 +325,7 @@ class TestFrameConsistency:
         """Along the score-axis direction (where the panels are stacked), each inter-panel seam is
         drawn exactly once — catching both a missing divider and a doubled edge — in either
         orientation, whether or not the border box encloses the stack."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -326,11 +351,18 @@ class TestFrameConsistency:
 
     @pytest.mark.parametrize("vertical", [True, False])
     def test_seams_share_one_width(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        make_compose_chart,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
     ):
         """Every seam is drawn by a border edge rather than a panel's own score-axis domain, so a
         border box wider than the score axis cannot leave one divider thicker than another."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -353,11 +385,18 @@ class TestFrameConsistency:
 
     @pytest.mark.parametrize("vertical", [True, False])
     def test_seams_take_score_axis_width_when_border_hidden(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        make_compose_chart,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
     ):
         """With the border box off, the seams that survive are drawn at the score axis width, so
         they match the score-axis domain that separates the two totals panels."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -366,7 +405,7 @@ class TestFrameConsistency:
             show_totals=True,
             vertical=vertical,
             border_config=BorderConfig(width=0),
-            score_axis_config={"width": 3},
+            score_axis_config=InternalScoreAxisConfig(width=3),
         )
 
         edges = set().union(*(_border_edges(panel) for panel in _panels(chart)))
@@ -374,11 +413,18 @@ class TestFrameConsistency:
 
     @pytest.mark.parametrize("vertical", [True, False])
     def test_no_border_edges_without_totals_when_border_hidden(
-        self, make_mock_df, score_col, rank_col, token_col, score_type_col, vertical
+        self,
+        make_mock_df,
+        make_compose_chart,
+        score_col,
+        rank_col,
+        token_col,
+        score_type_col,
+        vertical,
     ):
         """Without totals panels there are no seams, so a hidden border box leaves the chart with
         no border edges at all — only the two native axes."""
-        chart = _compose_shift(
+        chart = make_compose_chart(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,

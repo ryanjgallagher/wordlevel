@@ -115,7 +115,11 @@ def test_returns_chart(make_mock_df, score_col, rank_col, token_col):
     Sanity check that the function returns an Altair chart
     """
     chart = shift_labels(
-        make_mock_df(), score_col=score_col, rank_col=rank_col, token_col=token_col
+        make_mock_df(),
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        label_config=LabelConfig(),
     )
 
     assert isinstance(chart, alt.Chart)
@@ -132,6 +136,7 @@ def test_chart_data_and_encodings(make_mock_df, score_col, rank_col, token_col):
         score_col=score_col,
         rank_col=rank_col,
         token_col=token_col,
+        label_config=LabelConfig(),
         max_rank=50,
         vertical=True,
     )
@@ -191,6 +196,7 @@ def test_alignment_col_and_label_placement(score_col, rank_col, token_col):
         score_col=score_col,
         rank_col=rank_col,
         token_col=token_col,
+        label_config=LabelConfig(),
         alignment_col=alignment_col,
     )
     chart_json = chart.to_dict()
@@ -220,6 +226,7 @@ def test_chart_orientation(make_mock_df, score_col, rank_col, token_col, vertica
         score_col=score_col,
         rank_col=rank_col,
         token_col=token_col,
+        label_config=LabelConfig(),
         vertical=vertical,
     )
 
@@ -247,6 +254,7 @@ def test_max_rank_filter(make_mock_df, score_col, rank_col, token_col, filter_ma
         rank_col=rank_col,
         score_col=score_col,
         token_col=token_col,
+        label_config=LabelConfig(),
         max_rank=max_rank,
         filter_max_rank=filter_max_rank,
     )
@@ -293,7 +301,13 @@ def test_default_label_config(make_mock_df, score_col, rank_col, token_col):
     default_config = LabelConfig()
     df = make_mock_df()
 
-    chart = shift_labels(df, score_col=score_col, rank_col=rank_col, token_col=token_col)
+    chart = shift_labels(
+        df,
+        score_col=score_col,
+        rank_col=rank_col,
+        token_col=token_col,
+        label_config=default_config,
+    )
     chart_json = chart.to_dict()
 
     assert chart_json["mark"]["color"] == default_config.color
