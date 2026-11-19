@@ -87,15 +87,15 @@ def get_shift_components(
             rank 1 is the largest and ties are broken by row order. Ignored unless
             `include_total_difference`
         frequency_diff_alias:
-            Name of the column holding the frequency difference
+            Name to give the new column holding the frequency difference
         weighted_score_diff_alias:
-            Name of the column holding the weighted score difference
+            Name to give the new column holding the weighted score difference
         reference_score_diff_alias:
-            Name of the column holding the reference score difference
+            Name to give the new column holding the reference score difference
         total_difference_alias:
-            Name of the column holding the contribution $\delta_\tau$
+            Name to give the new column holding the contribution $\delta_\tau$
         rank_alias:
-            Name of the column holding the rank
+            Name to give the new column holding the rank
 
     Returns:
         `df` with the component columns added
@@ -289,17 +289,17 @@ def get_shift_plot_components(
             Difference between each token's average score and the reference score,
             $\frac{1}{2} \left( \phi_\tau^{(1)} + \phi_\tau^{(2)} \right) - \Phi^{(\text{ref})}$
         more_of_positive_alias:
-            Name of the column holding the `more_of_positive` bar
+            Name to give the new column holding the `more_of_positive` bar
         less_of_negative_alias:
-            Name of the column holding the `less_of_negative` bar
+            Name to give the new column holding the `less_of_negative` bar
         more_of_negative_alias:
-            Name of the column holding the `more_of_negative` bar
+            Name to give the new column holding the `more_of_negative` bar
         less_of_positive_alias:
-            Name of the column holding the `less_of_positive` bar
+            Name to give the new column holding the `less_of_positive` bar
         higher_score_alias:
-            Name of the column holding the `higher_score` bar
+            Name to give the new column holding the `higher_score` bar
         lower_score_alias:
-            Name of the column holding the `lower_score` bar
+            Name to give the new column holding the `lower_score` bar
         counteracted_suffix:
             Suffix appended to each bar's column name to name its counteracted column
 

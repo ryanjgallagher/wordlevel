@@ -20,6 +20,11 @@ from wordlevel.lexicons.core.load import Lexicon
 
 
 class ScoreFunc(Protocol):
+    """
+    A function that computes each token's contribution to a measure comparing two corpora, given
+    the token's frequency in each.
+    """
+
     def __call__(
         self,
         freqs1: pl.Expr,
@@ -28,12 +33,26 @@ class ScoreFunc(Protocol):
 
 
 class DualScoreFunc(Protocol):
+    """
+    A function that computes each token's score in each of two corpora, given the token's
+    frequency in each. Unlike a `ScoreFunc`, which returns one contribution per token, it returns
+    a pair of scores per token, one for each corpus. The scores are named `alias1` and `alias2`.
+    """
+
     def __call__(
         self, freqs1: pl.Expr, freqs2: pl.Expr, alias1: str, alias2: str
     ) -> tuple[pl.Expr, pl.Expr]: ...
 
 
 class DualCleanScoreFunc(Protocol):
+    """
+    A function that turns the pair of scores a `DualScoreFunc` computes into the effective, or
+    "clean", scores used to compute each token's contribution, given each token's frequency and
+    score in each of two corpora. Because frequencies and scores are computed separately and only
+    then multiplied, a score can diverge where a frequency is 0, even though the token's term, the
+    product of the two, should be 0. The scores are named `alias1` and `alias2`.
+    """
+
     def __call__(
         self,
         freqs1: pl.Expr,
@@ -56,7 +75,40 @@ def basic_score_plan(
     rank_alias: str = "rank",
     attribution_alias: str = "attribution",
 ) -> pl.DataFrame | pl.LazyFrame:
-    """ """
+    """
+    Scores a comparison of two corpora by a measure that computes each token's contribution
+    directly from its frequencies, with one row per token.
+
+    Args:
+        df:
+            The dataframe holding the frequencies of the two corpora
+        freqs_ref:
+            Frequency of each token in the reference corpus
+        freqs_cmp:
+            Frequency of each token in the comparison corpus
+        token:
+            The tokens
+        score_func:
+            Computes each token's contribution from its frequency in each corpus
+        attribute_by:
+            How each contribution is attributed. `"frequency"` and `"rank"` attribute it to the
+            corpus that uses the token more or ranks it higher, and `"score_sign"` to whether it
+            reinforces or offsets the overall difference
+        score_alias:
+            Name to give the new column holding the contribution
+        rank_alias:
+            Name to give the new column holding the rank
+        attribution_alias:
+            Name to give the new column holding the attribution
+
+    Returns:
+        A dataframe with the token and frequency columns, appended with three new columns:
+
+        - `score_alias`: the token's contribution
+        - `rank_alias`: the rank of the contribution's magnitude, where rank 1 is the largest and
+          ties are broken by row order
+        - `attribution_alias`: the corpus or direction the contribution is attributed to
+    """
     attribution_cols = {}
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
@@ -109,7 +161,75 @@ def weighted_average_score_plan(
     lower_score_alias: str = "lower_score",
     counteracted_suffix: str = "_counteracted",
 ) -> pl.DataFrame | pl.LazyFrame:
-    """ """
+    r"""
+    Scores a comparison of two corpora by a measure that is a difference in weighted averages, with
+    one row per token.
+
+    Each token's scores in each corpus are computed from the score frequencies and then cleaned.
+    The token's contribution is decomposed from the clean scores, weighted by the component
+    frequencies. The score and component frequencies are given separately so that, for example,
+    both corpora's scores can be weighted by one corpus's frequencies.
+
+    Args:
+        df:
+            The dataframe holding the frequencies of the two corpora
+        score_freqs_ref:
+            Frequency of each token in the reference corpus, used to compute its scores
+        score_freqs_cmp:
+            Frequency of each token in the comparison corpus, used to compute its scores
+        component_freqs_ref:
+            Frequency used to weight each token's score in the reference corpus
+        component_freqs_cmp:
+            Frequency used to weight each token's score in the comparison corpus
+        token:
+            The tokens
+        score_func:
+            Computes each token's score in each corpus from the score frequencies
+        clean_score_func:
+            Turns the scores computed by `score_func` into the clean scores
+        attribute_by:
+            How each contribution is attributed. `"frequency"` and `"rank"` attribute it to the
+            corpus that uses the token more or ranks it higher, and `"score_sign"` to whether it
+            reinforces or offsets the overall difference
+        reference_score:
+            The reference score $\Phi^{(\text{ref})}$. If `"mean"`, uses the weighted average of
+            the reference corpus
+        passthrough_cols:
+            Names of other columns in `df` to keep
+        score_alias:
+            Name to give the new column holding the contribution
+        rank_alias:
+            Name to give the new column holding the rank
+        attribution_alias:
+            Name to give the new column holding the attribution
+        more_of_positive_alias:
+            Name to give the new column holding the `more_of_positive` bar
+        less_of_negative_alias:
+            Name to give the new column holding the `less_of_negative` bar
+        more_of_negative_alias:
+            Name to give the new column holding the `more_of_negative` bar
+        less_of_positive_alias:
+            Name to give the new column holding the `less_of_positive` bar
+        higher_score_alias:
+            Name to give the new column holding the `higher_score` bar
+        lower_score_alias:
+            Name to give the new column holding the `lower_score` bar
+        counteracted_suffix:
+            Suffix appended to each bar's column name to name its counteracted column
+
+    Returns:
+        A dataframe with the token, frequency, and `passthrough_cols` columns, appended with new
+        columns:
+
+        - `score_ref` and `score_cmp`: the token's scores in each corpus, before they are cleaned
+        - `freq_diff`, `weighted_score_diff`, and `ref_score_diff`: the components of the token's
+          contribution
+        - `score_alias`: the token's contribution
+        - `rank_alias`: the rank of the contribution's magnitude, where rank 1 is the largest and
+          ties are broken by row order
+        - The six bar columns and their counteracted columns
+        - `attribution_alias`: the corpus or direction the contribution is attributed to
+    """
     attribution_cols = {}
     if attribute_by == "score_sign":
         attribution_cols["score"] = col(score_alias)
@@ -208,7 +328,51 @@ def lexicon_join_plan(
     scored_in_one_lexicon: float | ScoredInOneLexicon | pl.Expr = "drop",
     drop_null_scores: bool = True,
 ) -> pl.DataFrame | pl.LazyFrame:
-    """ """
+    """
+    Joins the scores that a lexicon assigns each token onto a comparison of two corpora, with one
+    score column for each corpus.
+
+    Either one lexicon scores both corpora, or each corpus is scored by its own lexicon. If only
+    one of `lexicon_ref` and `lexicon_cmp` is given, it scores both corpora.
+
+    Args:
+        df:
+            The dataframe holding the tokens of the two corpora
+        df_token_col:
+            Name of the token column in `df`
+        lexicon:
+            Lexicon that scores both corpora
+        lexicon_ref:
+            Lexicon that scores the reference corpus
+        lexicon_cmp:
+            Lexicon that scores the comparison corpus
+        lexicon_token_col:
+            Name of the token column when a lexicon is a dataframe
+        lexicon_score_col:
+            Name of the score column when a lexicon is a dataframe
+        score_alias_ref:
+            Name to give the new column holding each token's score in the reference corpus.
+            Defaults to the lexicon's score column name suffixed with `_ref`
+        score_alias_cmp:
+            Name to give the new column holding each token's score in the comparison corpus.
+            Defaults to the lexicon's score column name suffixed with `_cmp`
+        scored_in_one_lexicon:
+            How to handle a token that is scored by one corpus's lexicon but not the other's.
+            `"borrow"` applies the score from the other corpus's lexicon and adds an
+            `"is_borrowed"` column marking the tokens that borrowed a score. `"drop"` leaves the
+            missing score null. `"mean"` imputes the mean score of the corpus's own lexicon (not
+            weighted by frequency), and a float or Polars expression imputes that value instead.
+            A token in neither lexicon is left null
+        drop_null_scores:
+            Whether to drop the tokens missing a score in either corpus
+
+    Returns:
+        `df` with a score column for each corpus added
+
+    Raises:
+        ValueError: If `lexicon`, `lexicon_ref`, and `lexicon_cmp` are all `None`.
+        ValueError: If `lexicon` is given alongside `lexicon_ref` or `lexicon_cmp`.
+    """
     if lexicon is None and lexicon_ref is None and lexicon_cmp is None:
         raise ValueError("Must specify at least one of the lexicon parameters")
     if lexicon is not None and (lexicon_ref is not None or lexicon_cmp is not None):
