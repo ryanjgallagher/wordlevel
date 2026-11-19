@@ -886,43 +886,6 @@ def test_color_configs_carry_grand_total_color():
         assert config.colors[GRAND_TOTAL_SCORE_TYPE] == "#000000"
 
 
-@pytest.mark.parametrize(
-    "make_internal_bar_config",
-    [
-        lambda config: InternalBarConfig.from_bar_colors(config, None, ("reference", "comparison")),
-        lambda config: InternalBarConfig.from_shift_colors(config, None),
-    ],
-    ids=["from_bar_colors", "from_shift_colors"],
-)
-def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
-    """
-    Passing a dict with field names the config doesn't have raises the `_resolve_config` ValueError
-    """
-    with pytest.raises(ValueError, match="Invalid .* key"):
-        make_internal_bar_config({"not_a_field": "red", "also_bad": "blue"})
-
-
-@pytest.mark.parametrize(
-    "make_internal_bar_config, wrong_config",
-    [
-        (
-            lambda config: InternalBarConfig.from_bar_colors(
-                config, None, ("reference", "comparison")
-            ),
-            ShiftColorConfig(),
-        ),
-        (lambda config: InternalBarConfig.from_shift_colors(config, None), BarColorConfig()),
-    ],
-    ids=["from_bar_colors", "from_shift_colors"],
-)
-def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_config):
-    """
-    Passing a config of the wrong class raises the `_resolve_config` TypeError
-    """
-    with pytest.raises(TypeError, match="Expected a .* or a dict of its fields"):
-        make_internal_bar_config(wrong_config)
-
-
 def test_bar_outline_rendered_on_mark(token_col, score_col, score_type_col, rank_col):
     """
     The bar mark draws the outline color and width from the `InternalBarConfig`

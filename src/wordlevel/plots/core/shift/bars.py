@@ -1,5 +1,5 @@
-from dataclasses import asdict, dataclass, fields
-from typing import Self, TypeVar
+from dataclasses import asdict, dataclass
+from typing import Self
 
 import altair as alt
 import polars as pl
@@ -15,13 +15,12 @@ from wordlevel.configs import (
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftColorConfig,
+    _resolve_config,
 )
 from wordlevel.constants import COUNTERACTED_SUFFIX, GRAND_TOTAL_SCORE_TYPE
 from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.plots.core.utils import to_altair_optional
 
-
-_BarConfigT = TypeVar("_BarConfigT", bound=BarConfig | BarColorConfig | ShiftColorConfig)
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
     "more_of_negative": 1,
@@ -115,8 +114,8 @@ class InternalBarConfig(BarConfig):
         Builds the config for a bar plot, coloring the pair of bars that the comparison's
         attribution produces. A color left unset takes its default
         """
-        resolved_config = cls._resolve_config(config, BarColorConfig)
-        resolved_bar_config = cls._resolve_config(bar_config, BarConfig)
+        resolved_config = _resolve_config(config, BarColorConfig)
+        resolved_bar_config = _resolve_config(bar_config, BarConfig)
 
         colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
         for label in attribution_labels:
@@ -140,8 +139,8 @@ class InternalBarConfig(BarConfig):
         Builds the config for a word shift plot. Unlike `from_bar_colors` it enforces the order of
         the different bar types, and fades each `*_counteracted` bar behind the bar it counteracts
         """
-        resolved_config = cls._resolve_config(config, ShiftColorConfig)
-        resolved_bar_config = cls._resolve_config(bar_config, BarConfig)
+        resolved_config = _resolve_config(config, ShiftColorConfig)
+        resolved_bar_config = _resolve_config(bar_config, BarConfig)
 
         colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
         opacities: dict[str, float] = {}
@@ -177,33 +176,6 @@ class InternalBarConfig(BarConfig):
             | {st: "steelblue" for st in score_types},
             orders=None,
         )
-
-    @staticmethod
-    def _resolve_config(
-        config: BarConfig | BarColorConfig | ShiftColorConfig | dict | None,
-        expected_config: type[_BarConfigT],
-    ) -> _BarConfigT:
-        """
-        Resolves a user-supplied config (which may be None or a dict) and resolves it into the
-        corresponding config data class
-        """
-        if config is None:
-            return expected_config()
-        if isinstance(config, dict):
-            valid_keys = {f.name for f in fields(expected_config)}
-            invalid_keys = set(config) - valid_keys
-            if invalid_keys:
-                raise ValueError(
-                    f"Invalid {expected_config.__name__} key(s) {sorted(invalid_keys)}. Valid keys "
-                    f"are {sorted(valid_keys)} (or pass a {expected_config.__name__})."
-                )
-            return expected_config(**config)
-        if not isinstance(config, expected_config):
-            raise TypeError(
-                f"Expected a {expected_config.__name__} or a dict of its fields, but got a "
-                f"{type(config).__name__}."
-            )
-        return config
 
     @staticmethod
     def _get_colors(config: ShiftColorConfig) -> dict[str, str]:
