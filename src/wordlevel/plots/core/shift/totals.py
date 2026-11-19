@@ -154,16 +154,16 @@ def shift_total(
     score_col: str,
     score_type_col: str,
     grand_total: bool,
+    rank_axis_config: RankAxisConfig,
+    score_axis_config: InternalScoreAxisConfig,
+    bar_config: InternalBarConfig,
+    label_config: LabelConfig,
+    border_config: InternalBorderConfig,
+    totals_config: TotalsConfig,
+    zero_line_config: ZeroLineConfig,
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis_config: RankAxisConfig | dict | None = None,
-    score_axis_config: InternalScoreAxisConfig | dict | None = None,
-    bar_config: InternalBarConfig | None = None,
-    label_config: LabelConfig | dict | None = None,
-    border_config: InternalBorderConfig | None = None,
-    totals_config: TotalsConfig | dict | None = None,
-    zero_line_config: ZeroLineConfig | dict | None = None,
     scale_factor: float = 1.0,
 ) -> alt.LayerChart:
     """
@@ -182,16 +182,6 @@ def shift_total(
         grand_total:
             Whether to create the bar chart for individual score types or just the grand total (all
             contributions summed together)
-        vertical:
-            Whether to orient the chart vertically, where tokens are listed top-to-bottom and
-            bars extend horizontally. If `False`, tokens are listed left-to-right and bars
-            extend vertically
-        height:
-            The height of the chart, in pixels. Ignored if `vertical`, see
-            `RankAxisConfig.bar_width` to control the height
-        width:
-            The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
-            `RankAxisConfig.bar_width` to control the width
         rank_axis_config:
             Configuration for the rank axis
         score_axis_config:
@@ -207,6 +197,16 @@ def shift_total(
             the color of the grand total bar
         zero_line_config:
             Configuration for the zero line at the score-axis origin
+        vertical:
+            Whether to orient the chart vertically, where tokens are listed top-to-bottom and
+            bars extend horizontally. If `False`, tokens are listed left-to-right and bars
+            extend vertically
+        height:
+            The height of the chart, in pixels. Ignored if `vertical`, see
+            `RankAxisConfig.bar_width` to control the height
+        width:
+            The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
+            `RankAxisConfig.bar_width` to control the width
         scale_factor:
             Multiplier applied to the score axis when fitting it to the bar labels. Increasing it
             provides more space for the bar labels
@@ -214,32 +214,9 @@ def shift_total(
     Returns:
         An Altair chart of word shift total(s)
     """
-    # Initialize necessary configs
-    if isinstance(rank_axis_config, dict):
-        rank_axis_config = RankAxisConfig(**rank_axis_config)
-    elif rank_axis_config is None:
-        rank_axis_config = RankAxisConfig()
-
-    if isinstance(score_axis_config, dict):
-        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
-    elif score_axis_config is None:
-        score_axis_config = InternalScoreAxisConfig()
-
-    if isinstance(totals_config, dict):
-        totals_config = TotalsConfig(**totals_config)
-    elif totals_config is None:
-        totals_config = TotalsConfig()
-
-    # The score type and grand total configs need to be resolved separately since they're both used
-    if isinstance(bar_config, dict):
-        type_bar_config = InternalBarConfig(**bar_config)
-    elif bar_config is None:
-        # TODO: these raw score types keep the `_counteracted` suffix that `_get_score_type_totals`
-        #       strips, so the fallback labels/colors won't match; strip before `from_score_types`
-        score_types = df.lazy().select(col(score_type_col).unique()).collect().to_series().to_list()
-        type_bar_config = InternalBarConfig.from_score_types(score_types)
-    else:
-        type_bar_config = replace(bar_config, opacities=None)
+    # The totals sum each `*_counteracted` contribution into its base type, so there are no faded
+    # bars and the opacities are dropped
+    type_bar_config = replace(bar_config, opacities=None)
 
     if grand_total:
         # The grand total inherits the bar outline unless the `TotalsConfig` sets its own
@@ -260,9 +237,6 @@ def shift_total(
         )
     else:
         bar_config = type_bar_config
-
-    if border_config is None:
-        border_config = InternalBorderConfig()
 
     # Size parameters
     size_param = {}

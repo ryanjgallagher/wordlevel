@@ -13,11 +13,11 @@ def shift_labels(
     score_col: str,
     rank_col: str,
     token_col: str,
+    label_config: LabelConfig,
     alignment_col: str | None = None,
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
-    label_config: LabelConfig | dict | None = None,
 ) -> alt.Chart:
     """
     Makes the text layer of a word shift plot, labeling each token at the end of its bar, or at
@@ -32,12 +32,6 @@ def shift_labels(
     """
     if filter_max_rank:
         df = df.filter(col(rank_col) <= max_rank)
-
-    # Set default label configurations
-    if isinstance(label_config, dict):
-        label_config = LabelConfig(**label_config)
-    elif label_config is None:
-        label_config = LabelConfig()
 
     label_align_col = alignment_col if alignment_col is not None else score_col
     passthrough_cols = [] if label_align_col == score_col else [label_align_col]

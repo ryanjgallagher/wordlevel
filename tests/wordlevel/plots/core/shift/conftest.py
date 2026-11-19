@@ -1,5 +1,6 @@
 import random
 from collections.abc import Callable
+from typing import Any
 
 import polars as pl
 import pytest
@@ -16,7 +17,18 @@ from wordlevel.comparison.core.score.components import (
     reference_score_diff,
     weighted_score_diff,
 )
+from wordlevel.configs import (
+    BarConfig,
+    BorderConfig,
+    LabelConfig,
+    RankAxisConfig,
+    ShiftColorConfig,
+    TotalsConfig,
+    ZeroLineConfig,
+)
 from wordlevel.constants import SHIFT_SCORE_TYPES
+from wordlevel.plots.core.shift.bars import InternalBarConfig, InternalScoreAxisConfig
+from wordlevel.plots.core.shift.border import InternalBorderConfig
 
 
 negative_score_types = {
@@ -137,3 +149,62 @@ def make_mock_df(words, token_col, rank_col, score_col, score_type_col) -> Calla
         return df
 
     return _df_factory
+
+
+@pytest.fixture
+def make_bars_configs() -> Callable[..., dict[str, Any]]:
+    """
+    Factory for the config arguments of `shift_bars`, at their defaults unless overridden. The bar
+    colors are the word shift colors, which match the score types of `make_mock_df`
+    """
+
+    def _configs_factory(**overrides: Any) -> dict[str, Any]:
+        return {
+            "rank_axis_config": RankAxisConfig(),
+            "score_axis_config": InternalScoreAxisConfig(),
+            "bar_config": InternalBarConfig.from_shift_colors(ShiftColorConfig(), BarConfig()),
+            "border_config": InternalBorderConfig(),
+        } | overrides
+
+    return _configs_factory
+
+
+@pytest.fixture
+def make_shift_configs(make_bars_configs) -> Callable[..., dict[str, Any]]:
+    """
+    Factory for the config arguments of `shift`, at their defaults unless overridden
+    """
+
+    def _configs_factory(**overrides: Any) -> dict[str, Any]:
+        return (
+            make_bars_configs()
+            | {"label_config": LabelConfig(), "zero_line_config": ZeroLineConfig()}
+            | overrides
+        )
+
+    return _configs_factory
+
+
+@pytest.fixture
+def make_totals_configs(make_shift_configs) -> Callable[..., dict[str, Any]]:
+    """
+    Factory for the config arguments of `shift_total`, at their defaults unless overridden
+    """
+
+    def _configs_factory(**overrides: Any) -> dict[str, Any]:
+        return make_shift_configs() | {"totals_config": TotalsConfig()} | overrides
+
+    return _configs_factory
+
+
+@pytest.fixture
+def make_compose_configs(make_totals_configs) -> Callable[..., dict[str, Any]]:
+    """
+    Factory for the config arguments of `compose_shift`, at their defaults unless overridden. Unlike
+    the panels it composes, it takes the user-facing `BorderConfig`
+    """
+
+    def _configs_factory(**overrides: Any) -> dict[str, Any]:
+        return make_totals_configs() | {"border_config": BorderConfig()} | overrides
+
+    return _configs_factory

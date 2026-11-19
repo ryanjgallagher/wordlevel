@@ -2,8 +2,14 @@ import altair as alt
 import polars as pl
 import pytest
 
-from wordlevel.configs import BorderConfig, RankAxisConfig, ScoreAxisConfig
-from wordlevel.plots.core.shift.bars import shift_bars
+from wordlevel.configs import (
+    BarColorConfig,
+    BarConfig,
+    BorderConfig,
+    RankAxisConfig,
+    ScoreAxisConfig,
+)
+from wordlevel.plots.core.shift.bars import InternalBarConfig, shift_bars
 from wordlevel.plots.core.shift.border import InternalBorderConfig, shift_borders
 
 
@@ -19,12 +25,19 @@ def df_mock():
 
 
 @pytest.fixture
-def base_chart(df_mock):
+def base_chart(df_mock, make_bars_configs):
     return shift_bars(
         df_mock,
         score_col="score",
         rank_col="rank",
         score_type_col="score_type",
+        **make_bars_configs(
+            bar_config=InternalBarConfig.from_bar_colors(
+                config=BarColorConfig(),
+                bar_config=BarConfig(),
+                attribution_labels=("reference", "comparison"),
+            )
+        ),
     )
 
 

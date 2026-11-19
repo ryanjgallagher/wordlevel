@@ -1,12 +1,11 @@
-from dataclasses import asdict, dataclass, fields
-from typing import Self, TypeVar
+from dataclasses import asdict, dataclass
+from typing import Self
 
 import altair as alt
 import polars as pl
 
 from wordlevel.configs import (
     DEFAULT_ATTRIBUTION_COLORS,
-    DEFAULT_GRAND_TOTAL_COLOR,
     DEFAULT_SCORE_AXIS_TITLE,
     NON_SCORE_TYPE_FIELDS,
     PERCENT_SCORE_AXIS_TITLE,
@@ -20,8 +19,6 @@ from wordlevel.constants import COUNTERACTED_SUFFIX, GRAND_TOTAL_SCORE_TYPE
 from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
 from wordlevel.plots.core.utils import to_altair_optional
 
-
-_BarConfigT = TypeVar("_BarConfigT", bound=BarConfig | BarColorConfig | ShiftColorConfig)
 
 _SHIFT_TYPE_ORDERS: dict[str, int] = {
     "more_of_negative": 1,
@@ -60,25 +57,20 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
     @classmethod
     def from_config(
         cls,
-        config: ScoreAxisConfig | dict | None,
+        config: ScoreAxisConfig,
         all_positive_labels: bool,
         percent: bool = False,
     ) -> Self:
         """
-        Resolves a user `ScoreAxisConfig` into the internal config. When contributions are shown as
+        Derives the internal config from a user `ScoreAxisConfig`. When contributions are shown as
         percentages and the title is left at its default, the title reflects percentages.
         """
-        if config is None:
-            config = ScoreAxisConfig()
-        elif isinstance(config, dict):
-            config = ScoreAxisConfig(**config)
-
-        config = asdict(config)
+        config_fields = asdict(config)
         # Only default to the percent title if the user didn't specify it
-        if percent and config["title"] == DEFAULT_SCORE_AXIS_TITLE:
-            config["title"] = PERCENT_SCORE_AXIS_TITLE
+        if percent and config_fields["title"] == DEFAULT_SCORE_AXIS_TITLE:
+            config_fields["title"] = PERCENT_SCORE_AXIS_TITLE
 
-        return cls(**config, all_positive_labels=all_positive_labels, percent=percent)
+        return cls(**config_fields, all_positive_labels=all_positive_labels, percent=percent)
 
 
 @dataclass
@@ -107,103 +99,55 @@ class InternalBarConfig(BarConfig):
     @classmethod
     def from_bar_colors(
         cls,
-        config: BarColorConfig | dict | None,
-        bar_config: BarConfig | dict | None,
+        config: BarColorConfig,
+        bar_config: BarConfig,
         attribution_labels: tuple[str, str],
     ) -> Self:
         """
         Builds the config for a bar plot, coloring the pair of bars that the comparison's
         attribution produces. A color left unset takes its default
         """
-        resolved_config = cls._resolve_config(config, BarColorConfig)
-        resolved_bar_config = cls._resolve_config(bar_config, BarConfig)
-
-        colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
+        colors = {GRAND_TOTAL_SCORE_TYPE: config.grand_total}
         for label in attribution_labels:
-            color = getattr(resolved_config, label)
+            color = getattr(config, label)
             colors[label] = DEFAULT_ATTRIBUTION_COLORS[label] if color is None else color
 
         return cls(
             colors=colors,
             orders=None,
-            outline_color=resolved_bar_config.outline_color,
-            outline_width=resolved_bar_config.outline_width,
+            outline_color=bar_config.outline_color,
+            outline_width=bar_config.outline_width,
         )
 
     @classmethod
     def from_shift_colors(
         cls,
-        config: ShiftColorConfig | dict | None,
-        bar_config: BarConfig | dict | None,
+        config: ShiftColorConfig,
+        bar_config: BarConfig,
     ) -> Self:
         """
         Builds the config for a word shift plot. Unlike `from_bar_colors` it enforces the order of
         the different bar types, and fades each `*_counteracted` bar behind the bar it counteracts
         """
-        resolved_config = cls._resolve_config(config, ShiftColorConfig)
-        resolved_bar_config = cls._resolve_config(bar_config, BarConfig)
-
-        colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
+        colors = {GRAND_TOTAL_SCORE_TYPE: config.grand_total}
         opacities: dict[str, float] = {}
 
         # The config declares only the six base colors, but we need the counteracted ones too
-        for score_type, color in cls._get_colors(resolved_config).items():
+        for score_type, color in cls._get_colors(config).items():
             counteracted = f"{score_type}{COUNTERACTED_SUFFIX}"
 
             colors[score_type] = color
             colors[counteracted] = color
             opacities[score_type] = 1.0
-            opacities[counteracted] = resolved_config.counteracted_opacity
+            opacities[counteracted] = config.counteracted_opacity
 
         return cls(
             colors=colors,
             orders=_SHIFT_TYPE_ORDERS,
             opacities=opacities,
-            outline_color=resolved_bar_config.outline_color,
-            outline_width=resolved_bar_config.outline_width,
+            outline_color=bar_config.outline_color,
+            outline_width=bar_config.outline_width,
         )
-
-    @classmethod
-    def from_score_types(cls, score_types: list[str]) -> Self:
-        """
-        No config supplied — derive a uniform-color colors dict from whatever score types are
-        present in the data. Callers that want plot-type-specific defaults are expected to
-        construct an InternalBarConfig via from_bar_colors / from_shift_colors.
-        """
-        # TODO: infer if the score types correspond to reference/comparison, reinforce/offset, or
-        #       the shift score types, and route to those constructors instead
-        return cls(
-            colors={GRAND_TOTAL_SCORE_TYPE: DEFAULT_GRAND_TOTAL_COLOR}
-            | {st: "steelblue" for st in score_types},
-            orders=None,
-        )
-
-    @staticmethod
-    def _resolve_config(
-        config: BarConfig | BarColorConfig | ShiftColorConfig | dict | None,
-        expected_config: type[_BarConfigT],
-    ) -> _BarConfigT:
-        """
-        Resolves a user-supplied config (which may be None or a dict) and resolves it into the
-        corresponding config data class
-        """
-        if config is None:
-            return expected_config()
-        if isinstance(config, dict):
-            valid_keys = {f.name for f in fields(expected_config)}
-            invalid_keys = set(config) - valid_keys
-            if invalid_keys:
-                raise ValueError(
-                    f"Invalid {expected_config.__name__} key(s) {sorted(invalid_keys)}. Valid keys "
-                    f"are {sorted(valid_keys)} (or pass a {expected_config.__name__})."
-                )
-            return expected_config(**config)
-        if not isinstance(config, expected_config):
-            raise TypeError(
-                f"Expected a {expected_config.__name__} or a dict of its fields, but got a "
-                f"{type(config).__name__}."
-            )
-        return config
 
     @staticmethod
     def _get_colors(config: ShiftColorConfig) -> dict[str, str]:
@@ -218,15 +162,15 @@ def shift_bars(
     score_col: str,
     rank_col: str,
     score_type_col: str,
+    rank_axis_config: RankAxisConfig,
+    score_axis_config: InternalScoreAxisConfig,
+    bar_config: InternalBarConfig,
+    border_config: InternalBorderConfig,
     max_rank: int = 50,
     filter_max_rank: bool = True,
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
-    rank_axis_config: RankAxisConfig | dict | None = None,
-    score_axis_config: InternalScoreAxisConfig | dict | None = None,
-    bar_config: InternalBarConfig | None = None,
-    border_config: InternalBorderConfig | None = None,
     show_legend: bool = False,
     score_axis_opposite: bool = False,
 ) -> alt.Chart:
@@ -245,6 +189,14 @@ def shift_bars(
             its contributing scores
         score_type_col:
             Column in the dataframe indicating the type of "score" associated with each bar
+        rank_axis_config:
+            Configuration for the rank axis
+        score_axis_config:
+            Configuration for the score axis
+        bar_config:
+            Configuration for the bars
+        border_config:
+            Configuration for the axes and border
         max_rank:
             The maximum number of top-contributing tokens to display
         filter_max_rank:
@@ -259,14 +211,6 @@ def shift_bars(
         width:
             The width of the chart, in pixels. Ignored if horizontal (`not vertical`), see
             `RankAxisConfig.bar_width` to control the width
-        rank_axis_config:
-            Configuration for the rank axis
-        score_axis_config:
-            Configuration for the score axis
-        bar_config:
-            Configuration for the bars
-        border_config:
-            Configuration for the axes and border
         show_legend:
             Whether to show the chart legend
         score_axis_opposite:
@@ -279,24 +223,6 @@ def shift_bars(
     # Filter the dataframe to the top N rows
     if filter_max_rank:
         df = df.filter(pl.col(rank_col) <= max_rank)
-
-    # Configure defaults for rank and score axes and the bars
-    if isinstance(rank_axis_config, dict):
-        rank_axis_config = RankAxisConfig(**rank_axis_config)
-    elif rank_axis_config is None:
-        rank_axis_config = RankAxisConfig()
-
-    if isinstance(score_axis_config, dict):
-        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
-    elif score_axis_config is None:
-        score_axis_config = InternalScoreAxisConfig()
-
-    if bar_config is None:
-        score_types = df[score_type_col].unique().to_list()
-        bar_config = InternalBarConfig.from_score_types(score_types)
-
-    if border_config is None:
-        border_config = InternalBorderConfig()
 
     # Configure the legend
     if show_legend:

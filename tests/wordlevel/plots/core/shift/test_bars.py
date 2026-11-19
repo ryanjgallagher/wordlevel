@@ -31,18 +31,24 @@ from wordlevel.plots.core.shift.bars import (
 from wordlevel.plots.core.shift.border import InternalBorderConfig
 
 
-def test_returns_chart(make_mock_df, score_col, score_type_col, rank_col):
+def test_returns_chart(make_mock_df, make_bars_configs, score_col, score_type_col, rank_col):
     """
     Sanity check that the function returns an Altair chart
     """
     chart = shift_bars(
-        make_mock_df(), rank_col=rank_col, score_col=score_col, score_type_col=score_type_col
+        make_mock_df(),
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        **make_bars_configs(),
     )
 
     assert isinstance(chart, alt.Chart)
 
 
-def test_chart_data_and_encodings(make_mock_df, score_col, score_type_col, rank_col):
+def test_chart_data_and_encodings(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col
+):
     """
     Tests that the chart contains the correct data and the correct encodings are used
     """
@@ -55,10 +61,12 @@ def test_chart_data_and_encodings(make_mock_df, score_col, score_type_col, rank_
         score_type_col=score_type_col,
         max_rank=50,
         vertical=True,
+        **make_bars_configs(),
     )
 
+    # The shift bar config's stacking orders add a `stacked_bar_order` column to the input data
     df_chart = pl.DataFrame(chart.data)
-    assert_frame_equal(df, df_chart)
+    assert_frame_equal(df, df_chart.select(df.columns))
 
     chart_json = chart.to_dict()
     encoding = chart_json["encoding"]
@@ -74,7 +82,9 @@ def test_chart_data_and_encodings(make_mock_df, score_col, score_type_col, rank_
 
 
 @pytest.mark.parametrize("vertical", [True, False])
-def test_chart_orientation(make_mock_df, score_col, score_type_col, rank_col, vertical):
+def test_chart_orientation(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, vertical
+):
     """
     Test that the vertical parameter correctly swaps the X and Y axes.
     """
@@ -84,6 +94,7 @@ def test_chart_orientation(make_mock_df, score_col, score_type_col, rank_col, ve
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=vertical,
+        **make_bars_configs(),
     )
 
     chart_json = chart.to_dict()
@@ -100,7 +111,7 @@ def test_chart_orientation(make_mock_df, score_col, score_type_col, rank_col, ve
 @pytest.mark.parametrize("vertical", [True, False])
 @pytest.mark.parametrize("bar_width", [10, 14, 25])
 def test_rank_dimension_from_bar_width(
-    make_mock_df, score_col, score_type_col, rank_col, vertical, bar_width
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, vertical, bar_width
 ):
     """
     The rank-axis dimension (height when vertical, width when horizontal) is an alt.Step derived
@@ -112,7 +123,7 @@ def test_rank_dimension_from_bar_width(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=vertical,
-        rank_axis_config=RankAxisConfig(bar_width=bar_width),
+        **make_bars_configs(rank_axis_config=RankAxisConfig(bar_width=bar_width)),
     )
 
     spec = chart.to_dict()
@@ -122,7 +133,7 @@ def test_rank_dimension_from_bar_width(
 
 @pytest.mark.parametrize("vertical", [True, False])
 def test_rank_dimension_ignores_explicit_size(
-    make_mock_df, score_col, score_type_col, rank_col, vertical
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, vertical
 ):
     """
     The rank-axis dimension always comes from bar_width, so an explicit pixel size passed for that
@@ -139,6 +150,7 @@ def test_rank_dimension_ignores_explicit_size(
         vertical=vertical,
         height=999,
         width=777,
+        **make_bars_configs(),
     )
 
     spec = chart.to_dict()
@@ -152,7 +164,7 @@ def test_rank_dimension_ignores_explicit_size(
 
 @pytest.mark.parametrize("vertical", [True, False])
 def test_score_dimension_absent_when_unset(
-    make_mock_df, score_col, score_type_col, rank_col, vertical
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, vertical
 ):
     """
     When the score-axis dimension is not given it is left out of the spec, while the rank-axis
@@ -164,6 +176,7 @@ def test_score_dimension_absent_when_unset(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=vertical,
+        **make_bars_configs(),
     )
 
     spec = chart.to_dict()
@@ -180,14 +193,15 @@ def test_score_dimension_absent_when_unset(
     "border, expected_color",
     [
         # The default internal border is Altair's axis grey
-        (None, "#888"),
         (InternalBorderConfig(), "#888"),
         # Explicitly opting out (color=None) defers to Altair's per-element defaults (keys absent)
         (InternalBorderConfig(color=None), None),
         (InternalBorderConfig(color="black", width=2), "black"),
     ],
 )
-def test_border_config(make_mock_df, score_col, score_type_col, rank_col, border, expected_color):
+def test_border_config(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, border, expected_color
+):
     """
     shift_bars draws both the rank and score axis domains, colored by the border color (the fallback
     for axes without their own axis_color). There is no view box; the opposite border edges are drawn
@@ -199,7 +213,7 @@ def test_border_config(make_mock_df, score_col, score_type_col, rank_col, border
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        border_config=border,
+        **make_bars_configs(border_config=border),
     )
 
     spec = chart.to_dict()
@@ -224,7 +238,7 @@ def test_border_config(make_mock_df, score_col, score_type_col, rank_col, border
     [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")],
 )
 def test_axis_width_owned_by_axis_config(
-    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, axis_config_cls, channel
 ):
     """
     The native axis domain width is owned by the axis config's own `width`; it does not fall back to
@@ -239,10 +253,11 @@ def test_axis_width_owned_by_axis_config(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        border_config=InternalBorderConfig(
-            width=1
-        ),  # differs from the axis width; must not leak in
-        **kwargs,
+        **make_bars_configs(
+            # The border width differs from the axis width, so it must not leak in
+            border_config=InternalBorderConfig(width=1),
+            **kwargs,
+        ),
     )
 
     axis = chart.to_dict()["encoding"][channel]["axis"]
@@ -250,7 +265,9 @@ def test_axis_width_owned_by_axis_config(
 
 
 @pytest.mark.parametrize("filter_max_rank", [True, False])
-def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filter_max_rank):
+def test_max_rank_filter(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, filter_max_rank
+):
     """
     Test that max_rank correctly filters the data used for the chart
     """
@@ -264,6 +281,7 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filt
         score_type_col=score_type_col,
         max_rank=max_rank,
         filter_max_rank=filter_max_rank,
+        **make_bars_configs(),
     )
 
     df_chart = pl.DataFrame(chart.data)
@@ -288,6 +306,7 @@ def test_max_rank_filter(make_mock_df, score_col, score_type_col, rank_col, filt
 )
 def test_axis_config(
     make_mock_df,
+    make_bars_configs,
     score_col,
     score_type_col,
     rank_col,
@@ -300,52 +319,45 @@ def test_axis_config(
     """
     Test that configs for the rank axis are properly applied to the chart
     """
-    # The parametrized `Config` selects the rank or score axis; exercise it both as a formal config
-    # object and as a plain dict of the same fields.
+    # The parametrized `Config` selects the rank or score axis
     is_rank = issubclass(Config, RankAxisConfig)
     axis = "y" if is_rank else "x"
 
-    for constructor in [Config, dict]:
-        config_params = {
-            "title": title,
-            "title_fontsize": title_fontsize,
-            "label_fontsize": label_fontsize,
-            "grid": grid,
-        }
-        config = constructor(**config_params)
+    config = Config(
+        title=title, title_fontsize=title_fontsize, label_fontsize=label_fontsize, grid=grid
+    )
+    axis_kwargs = {"rank_axis_config": config} if is_rank else {"score_axis_config": config}
+    chart = shift_bars(
+        make_mock_df(),
+        rank_col=rank_col,
+        score_col=score_col,
+        score_type_col=score_type_col,
+        vertical=True,
+        **make_bars_configs(**axis_kwargs),
+    )
 
-        chart_params = {
-            "df": make_mock_df(),
-            "rank_col": rank_col,
-            "score_col": score_col,
-            "score_type_col": score_type_col,
-            "vertical": True,
-        }
-        axis_kwargs = {"rank_axis_config": config} if is_rank else {"score_axis_config": config}
-        chart = shift_bars(**chart_params, **axis_kwargs)
+    chart_json = chart.to_dict()
+    chart_axis = chart_json["encoding"][axis]["axis"]
 
-        chart_json = chart.to_dict()
-        chart_axis = chart_json["encoding"][axis]["axis"]
+    altair_key2expected_param = {
+        "title": title,
+        "titleFontSize": title_fontsize,
+        "labelFontSize": label_fontsize,
+    }
 
-        altair_key2expected_param = {
-            "title": title,
-            "titleFontSize": title_fontsize,
-            "labelFontSize": label_fontsize,
-        }
-
-        for altair_key, expected_param in altair_key2expected_param.items():
-            if expected_param is None:
-                assert altair_key not in chart_axis or chart_axis[altair_key] is None
-            else:
-                assert chart_axis[altair_key] == expected_param
-
-        if grid:
-            assert chart_axis["grid"]
+    for altair_key, expected_param in altair_key2expected_param.items():
+        if expected_param is None:
+            assert altair_key not in chart_axis or chart_axis[altair_key] is None
         else:
-            assert not chart_axis["grid"]
+            assert chart_axis[altair_key] == expected_param
+
+    if grid:
+        assert chart_axis["grid"]
+    else:
+        assert not chart_axis["grid"]
 
 
-def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col):
+def test_axis_default_configs(make_mock_df, make_bars_configs, score_col, score_type_col, rank_col):
     """
     Tests that the default configs work as expected
     """
@@ -358,8 +370,7 @@ def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col)
         score_col=score_col,
         score_type_col=score_type_col,
         vertical=True,
-        rank_axis_config=None,
-        score_axis_config=None,
+        **make_bars_configs(),
     )
     chart_json = chart.to_dict()
 
@@ -376,7 +387,7 @@ def test_axis_default_configs(make_mock_df, score_col, score_type_col, rank_col)
     "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
 )
 def test_axis_text_and_grid_colors(
-    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, axis_config_cls, channel
 ):
     """
     label_color, title_color, and grid_color on the rank/score axis configs pass through to the
@@ -392,7 +403,7 @@ def test_axis_text_and_grid_colors(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        **kwargs,
+        **make_bars_configs(**kwargs),
     )
 
     axis = chart.to_dict()["encoding"][channel]["axis"]
@@ -405,7 +416,7 @@ def test_axis_text_and_grid_colors(
     "axis_config_cls, channel", [(RankAxisConfig, "y"), (InternalScoreAxisConfig, "x")]
 )
 def test_axis_colors_absent_by_default(
-    make_mock_df, score_col, score_type_col, rank_col, axis_config_cls, channel
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, axis_config_cls, channel
 ):
     """
     When the per-axis colors are left at their default (None), the corresponding keys are not
@@ -422,7 +433,7 @@ def test_axis_colors_absent_by_default(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        **kwargs,
+        **make_bars_configs(**kwargs),
     )
 
     axis = chart.to_dict()["encoding"][channel]["axis"]
@@ -452,6 +463,7 @@ def test_axis_colors_absent_by_default(
 )
 def test_axis_color_overrides_and_fallback(
     make_mock_df,
+    make_bars_configs,
     score_col,
     score_type_col,
     rank_col,
@@ -477,8 +489,7 @@ def test_axis_color_overrides_and_fallback(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        border_config=InternalBorderConfig(color=border_color),
-        **kwargs,
+        **make_bars_configs(border_config=InternalBorderConfig(color=border_color), **kwargs),
     )
 
     axis = chart.to_dict()["encoding"][channel]["axis"]
@@ -491,7 +502,9 @@ def test_axis_color_overrides_and_fallback(
             assert axis[key] == expected
 
 
-def test_axis_colors_are_per_axis(make_mock_df, score_col, score_type_col, rank_col):
+def test_axis_colors_are_per_axis(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col
+):
     """
     The rank-axis and score-axis line/tick colors are independent of one another (setting one does
     not leak into the other).
@@ -502,9 +515,11 @@ def test_axis_colors_are_per_axis(make_mock_df, score_col, score_type_col, rank_
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        rank_axis_config=RankAxisConfig(axis_color="red", tick_color="green"),
-        score_axis_config=InternalScoreAxisConfig(axis_color="blue", tick_color="orange"),
-        border_config=InternalBorderConfig(color="black"),
+        **make_bars_configs(
+            rank_axis_config=RankAxisConfig(axis_color="red", tick_color="green"),
+            score_axis_config=InternalScoreAxisConfig(axis_color="blue", tick_color="orange"),
+            border_config=InternalBorderConfig(color="black"),
+        ),
     )
 
     encoding = chart.to_dict()["encoding"]
@@ -520,7 +535,7 @@ def test_axis_colors_are_per_axis(make_mock_df, score_col, score_type_col, rank_
 
 @pytest.mark.parametrize("all_positive_labels", [True, False])
 def test_score_axis_all_positive_labels(
-    make_mock_df, score_col, score_type_col, rank_col, all_positive_labels
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col, all_positive_labels
 ):
     """
     Test that all_positive_labels correctly adds a labelExpr to show absolute values on the
@@ -533,7 +548,9 @@ def test_score_axis_all_positive_labels(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        score_axis_config=InternalScoreAxisConfig(all_positive_labels=all_positive_labels),
+        **make_bars_configs(
+            score_axis_config=InternalScoreAxisConfig(all_positive_labels=all_positive_labels)
+        ),
     )
 
     chart_json = chart.to_dict()
@@ -556,6 +573,7 @@ def test_score_axis_all_positive_labels(
 )
 def test_score_axis_percent_labels(
     make_mock_df,
+    make_bars_configs,
     score_col,
     score_type_col,
     rank_col,
@@ -570,8 +588,10 @@ def test_score_axis_percent_labels(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        score_axis_config=InternalScoreAxisConfig(
-            all_positive_labels=all_positive_labels, percent=percent
+        **make_bars_configs(
+            score_axis_config=InternalScoreAxisConfig(
+                all_positive_labels=all_positive_labels, percent=percent
+            )
         ),
     )
 
@@ -587,8 +607,8 @@ def test_score_axis_percent_labels(
     "config, percent, expected_title",
     [
         # The default title becomes the percent title only when shown as percentages
-        (None, False, DEFAULT_SCORE_AXIS_TITLE),
-        (None, True, PERCENT_SCORE_AXIS_TITLE),
+        (ScoreAxisConfig(), False, DEFAULT_SCORE_AXIS_TITLE),
+        (ScoreAxisConfig(), True, PERCENT_SCORE_AXIS_TITLE),
         # A custom title is preserved, even when shown as percentages
         (ScoreAxisConfig(title="Custom"), True, "Custom"),
         # An explicitly hidden title (None) stays hidden (no title rendered)
@@ -596,7 +616,14 @@ def test_score_axis_percent_labels(
     ],
 )
 def test_score_axis_title_resolved_and_rendered(
-    make_mock_df, score_col, score_type_col, rank_col, config, percent, expected_title
+    make_mock_df,
+    make_bars_configs,
+    score_col,
+    score_type_col,
+    rank_col,
+    config,
+    percent,
+    expected_title,
 ):
     """The resolved title (percent only swaps the default) is carried through to the chart."""
     chart = shift_bars(
@@ -605,8 +632,10 @@ def test_score_axis_title_resolved_and_rendered(
         rank_col=rank_col,
         score_type_col=score_type_col,
         vertical=True,
-        score_axis_config=InternalScoreAxisConfig.from_config(
-            config, all_positive_labels=False, percent=percent
+        **make_bars_configs(
+            score_axis_config=InternalScoreAxisConfig.from_config(
+                config, all_positive_labels=False, percent=percent
+            )
         ),
     )
 
@@ -634,6 +663,7 @@ def test_score_axis_title_resolved_and_rendered(
 )
 def test_rank_axis_tick_configs(
     make_mock_df,
+    make_bars_configs,
     score_col,
     score_type_col,
     rank_col,
@@ -653,8 +683,12 @@ def test_rank_axis_tick_configs(
         score_type_col=score_type_col,
         max_rank=max_rank,
         vertical=True,
-        rank_axis_config=RankAxisConfig(
-            label_tick_values=tick_values, label_tick_step=tick_step, label_first_tick=first_tick
+        **make_bars_configs(
+            rank_axis_config=RankAxisConfig(
+                label_tick_values=tick_values,
+                label_tick_step=tick_step,
+                label_first_tick=first_tick,
+            )
         ),
     )
 
@@ -681,7 +715,9 @@ def _expected_shift_colors(config: ShiftColorConfig) -> dict[str, str]:
     return expected
 
 
-def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank_col):
+def test_shift_bar_configs_default(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col
+):
     """
     Test that the default shift bar configuration applies the ShiftColorConfig defaults
     """
@@ -690,7 +726,11 @@ def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_shift_colors(None, None),
+        **make_bars_configs(
+            bar_config=InternalBarConfig.from_shift_colors(
+                config=ShiftColorConfig(), bar_config=BarConfig()
+            )
+        ),
     )
 
     chart_json = chart.to_dict()
@@ -708,36 +748,35 @@ def test_shift_bar_configs_default(make_mock_df, score_col, score_type_col, rank
     assert chart_json["encoding"]["order"]["field"] == "stacked_bar_order"
 
 
-@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
 def test_shift_bar_configs_custom_colors(
-    make_mock_df, score_col, score_type_col, rank_col, as_dict
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col
 ):
     """
-    Test that a custom ShiftColorConfig overrides individual colors while keeping the rest at default,
-    whether passed as a ShiftColorConfig object or as a dict of the same fields. Overriding a base
-    color also recolors that score type's `*_counteracted` bar
+    Test that a custom ShiftColorConfig overrides individual colors while keeping the rest at
+    default. Overriding a base color also recolors that score type's `*_counteracted` bar
     """
-    custom_overrides = {"lower_score": "#000000", "more_of_positive": "#999999"}
-    config = custom_overrides if as_dict else ShiftColorConfig(**custom_overrides)
+    config = ShiftColorConfig(lower_score="#000000", more_of_positive="#999999")
 
     chart = shift_bars(
         make_mock_df(),
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_shift_colors(config, None),
+        **make_bars_configs(
+            bar_config=InternalBarConfig.from_shift_colors(config=config, bar_config=BarConfig())
+        ),
     )
 
     chart_json = chart.to_dict()
     scale = chart_json["encoding"]["color"]["scale"]
 
-    expected_colors = _expected_shift_colors(ShiftColorConfig(**custom_overrides))
+    expected_colors = _expected_shift_colors(config)
 
     assert dict(zip(scale["domain"], scale["range"])) == expected_colors
 
 
 def test_shift_bar_configs_fade_counteracted_bars(
-    make_mock_df, score_col, score_type_col, rank_col
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col
 ):
     """
     Test that the `*_counteracted` bars of a shift plot are faded to `counteracted_opacity` while
@@ -750,7 +789,9 @@ def test_shift_bar_configs_fade_counteracted_bars(
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_shift_colors(config, None),
+        **make_bars_configs(
+            bar_config=InternalBarConfig.from_shift_colors(config=config, bar_config=BarConfig())
+        ),
     )
 
     fill_opacity = chart.to_dict()["encoding"]["fillOpacity"]
@@ -769,7 +810,9 @@ def test_shift_bar_configs_fade_counteracted_bars(
     assert fill_opacity["scale"]["type"] == "ordinal"
 
 
-def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, rank_col):
+def test_bar_configs_incomplete_colors(
+    make_mock_df, make_bars_configs, score_col, score_type_col, rank_col
+):
     """
     Test that the bar configuration fails if the colors dict does not cover the score types in the
     data
@@ -780,7 +823,9 @@ def test_bar_configs_incomplete_colors(make_mock_df, score_col, score_type_col, 
             rank_col=rank_col,
             score_col=score_col,
             score_type_col=score_type_col,
-            bar_config=InternalBarConfig(colors={"lower_score": "red"}, orders=None),
+            **make_bars_configs(
+                bar_config=InternalBarConfig(colors={"lower_score": "red"}, orders=None)
+            ),
         )
 
 
@@ -792,7 +837,9 @@ ATTRIBUTION_LABEL_PAIRS = [("reference", "comparison"), ("reinforce", "offset")]
 @pytest.mark.parametrize(
     "attribution_labels", ATTRIBUTION_LABEL_PAIRS, ids=["frequency", "score_sign"]
 )
-def test_bar_colors_default(token_col, score_col, score_type_col, rank_col, attribution_labels):
+def test_bar_colors_default(
+    make_bars_configs, token_col, score_col, score_type_col, rank_col, attribution_labels
+):
     """
     `InternalBarConfig.from_bar_colors` colors the bars with each attribution's default and, since
     bar plots don't stack and have no counteracted bars, enforces no stacking order and no fade
@@ -812,7 +859,13 @@ def test_bar_colors_default(token_col, score_col, score_type_col, rank_col, attr
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_bar_colors(None, None, attribution_labels),
+        **make_bars_configs(
+            bar_config=InternalBarConfig.from_bar_colors(
+                config=BarColorConfig(),
+                bar_config=BarConfig(),
+                attribution_labels=attribution_labels,
+            )
+        ),
     )
 
     chart_json = chart.to_dict()
@@ -826,21 +879,18 @@ def test_bar_colors_default(token_col, score_col, score_type_col, rank_col, attr
     assert "fillOpacity" not in chart_json["encoding"]
 
 
-@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
 @pytest.mark.parametrize(
     "attribution_labels", ATTRIBUTION_LABEL_PAIRS, ids=["frequency", "score_sign"]
 )
 def test_bar_colors_custom(
-    token_col, score_col, score_type_col, rank_col, attribution_labels, as_dict
+    make_bars_configs, token_col, score_col, score_type_col, rank_col, attribution_labels
 ):
     """
-    A custom config overrides the first bar's color while keeping the second at default, whether
-    passed as a `BarColorConfig` or as a dict of the same fields
+    A custom config overrides the first bar's color while keeping the second at default
     """
     first, second = attribution_labels
 
-    overrides = {first: "#000000"}
-    config = overrides if as_dict else BarColorConfig(**overrides)
+    config = BarColorConfig(**{first: "#000000"})
 
     df = pl.DataFrame(
         {
@@ -856,7 +906,11 @@ def test_bar_colors_custom(
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig.from_bar_colors(config, None, attribution_labels),
+        **make_bars_configs(
+            bar_config=InternalBarConfig.from_bar_colors(
+                config=config, bar_config=BarConfig(), attribution_labels=attribution_labels
+            )
+        ),
     )
 
     scale = chart.to_dict()["encoding"]["color"]["scale"]
@@ -872,12 +926,20 @@ def test_color_configs_carry_grand_total_color():
     attribution_labels = ("reference", "comparison")
 
     defaults = (
-        InternalBarConfig.from_bar_colors(None, None, attribution_labels),
-        InternalBarConfig.from_shift_colors(None, None),
+        InternalBarConfig.from_bar_colors(
+            config=BarColorConfig(), bar_config=BarConfig(), attribution_labels=attribution_labels
+        ),
+        InternalBarConfig.from_shift_colors(config=ShiftColorConfig(), bar_config=BarConfig()),
     )
     customs = (
-        InternalBarConfig.from_bar_colors({"grand_total": "#000000"}, None, attribution_labels),
-        InternalBarConfig.from_shift_colors({"grand_total": "#000000"}, None),
+        InternalBarConfig.from_bar_colors(
+            config=BarColorConfig(grand_total="#000000"),
+            bar_config=BarConfig(),
+            attribution_labels=attribution_labels,
+        ),
+        InternalBarConfig.from_shift_colors(
+            config=ShiftColorConfig(grand_total="#000000"), bar_config=BarConfig()
+        ),
     )
 
     for config in defaults:
@@ -886,44 +948,9 @@ def test_color_configs_carry_grand_total_color():
         assert config.colors[GRAND_TOTAL_SCORE_TYPE] == "#000000"
 
 
-@pytest.mark.parametrize(
-    "make_internal_bar_config",
-    [
-        lambda config: InternalBarConfig.from_bar_colors(config, None, ("reference", "comparison")),
-        lambda config: InternalBarConfig.from_shift_colors(config, None),
-    ],
-    ids=["from_bar_colors", "from_shift_colors"],
-)
-def test_from_config_rejects_invalid_dict_keys(make_internal_bar_config):
-    """
-    Passing a dict with field names the config doesn't have raises the `_resolve_config` ValueError
-    """
-    with pytest.raises(ValueError, match="Invalid .* key"):
-        make_internal_bar_config({"not_a_field": "red", "also_bad": "blue"})
-
-
-@pytest.mark.parametrize(
-    "make_internal_bar_config, wrong_config",
-    [
-        (
-            lambda config: InternalBarConfig.from_bar_colors(
-                config, None, ("reference", "comparison")
-            ),
-            ShiftColorConfig(),
-        ),
-        (lambda config: InternalBarConfig.from_shift_colors(config, None), BarColorConfig()),
-    ],
-    ids=["from_bar_colors", "from_shift_colors"],
-)
-def test_from_config_rejects_wrong_config_type(make_internal_bar_config, wrong_config):
-    """
-    Passing a config of the wrong class raises the `_resolve_config` TypeError
-    """
-    with pytest.raises(TypeError, match="Expected a .* or a dict of its fields"):
-        make_internal_bar_config(wrong_config)
-
-
-def test_bar_outline_rendered_on_mark(token_col, score_col, score_type_col, rank_col):
+def test_bar_outline_rendered_on_mark(
+    make_bars_configs, token_col, score_col, score_type_col, rank_col
+):
     """
     The bar mark draws the outline color and width from the `InternalBarConfig`
     """
@@ -934,8 +961,10 @@ def test_bar_outline_rendered_on_mark(token_col, score_col, score_type_col, rank
         rank_col=rank_col,
         score_col=score_col,
         score_type_col=score_type_col,
-        bar_config=InternalBarConfig(
-            colors={"x": "red"}, orders=None, outline_color="blue", outline_width=2
+        **make_bars_configs(
+            bar_config=InternalBarConfig(
+                colors={"x": "red"}, orders=None, outline_color="blue", outline_width=2
+            )
         ),
     )
 
@@ -947,43 +976,46 @@ def test_bar_outline_rendered_on_mark(token_col, score_col, score_type_col, rank
     "make_internal_bar_config",
     [
         lambda bar_config: InternalBarConfig.from_bar_colors(
-            None, bar_config, ("reference", "comparison")
+            config=BarColorConfig(),
+            bar_config=bar_config,
+            attribution_labels=("reference", "comparison"),
         ),
-        lambda bar_config: InternalBarConfig.from_shift_colors(None, bar_config),
+        lambda bar_config: InternalBarConfig.from_shift_colors(
+            config=ShiftColorConfig(), bar_config=bar_config
+        ),
     ],
     ids=["from_bar_colors", "from_shift_colors"],
 )
 def test_internal_bar_config_default_outline(make_internal_bar_config):
     """
-    Without a user config, the bars take the default outline color and width
+    With a default `BarConfig`, the bars take the default outline color and width
     """
-    internal = make_internal_bar_config(None)
+    internal = make_internal_bar_config(BarConfig())
     assert (internal.outline_color, internal.outline_width) == (
         DEFAULT_BAR_OUTLINE_COLOR,
         DEFAULT_BAR_OUTLINE_WIDTH,
     )
 
 
-@pytest.mark.parametrize("as_dict", [False, True], ids=["object", "dict"])
 @pytest.mark.parametrize(
     "make_internal_bar_config",
     [
         lambda bar_config: InternalBarConfig.from_bar_colors(
-            None, bar_config, ("reference", "comparison")
+            config=BarColorConfig(),
+            bar_config=bar_config,
+            attribution_labels=("reference", "comparison"),
         ),
-        lambda bar_config: InternalBarConfig.from_shift_colors(None, bar_config),
+        lambda bar_config: InternalBarConfig.from_shift_colors(
+            config=ShiftColorConfig(), bar_config=bar_config
+        ),
     ],
     ids=["from_bar_colors", "from_shift_colors"],
 )
-def test_internal_bar_config_custom_outline(make_internal_bar_config, as_dict):
+def test_internal_bar_config_custom_outline(make_internal_bar_config):
     """
-    The outline comes from the `BarConfig` rather than the color config, whether passed as a config
-    object or as a dict of the same fields
+    The outline comes from the `BarConfig` rather than the color config
     """
-    overrides = {"outline_color": "blue", "outline_width": 2}
-    bar_config = overrides if as_dict else BarConfig(**overrides)
-
-    internal = make_internal_bar_config(bar_config)
+    internal = make_internal_bar_config(BarConfig(outline_color="blue", outline_width=2))
     assert (internal.outline_color, internal.outline_width) == ("blue", 2)
 
 
@@ -992,7 +1024,11 @@ def test_internal_bar_config_from_bar_colors_has_no_orders():
     `InternalBarConfig.from_bar_colors()` produces an internal config without stacking orders, since
     bar plots don't stack
     """
-    internal = InternalBarConfig.from_bar_colors(None, None, ("reference", "comparison"))
+    internal = InternalBarConfig.from_bar_colors(
+        config=BarColorConfig(),
+        bar_config=BarConfig(),
+        attribution_labels=("reference", "comparison"),
+    )
     assert internal.orders is None
     assert set(internal.colors) == {GRAND_TOTAL_SCORE_TYPE, "reference", "comparison"}
 
@@ -1002,6 +1038,8 @@ def test_internal_bar_config_from_shift_colors_uses_internal_orders():
     `InternalBarConfig.from_shift_colors()` produces an internal config whose `orders` equals
     `_SHIFT_TYPE_ORDERS` — i.e., stacking order is controlled internally, not by the user
     """
-    internal = InternalBarConfig.from_shift_colors(None, None)
+    internal = InternalBarConfig.from_shift_colors(
+        config=ShiftColorConfig(), bar_config=BarConfig()
+    )
     assert internal.orders == _SHIFT_TYPE_ORDERS
     assert set(internal.colors) == {GRAND_TOTAL_SCORE_TYPE, *SHIFT_SCORE_TYPES}

@@ -1,6 +1,7 @@
 """Configuration classes for wordlevel"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
+from typing import TypeVar
 
 
 DEFAULT_LABEL_SIZE: float = 11
@@ -387,3 +388,41 @@ class TotalsConfig:
     higher_score_label: str = "△"
     grand_total_outline_color: str | None = None
     grand_total_outline_width: float | None = None
+
+
+_ConfigT = TypeVar(
+    "_ConfigT",
+    bound=BarConfig
+    | BarColorConfig
+    | ShiftColorConfig
+    | ScoreAxisConfig
+    | RankAxisConfig
+    | LabelConfig
+    | BorderConfig
+    | ZeroLineConfig
+    | TotalsConfig,
+)
+
+
+def _resolve_config(config: _ConfigT | dict | None, expected_config: type[_ConfigT]) -> _ConfigT:
+    """
+    Resolves a user-supplied config, which may be `None` or a dict of its fields, into the expected
+    config data class
+    """
+    if config is None:
+        return expected_config()
+    if isinstance(config, dict):
+        valid_keys = {f.name for f in fields(expected_config)}
+        invalid_keys = set(config) - valid_keys
+        if invalid_keys:
+            raise ValueError(
+                f"Invalid {expected_config.__name__} key(s) {sorted(invalid_keys)}. Valid keys "
+                f"are {sorted(valid_keys)} (or pass a {expected_config.__name__})."
+            )
+        return expected_config(**config)
+    if not isinstance(config, expected_config):
+        raise TypeError(
+            f"Expected a {expected_config.__name__} or a dict of its fields, but got a "
+            f"{type(config).__name__}."
+        )
+    return config

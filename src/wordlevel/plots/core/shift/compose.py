@@ -20,18 +20,18 @@ def compose_shift(
     rank_col: str,
     score_type_col: str,
     token_col: str,
+    rank_axis_config: RankAxisConfig,
+    score_axis_config: InternalScoreAxisConfig,
+    bar_config: InternalBarConfig,
+    label_config: LabelConfig,
+    border_config: BorderConfig,
+    zero_line_config: ZeroLineConfig,
+    totals_config: TotalsConfig,
     max_rank: int = 50,
     vertical: bool = True,
     height: float | None = None,
     width: float | None = None,
     show_totals: bool = False,
-    rank_axis_config: RankAxisConfig | dict | None = None,
-    score_axis_config: InternalScoreAxisConfig | dict | None = None,
-    bar_config: InternalBarConfig | None = None,
-    label_config: LabelConfig | dict | None = None,
-    border_config: BorderConfig | dict | None = None,
-    zero_line_config: ZeroLineConfig | dict | None = None,
-    totals_config: TotalsConfig | dict | None = None,
     scale_factor: float = 1.0,
     show_legend: bool = False,
 ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
@@ -53,6 +53,20 @@ def compose_shift(
             Column in the dataframe indicating the type of "score" associated with each bar
         token_col:
             Column in the dataframe indicating the name of the token to which the scores correspond
+        rank_axis_config:
+            Configuration for the rank axis
+        score_axis_config:
+            Configuration for the score axis
+        bar_config:
+            Configuration for the bars
+        label_config:
+            Configuration for the bar labels
+        border_config:
+            Configuration for the axes and border
+        zero_line_config:
+            Configuration for the zero line at the score-axis origin
+        totals_config:
+            Configuration for the totals panels. Ignored if `show_totals` is False
         max_rank:
             The maximum number of top-contributing tokens to display
         vertical:
@@ -68,20 +82,6 @@ def compose_shift(
         show_totals:
             Whether to show the overall total contributions of each score type and overall as
             additional panels composed with the main shift panel
-        rank_axis_config:
-            Configuration for the rank axis
-        score_axis_config:
-            Configuration for the score axis
-        bar_config:
-            Configuration for the bars
-        label_config:
-            Configuration for the bar labels
-        border_config:
-            Configuration for the axes and border
-        zero_line_config:
-            Configuration for the zero line at the score-axis origin
-        totals_config:
-            Configuration for the totals panels. Ignored if `show_totals` is False
         scale_factor:
             Multiplier applied to the score axis when fitting it to the bar labels. Increasing it
             provides more space for the bar labels
@@ -91,22 +91,6 @@ def compose_shift(
     Returns:
         An Altair chart of the word shift plot
     """
-    # Resolve the axis and border configs once so they can be shared across the panels
-    if isinstance(rank_axis_config, dict):
-        rank_axis_config = RankAxisConfig(**rank_axis_config)
-    elif rank_axis_config is None:
-        rank_axis_config = RankAxisConfig()
-
-    if isinstance(score_axis_config, dict):
-        score_axis_config = InternalScoreAxisConfig(**score_axis_config)
-    elif score_axis_config is None:
-        score_axis_config = InternalScoreAxisConfig()
-
-    if isinstance(border_config, dict):
-        border_config = BorderConfig(**border_config)
-    elif border_config is None:
-        border_config = BorderConfig()
-
     border_is_visible = border_config.width > 0
 
     # For horizontal totals (`vertical=False` and `show_totals=True`), the main chart's score axis
