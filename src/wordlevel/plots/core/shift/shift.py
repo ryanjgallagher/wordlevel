@@ -86,7 +86,7 @@ def shift(
             Configuration for the axes and border
         zero_line_config:
             Configuration for the zero line at the score-axis origin
-        totals_config
+        totals_config:
             Configuration for the "grand" total bar. Ignored if `show_totals` is False
         scale_factor:
             Multiplier applied to the score axis when fitting it to the bar labels. Increasing it

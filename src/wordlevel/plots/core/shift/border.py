@@ -107,7 +107,7 @@ def shift_borders(
 
     Returns:
         A `LayerChart` of the provided charts with the newly created border "charts." `chart[0]` is
-        a `LayerChat` of the original `charts`, where as `chart[1:]` consists of the borders
+        a `LayerChart` of the original `charts`, whereas `chart[1:]` consists of the borders
     """
     dim2params = {
         rank_col: {

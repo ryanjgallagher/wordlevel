@@ -46,6 +46,12 @@ PlotType = Literal["bar", "shift"]
 
 @dataclass(frozen=True)
 class PlotCacheKey:
+    """
+    Identifies a cached plot dataframe by the comparison it plots (`alias`), the type of plot
+    (`plot_type`), and the options that change the dataframe's contents
+    (`split_nonnegative_by_corpus` and `show_totals`).
+    """
+
     alias: str
     plot_type: PlotType
     split_nonnegative_by_corpus: bool
@@ -54,6 +60,11 @@ class PlotCacheKey:
 
 @dataclass
 class PlotCachedDataFrame:
+    """
+    A cached plot dataframe and the rank it was filtered to (`max_rank`). If `max_rank` is `None`,
+    the dataframe holds every token.
+    """
+
     df: pl.DataFrame
     max_rank: int | None
 
