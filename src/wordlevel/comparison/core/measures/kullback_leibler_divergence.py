@@ -12,24 +12,32 @@ def kullback_leibler_divergence_dual_dist_scores(
     alias1: str | None = None,
     alias2: str | None = None,
 ) -> tuple[pl.Expr, pl.Expr]:
-    """
-    Per-token scores for the KL divergence shift D_KL(P_2 || P_1), expressed as a
-    rearrangement of the paper's formula in surprisals s(p) = log_b(1/p) = -log_b p.
+    r"""
+    Computes each token's score in each of the two corpora for the Kullback-Leibler divergence
+    $D_{\text{KL}} \left( P^{(2)} \parallel P^{(1)} \right)$ of the second corpus from the first.
+    The scores are named `alias1` and `alias2` if given.
 
-    Per-token contribution (arXiv:2008.02250 §III.C):
+    The scores are
 
-        delta = p_2 * s(p_1) - p_2 * s(p_2)
-              = p_2 * log_b(1/p_1) - p_2 * log_b(1/p_2)
-              = p_2 * log_b(p_2 / p_1)
+    $$
+    \phi_\tau^{(1)} = \log_b \frac{1}{p_\tau^{(2)}}
+    \qquad
+    \phi_\tau^{(2)} = \log_b \frac{1}{p_\tau^{(1)}}
+    $$
 
-    Mapping to the framework's `p_2 * s_2 - p_1 * s_1` with both component frequencies set
-    to p_2 (via `share_component_freqs_by="comparison"`):
-      - s_2 = s(p_1) = surprisal of freqs1
-      - s_1 = s(p_2) = surprisal of freqs2
+    where $p_\tau^{(1)}$ and $p_\tau^{(2)}$ are the normalized frequencies of token $\tau$ in each
+    corpus and $b$ is the logarithm `base`. Each corpus is scored by the other corpus's
+    frequencies, so that when both scores are weighted by the frequency in the second corpus, each
+    token's contribution to $D_{\text{KL}} \left( P^{(2)} \parallel P^{(1)} \right)$ is
 
-    So this function returns Tsallis surprisals at alpha=1 with their positions swapped
-    relative to (freqs1, freqs2). Aligned with arXiv:2008.02250 §III.C and the standard
-    info-theory convention (first argument of D is the data).
+    $$
+    p_\tau^{(2)} \phi_\tau^{(2)} - p_\tau^{(2)} \phi_\tau^{(1)}
+        = p_\tau^{(2)} \log_b \frac{1}{p_\tau^{(1)}} - p_\tau^{(2)} \log_b \frac{1}{p_\tau^{(2)}}
+        = p_\tau^{(2)} \log_b \frac{p_\tau^{(2)}}{p_\tau^{(1)}}
+    $$
+
+    If `normalize` is `False`, `freqs1` and `freqs2` are used as given rather than normalized to
+    sum to 1.
     """
     surprisal_freqs1, surprisal_freqs2 = tsallis_entropy_dual_dist_scores(
         freqs1, freqs2, alpha=1, base=base, normalize=normalize
@@ -45,22 +53,21 @@ def kullback_leibler_divergence_clean_dual_dist_scores(
     alias1: str | None = None,
     alias2: str | None = None,
 ) -> tuple[pl.Expr, pl.Expr]:
-    """
-    Clean swapped surprisals so the entropy convention 0 * s(0) = 0 holds, where s is the
-    surprisal log_b(1/p). The two terms of the rearranged KL formula get asymmetric handling
-    because only one of them should carry through a legitimate +inf divergence.
+    r"""
+    Sets each token's scores to 0 where they are infinite and the second corpus does not use it, so
+    that its terms $p_\tau^{(2)} \phi_\tau^{(1)}$ and $p_\tau^{(2)} \phi_\tau^{(2)}$ in the
+    Kullback-Leibler divergence $D_{\text{KL}} \left( P^{(2)} \parallel P^{(1)} \right)$ are 0
+    rather than undefined. The scores are named `alias1` and `alias2` if given.
 
-    `scores1` is s(p_2) (surprisal of freqs2 — the data); `scores2` is s(p_1) (surprisal
-    of freqs1 — the codebook). Both will be multiplied by p_2 in the framework:
+    The scores are $\phi_\tau^{(1)} = \log_b \frac{1}{p_\tau^{(2)}}$ and
+    $\phi_\tau^{(2)} = \log_b \frac{1}{p_\tau^{(1)}}$, and are set to 0 asymmetrically:
 
-      - `p_2 * scores1` term: zero out scores1 when freqs2 == 0, since 0 * s(0) = 0 * inf
-        would otherwise be NaN. This is the entropy convention 0 * log(0) = 0.
-      - `p_2 * scores2` term: leave scores2 alone unless *both* freqs are zero.
-          * p_2 > 0, p_1 = 0: scores2 = s(p_1) = +inf is preserved so the standalone
-            metric produces a +inf per-token contribution — the divergence is legitimately
-            infinite when the codebook lacks a token the data has.
-          * p_2 = 0, p_1 > 0: scores2 is finite; 0 * finite = 0 naturally.
-          * p_2 = 0, p_1 = 0: scores2 = +inf; 0 * inf = NaN — must clean.
+    - $\phi_\tau^{(1)}$ is set to 0 wherever $p_\tau^{(2)} = 0$, where it is infinite. This follows
+      the convention $0 \log \frac{1}{0} = 0$.
+    - $\phi_\tau^{(2)}$ is set to 0 only where $p_\tau^{(1)} = p_\tau^{(2)} = 0$. Where only
+      $p_\tau^{(2)} = 0$, it is finite, so its term is 0 without being set. Where only
+      $p_\tau^{(1)} = 0$, it stays infinite, since the divergence is infinite when the first corpus
+      does not use a token that the second corpus does.
     """
     clean_scores1 = pl.when(freqs2 == 0).then(0).otherwise(scores1)
     clean_scores2 = pl.when((freqs2 == 0) & (freqs1 == 0)).then(0).otherwise(scores2)
@@ -74,15 +81,10 @@ def kullback_leibler_divergence(
     base: int = 2,
     normalize: bool = True,
 ) -> pl.Expr:
-    """
-    KL divergence D_KL(P_2 || P_1) per token, expressed as a rearrangement in surprisals:
-
-        D_KL = p_2 * s(p_1) - p_2 * s(p_2)
-             = p_2 * log_b(1/p_1) - p_2 * log_b(1/p_2)
-             = p_2 * log_b(p_2 / p_1)
-
-    Let p_1 = freqs1 (the codebook / reference) and p_2 = freqs2 (the data / comparison).
-    Aligned with arXiv:2008.02250 §III.C and standard info-theory convention.
+    r"""
+    Not exposed in the API. Computes each token's contribution to the Kullback-Leibler divergence
+    $D_{\text{KL}} \left( P^{(2)} \parallel P^{(1)} \right)$ of the second corpus from the first,
+    which sum to the divergence.
     """
     probs1 = normalize_freqs(freqs1, normalize=normalize)
     probs2 = normalize_freqs(freqs2, normalize=normalize)
