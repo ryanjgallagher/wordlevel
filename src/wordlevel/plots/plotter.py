@@ -20,6 +20,7 @@ from wordlevel.configs import (
     ShiftColorConfig,
     TotalsConfig,
     ZeroLineConfig,
+    _resolve_config,
 )
 from wordlevel.constants import (
     ATTRIBUTION_COL,
@@ -193,14 +194,21 @@ class Plotter:
         Raises:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
             ValueError: If `color_config` specifies the wrong color fields
+            ValueError: If a config dict has keys that are not fields of its config
+            TypeError: If a config is neither the expected config class nor a dict
         """
         comp = self._comparisons[comparison]
-        self._validate_attribution_colors(color_config, comp.attribution_labels)
 
-        if label_config is None:
-            label_config = LabelConfig()
-        elif isinstance(label_config, dict):
-            label_config = LabelConfig(**label_config)
+        rank_axis_config = _resolve_config(rank_axis_config, RankAxisConfig)
+        score_axis_config = _resolve_config(score_axis_config, ScoreAxisConfig)
+        color_config = _resolve_config(color_config, BarColorConfig)
+        bar_config = _resolve_config(bar_config, BarConfig)
+        label_config = _resolve_config(label_config, LabelConfig)
+        border_config = _resolve_config(border_config, BorderConfig)
+        zero_line_config = _resolve_config(zero_line_config, ZeroLineConfig)
+        totals_config = _resolve_config(totals_config, TotalsConfig)
+
+        self._validate_attribution_colors(color_config, comp.attribution_labels)
 
         df_plot = self._get_plot_df(
             comparison=comp,
@@ -349,6 +357,8 @@ class Plotter:
         Raises:
             KeyError: If `comparison` is not the alias of a comparison in the catalog
             ValueError: If the comparison's measure is not a weighted average
+            ValueError: If a config dict has keys that are not fields of its config
+            TypeError: If a config is neither the expected config class nor a dict
         """
         comp = self._comparisons[comparison]
         if not comp.is_weighted_avg:
@@ -356,10 +366,14 @@ class Plotter:
                 "Cannot make a word shift plot for measures that are not weighted averages"
             )
 
-        if label_config is None:
-            label_config = LabelConfig()
-        elif isinstance(label_config, dict):
-            label_config = LabelConfig(**label_config)
+        rank_axis_config = _resolve_config(rank_axis_config, RankAxisConfig)
+        score_axis_config = _resolve_config(score_axis_config, ScoreAxisConfig)
+        color_config = _resolve_config(color_config, ShiftColorConfig)
+        bar_config = _resolve_config(bar_config, BarConfig)
+        label_config = _resolve_config(label_config, LabelConfig)
+        border_config = _resolve_config(border_config, BorderConfig)
+        zero_line_config = _resolve_config(zero_line_config, ZeroLineConfig)
+        totals_config = _resolve_config(totals_config, TotalsConfig)
 
         df_plot = self._get_plot_df(
             comparison=comp,
@@ -530,7 +544,7 @@ class Plotter:
 
     @staticmethod
     def _validate_attribution_colors(
-        color_config: BarColorConfig | dict | None, attribution_labels: tuple[str, str]
+        color_config: BarColorConfig, attribution_labels: tuple[str, str]
     ) -> None:
         """
         Checks a user's bar colors against the pair of contributions a comparison produces. A
@@ -540,19 +554,10 @@ class Plotter:
         Raises:
             ValueError: If a color is set for an attribution the comparison does not produce
         """
-        if color_config is None:
-            return
-
         attribution_fields = {label for labels in ATTRIBUTION_LABELS.values() for label in labels}
-
-        if isinstance(color_config, dict):
-            colored = {field for field in color_config if field in attribution_fields}
-        else:
-            colored = {
-                field
-                for field in attribution_fields
-                if getattr(color_config, field, None) is not None
-            }
+        colored = {
+            field for field in attribution_fields if getattr(color_config, field) is not None
+        }
 
         inapplicable = sorted(colored - set(attribution_labels))
         if inapplicable:

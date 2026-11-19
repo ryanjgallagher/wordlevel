@@ -15,7 +15,6 @@ from wordlevel.configs import (
     RankAxisConfig,
     ScoreAxisConfig,
     ShiftColorConfig,
-    _resolve_config,
 )
 from wordlevel.constants import COUNTERACTED_SUFFIX, GRAND_TOTAL_SCORE_TYPE
 from wordlevel.plots.core.shift.border import _TRANSLATE_PX, InternalBorderConfig
@@ -59,25 +58,20 @@ class InternalScoreAxisConfig(ScoreAxisConfig):
     @classmethod
     def from_config(
         cls,
-        config: ScoreAxisConfig | dict | None,
+        config: ScoreAxisConfig,
         all_positive_labels: bool,
         percent: bool = False,
     ) -> Self:
         """
-        Resolves a user `ScoreAxisConfig` into the internal config. When contributions are shown as
+        Derives the internal config from a user `ScoreAxisConfig`. When contributions are shown as
         percentages and the title is left at its default, the title reflects percentages.
         """
-        if config is None:
-            config = ScoreAxisConfig()
-        elif isinstance(config, dict):
-            config = ScoreAxisConfig(**config)
-
-        config = asdict(config)
+        config_fields = asdict(config)
         # Only default to the percent title if the user didn't specify it
-        if percent and config["title"] == DEFAULT_SCORE_AXIS_TITLE:
-            config["title"] = PERCENT_SCORE_AXIS_TITLE
+        if percent and config_fields["title"] == DEFAULT_SCORE_AXIS_TITLE:
+            config_fields["title"] = PERCENT_SCORE_AXIS_TITLE
 
-        return cls(**config, all_positive_labels=all_positive_labels, percent=percent)
+        return cls(**config_fields, all_positive_labels=all_positive_labels, percent=percent)
 
 
 @dataclass
@@ -106,60 +100,54 @@ class InternalBarConfig(BarConfig):
     @classmethod
     def from_bar_colors(
         cls,
-        config: BarColorConfig | dict | None,
-        bar_config: BarConfig | dict | None,
+        config: BarColorConfig,
+        bar_config: BarConfig,
         attribution_labels: tuple[str, str],
     ) -> Self:
         """
         Builds the config for a bar plot, coloring the pair of bars that the comparison's
         attribution produces. A color left unset takes its default
         """
-        resolved_config = _resolve_config(config, BarColorConfig)
-        resolved_bar_config = _resolve_config(bar_config, BarConfig)
-
-        colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
+        colors = {GRAND_TOTAL_SCORE_TYPE: config.grand_total}
         for label in attribution_labels:
-            color = getattr(resolved_config, label)
+            color = getattr(config, label)
             colors[label] = DEFAULT_ATTRIBUTION_COLORS[label] if color is None else color
 
         return cls(
             colors=colors,
             orders=None,
-            outline_color=resolved_bar_config.outline_color,
-            outline_width=resolved_bar_config.outline_width,
+            outline_color=bar_config.outline_color,
+            outline_width=bar_config.outline_width,
         )
 
     @classmethod
     def from_shift_colors(
         cls,
-        config: ShiftColorConfig | dict | None,
-        bar_config: BarConfig | dict | None,
+        config: ShiftColorConfig,
+        bar_config: BarConfig,
     ) -> Self:
         """
         Builds the config for a word shift plot. Unlike `from_bar_colors` it enforces the order of
         the different bar types, and fades each `*_counteracted` bar behind the bar it counteracts
         """
-        resolved_config = _resolve_config(config, ShiftColorConfig)
-        resolved_bar_config = _resolve_config(bar_config, BarConfig)
-
-        colors = {GRAND_TOTAL_SCORE_TYPE: resolved_config.grand_total}
+        colors = {GRAND_TOTAL_SCORE_TYPE: config.grand_total}
         opacities: dict[str, float] = {}
 
         # The config declares only the six base colors, but we need the counteracted ones too
-        for score_type, color in cls._get_colors(resolved_config).items():
+        for score_type, color in cls._get_colors(config).items():
             counteracted = f"{score_type}{COUNTERACTED_SUFFIX}"
 
             colors[score_type] = color
             colors[counteracted] = color
             opacities[score_type] = 1.0
-            opacities[counteracted] = resolved_config.counteracted_opacity
+            opacities[counteracted] = config.counteracted_opacity
 
         return cls(
             colors=colors,
             orders=_SHIFT_TYPE_ORDERS,
             opacities=opacities,
-            outline_color=resolved_bar_config.outline_color,
-            outline_width=resolved_bar_config.outline_width,
+            outline_color=bar_config.outline_color,
+            outline_width=bar_config.outline_width,
         )
 
     @classmethod

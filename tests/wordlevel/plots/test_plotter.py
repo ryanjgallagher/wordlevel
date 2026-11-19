@@ -1,3 +1,5 @@
+import json
+import re
 from typing import cast
 
 import altair as alt
@@ -6,7 +8,17 @@ import pytest
 
 from wordlevel.catalog.catalog import Catalog
 from wordlevel.comparison.comparison import comp
-from wordlevel.configs import BarColorConfig, ShiftColorConfig
+from wordlevel.configs import (
+    BarColorConfig,
+    BarConfig,
+    BorderConfig,
+    LabelConfig,
+    RankAxisConfig,
+    ScoreAxisConfig,
+    ShiftColorConfig,
+    TotalsConfig,
+    ZeroLineConfig,
+)
 from wordlevel.constants import (
     PLOT_CONTRIBUTION_COL,
     PLOT_CONTRIBUTION_TYPE_COL,
@@ -243,6 +255,34 @@ def _score_axis_title(chart: alt.TopLevelMixin) -> str:
     return cast(alt.LayerChart, chart).layer[0].layer[0].to_dict()["encoding"]["x"]["axis"]["title"]
 
 
+def _spec_without_data(chart: alt.TopLevelMixin) -> str:
+    """
+    Serializes a chart's spec without its inline data or the dataset names that reference it.
+
+    Some layers' rows (e.g. the token labels) come out of an unordered `group_by`, so their order,
+    and the hash-based dataset names derived from it, can differ between otherwise identical calls.
+    Row order does not affect the rendered chart, so comparing specs without the data compares
+    only the parts that config fields placed outside the data can change
+    """
+    spec = chart.to_dict()
+    spec.pop("datasets")
+    return re.sub(r"data-[0-9a-f]+", "data", json.dumps(spec, sort_keys=True))
+
+
+# One non-default field per config parameter shared by `bar()` and `shift()`. The color configs
+# differ between the two methods, so they are tested in each class. Each field is chosen so that it
+# never ends up in the chart's data, which `_spec_without_data` leaves out of the comparison
+CONFIG_PARAM_OVERRIDES = [
+    ("rank_axis_config", RankAxisConfig, {"title": "Position"}),
+    ("score_axis_config", ScoreAxisConfig, {"title": "Shift"}),
+    ("bar_config", BarConfig, {"outline_width": 1.1}),
+    ("label_config", LabelConfig, {"color": "red"}),
+    ("border_config", BorderConfig, {"width": 1.3}),
+    ("zero_line_config", ZeroLineConfig, {"color": "red"}),
+    ("totals_config", TotalsConfig, {"grand_total_outline_width": 1.2}),
+]
+
+
 class TestBar:
     def test_wiring(self, df_mock: pl.DataFrame, catalog: Catalog) -> None:
         """bar() returns a LayerChart with 4 layers and the correct number of data rows."""
@@ -255,6 +295,17 @@ class TestBar:
         assert (
             len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 2
         )  # reference, comparison
+
+    @pytest.mark.parametrize("param, config_class, fields", CONFIG_PARAM_OVERRIDES)
+    def test_config_accepts_object_or_dict(
+        self, catalog: Catalog, param: str, config_class: type, fields: dict
+    ) -> None:
+        """Each config parameter renders the same chart from a config instance or a matching dict"""
+        plotter = Plotter(catalog.comparisons, "word")
+        from_object = plotter.bar("freq_comp", show_totals=True, **{param: config_class(**fields)})
+        from_dict = plotter.bar("freq_comp", show_totals=True, **{param: fields})
+
+        assert _spec_without_data(from_object) == _spec_without_data(from_dict)
 
     @pytest.mark.parametrize(
         "color_config",
@@ -378,6 +429,19 @@ class TestShift:
         assert (
             len(cast(pl.DataFrame, chart.layer[0].layer[0].data)) == df_mock.height * 12
         )  # 12 shift types
+
+    @pytest.mark.parametrize("param, config_class, fields", CONFIG_PARAM_OVERRIDES)
+    def test_config_accepts_object_or_dict(
+        self, catalog: Catalog, param: str, config_class: type, fields: dict
+    ) -> None:
+        """Each config parameter renders the same chart from a config instance or a matching dict"""
+        plotter = Plotter(catalog.comparisons, "word")
+        from_object = plotter.shift(
+            "entropy_comp", show_totals=True, **{param: config_class(**fields)}
+        )
+        from_dict = plotter.shift("entropy_comp", show_totals=True, **{param: fields})
+
+        assert _spec_without_data(from_object) == _spec_without_data(from_dict)
 
     def test_show_totals_totals_span_full_vocab(
         self, df_mock: pl.DataFrame, catalog: Catalog
