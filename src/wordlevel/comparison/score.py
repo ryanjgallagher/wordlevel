@@ -56,7 +56,10 @@ if TYPE_CHECKING:
 
 
 def _fixed_dual_score_func(expr1: pl.Expr, expr2: pl.Expr) -> DualScoreFunc:
-    """ """
+    """
+    Builds a `DualScoreFunc` whose scores are fixed rather than computed from the frequencies. It
+    returns `expr1` and `expr2` as the scores of the two corpora.
+    """
 
     def func(freqs1: pl.Expr, freqs2: pl.Expr, alias1: str, alias2: str) -> tuple[pl.Expr, pl.Expr]:
         return expr1.alias(alias1), expr2.alias(alias2)
@@ -72,7 +75,9 @@ def _passthrough_clean_score_func(
     alias1: str,
     alias2: str,
 ) -> tuple[pl.Expr, pl.Expr]:
-    """ """
+    """
+    A `DualCleanScoreFunc` that returns the scores unchanged.
+    """
     return scores1.alias(alias1), scores2.alias(alias2)
 
 
@@ -86,7 +91,10 @@ class Scorer:
         self._comparison = comparison
 
     def _get_default_alias(self, method: str) -> str:
-        """ """
+        """
+        Builds a default alias for the comparison from the names of its corpora and the scoring
+        method, e.g. `"reference:before_comparison:after_method:shannon_entropy"`.
+        """
         state = self._comparison._state
 
         return f"reference:{state.reference}_comparison:{state.comparison}_method:{method}"
@@ -187,7 +195,30 @@ class Scorer:
         attributed_by: ATTRIBUTION_TYPE,
         lexicon_join_plan: PlanStage | None = None,
     ) -> Comparison:
-        """ """
+        """
+        Returns a new `Comparison` scored by the given plan. If the comparison has no alias, it is
+        given a default one built from the names of its corpora and the scoring method.
+
+        Args:
+            score_plan:
+                The plan that scores the comparison
+            method:
+                The name of the scoring method
+            parameters:
+                Any parameters specific to the scoring method
+            is_weighted_avg:
+                Whether the scoring method can be interpreted as a weighted average or difference
+                in weighted averages
+            is_nonnegative:
+                Whether the scoring method is inherently non-negative, i.e. all token-level
+                contributions are non-negative
+            attributed_by:
+                The attribution type used to split token contributions between the two bars of a
+                bar plot
+            lexicon_join_plan:
+                The plan that joins lexicon scores onto the comparison, if the scoring method uses
+                a lexicon
+        """
         # TODO: `lexicon_join_plan` shadows the core function of the same name imported above, fix
         state = self._comparison._state
 
