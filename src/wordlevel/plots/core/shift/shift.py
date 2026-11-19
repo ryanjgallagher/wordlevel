@@ -81,7 +81,8 @@ def shift(
         show_legend:
             Whether to show the chart legend
         score_axis_opposite:
-            Whether to place the score axis on the side opposite its default position
+            Whether to place the score axis on the side opposite its default position. Ignored if
+            `vertical` is True
 
     Returns:
         An Altair chart of the word shift panel

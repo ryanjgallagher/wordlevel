@@ -6,18 +6,18 @@ import polars as pl
 import pytest
 
 from wordlevel.configs import BorderConfig, TotalsConfig, ZeroLineConfig
-from wordlevel.plots.core.shift.shift import shift
+from wordlevel.plots.core.shift.compose import compose_shift
 from wordlevel.plots.core.shift.totals import _LABEL_COL, _SCORE_TYPE_COL
 
 
-def _shift(
+def _compose_shift(
     df, score_col, rank_col, token_col, score_type_col, **kwargs
 ) -> alt.LayerChart | alt.VConcatChart | alt.HConcatChart:
-    """Call `shift` with the standard column mapping and test-sized dimensions."""
+    """Call `compose_shift` with the standard column mapping and test-sized dimensions."""
     kwargs.setdefault("max_rank", 10)
     kwargs.setdefault("width", 100)
     kwargs.setdefault("height", 100)
-    return shift(
+    return compose_shift(
         df,
         score_col=score_col,
         rank_col=rank_col,
@@ -104,7 +104,7 @@ class TestShowTotals:
     ):
         """`show_totals` stacks three panels (per-type totals, grand total, main chart) with a
         concat matching the orientation."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -121,7 +121,7 @@ class TestShowTotals:
         self, make_mock_df, score_col, rank_col, token_col, score_type_col
     ):
         """Without `show_totals`, `shift` returns a single layer chart rather than a concat."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -137,7 +137,7 @@ class TestShowTotals:
     ):
         """The stacked panels resolve their color scales independently so their legends do not
         merge into one shared scale."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -154,7 +154,7 @@ class TestShowTotals:
         """The stacked panels resolve their fill opacity scales independently. Only the main panel
         has faded bars, and a shared scale would union the panels' differing score types into one
         domain while keeping only the first panel's range."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -170,7 +170,7 @@ class TestShowTotals:
     ):
         """The panels are ordered [per-type totals, grand total, main]: the last panel is the full
         word-shift chart, the middle panel is the single grand-total bar."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -199,7 +199,7 @@ class TestShowTotals:
         self, make_mock_df, score_col, rank_col, token_col, score_type_col
     ):
         """`shift` forwards `totals_config` into the grand-total panel."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -225,7 +225,7 @@ class TestShowTotals:
     ):
         """With totals, the main chart's score axis is moved to the far (right) side only when
         horizontal, so it clears the totals panels placed to its left."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -248,7 +248,7 @@ class TestFrameConsistency:
     ):
         """Every border edge on every panel shares one color and width, so the stacked frame reads
         as a single continuous border rather than mismatched per-panel edges."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -268,7 +268,7 @@ class TestFrameConsistency:
     ):
         """The zero line is drawn identically (color and width) on the main chart and both totals
         panels."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -300,7 +300,7 @@ class TestFrameConsistency:
         """Along the score-axis direction (where the panels are stacked), each inter-panel seam is
         drawn exactly once — catching both a missing divider and a doubled edge — in either
         orientation, whether or not the border box encloses the stack."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -330,7 +330,7 @@ class TestFrameConsistency:
     ):
         """Every seam is drawn by a border edge rather than a panel's own score-axis domain, so a
         border box wider than the score axis cannot leave one divider thicker than another."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -357,7 +357,7 @@ class TestFrameConsistency:
     ):
         """With the border box off, the seams that survive are drawn at the score axis width, so
         they match the score-axis domain that separates the two totals panels."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
@@ -378,7 +378,7 @@ class TestFrameConsistency:
     ):
         """Without totals panels there are no seams, so a hidden border box leaves the chart with
         no border edges at all — only the two native axes."""
-        chart = _shift(
+        chart = _compose_shift(
             make_mock_df(n=50),
             score_col=score_col,
             rank_col=rank_col,
