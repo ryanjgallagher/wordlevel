@@ -33,7 +33,7 @@ from wordlevel.plots.core.shift.bars import (
     InternalBarConfig,
     InternalScoreAxisConfig,
 )
-from wordlevel.plots.core.shift.shift import shift
+from wordlevel.plots.core.shift.compose import compose_shift
 from wordlevel.plots.core.shift.transform import (
     append_borrow_symbol_to_tokens,
     bar_plot_df,
@@ -211,7 +211,7 @@ class Plotter:
             borrow_symbol=label_config.borrow_symbol,
         )
 
-        return shift(
+        return compose_shift(
             df=df_plot,
             token_col=self._token_col,
             rank_col=RANK_COL,
@@ -370,7 +370,7 @@ class Plotter:
             borrow_symbol=label_config.borrow_symbol,
         )
 
-        return shift(
+        return compose_shift(
             df=df_plot,
             token_col=self._token_col,
             rank_col=RANK_COL,
